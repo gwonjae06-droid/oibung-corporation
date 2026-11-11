@@ -1,6 +1,6 @@
 (() => {
   'use strict';
-  const games = Array.isArray(window.OIBUNG_GAMES) ? window.OIBUNG_GAMES.filter(g => g && g.id && g.title && /^https:\/\//.test(g.playUrl || '')) : [];
+  const games = Array.isArray(window.OIBUNG_GAMES) ? window.OIBUNG_GAMES.filter(g => g && g.id && g.title) : [];
   const initialGames = [...games];
   const byId = new Map(games.map(game => [game.id, game]));
   const grid = document.querySelector('#game-grid');
@@ -49,17 +49,20 @@
   }
   function cardTemplate(game, index) {
     const favorite = favorites.has(game.id);
+    const playUrl = safeSourceUrl(game.playUrl);
+    const cover = `
+      ${coverArt(game)}<span class="game-card-number">${formatCount(index + 1)} / ${formatCount(games.length)}</span>
+      ${game.badge || playUrl ? `<span class="game-card-badge">${escapeHTML(game.badge || 'PLAY NOW')}</span>` : ''}
+      <div class="cover-content"><div class="cover-english">${escapeHTML(game.english || game.title)}</div><div class="cover-sub">${escapeHTML(game.tagline)}</div></div>`;
     return `<article class="game-card" data-game-id="${escapeHTML(game.id)}">
-      <a class="game-cover" href="${escapeHTML(game.playUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHTML(game.title)} 플레이하기">
-        ${coverArt(game)}<span class="game-card-number">${formatCount(index + 1)} / ${formatCount(games.length)}</span>
-        <span class="game-card-badge">${escapeHTML(game.badge || 'PLAY NOW')}</span>
-        <div class="cover-content"><div class="cover-english">${escapeHTML(game.english || game.title)}</div><div class="cover-sub">${escapeHTML(game.tagline)}</div></div>
-      </a>
+      ${playUrl
+        ? `<a class="game-cover" href="${escapeHTML(playUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHTML(game.title)} 플레이하기">${cover}</a>`
+        : `<div class="game-cover">${cover}</div>`}
       <div class="game-card-body"><div class="game-card-title-row"><div><div class="game-genre">${escapeHTML(game.genre)}</div><h3>${escapeHTML(game.title)}</h3></div>
       <button class="favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} ${favorite ? '찜 해제' : '찜하기'}" aria-pressed="${favorite}">${icon('heart')}</button></div>
       <p class="game-card-desc">${escapeHTML(game.description)}</p>
       <div class="game-card-footer"><button class="details-link" type="button" data-details="${escapeHTML(game.id)}">게임 자세히 보기 ↗</button>
-      <a class="play-link" href="${escapeHTML(game.playUrl)}" target="_blank" rel="noopener noreferrer">플레이하기 ${icon('arrow')}</a></div></div></article>`;
+      ${playUrl ? `<a class="play-link" href="${escapeHTML(playUrl)}" target="_blank" rel="noopener noreferrer">플레이하기 ${icon('arrow')}</a>` : ''}</div></div></article>`;
   }
   function render() {
     const query = searchInput.value.trim().toLocaleLowerCase('ko-KR');
@@ -82,10 +85,15 @@
     document.querySelector('#detail-title').textContent = game.title;
     document.querySelector('#detail-summary').textContent = game.description;
     document.querySelector('#detail-tags').innerHTML = (game.tags || []).map(tag => `<span>${escapeHTML(tag)}</span>`).join('');
-    document.querySelector('#detail-play').href = game.playUrl;
+    const play = document.querySelector('#detail-play');
+    const playUrl = safeSourceUrl(game.playUrl);
+    play.hidden = !playUrl;
+    if (playUrl) play.href = playUrl;
+    else play.removeAttribute('href');
     const source = document.querySelector('#detail-source');
     source.hidden = !safeSourceUrl(game.sourceUrl);
     if (!source.hidden) source.href = game.sourceUrl;
+    play.parentElement.hidden = play.hidden && source.hidden;
     detailDialog.dataset.gameId = id;
     detailDialog.showModal();
     detailDialog.dispatchEvent(new Event('game-opened'));

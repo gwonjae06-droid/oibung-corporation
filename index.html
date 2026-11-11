@@ -16,8 +16,8 @@
   <link rel="stylesheet" href="styles.css">
   <script src="games.js" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=guest-1" defer></script>
-  <script type="module" src="community.js?v=guest-1"></script>
+  <script src="app.js?v=optional-link-1" defer></script>
+  <script type="module" src="community.js?v=optional-link-1"></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -99,7 +99,7 @@
         </div>
         <div id="game-grid" class="game-grid" aria-live="polite"></div>
         <div id="empty-state" class="empty-state" hidden><span class="empty-glyph">✳</span><h3>아직 게임이 없네!</h3><p>검색어나 필터를 바꿔서 다시 찾아봐.</p><button type="button" id="reset-filters" class="button-outline">전체 게임 보기 <svg><use href="#i-right"/></svg></button></div>
-        <div class="library-footnote"><span>✳</span> 게임은 새 탭에서 열려요. 각 게임의 저장 데이터는 해당 게임 사이트에서 관리합니다.</div>
+        <div class="library-footnote"><span>✳</span> 플레이 링크는 새 탭에서 열려요. 각 게임의 저장 데이터는 해당 게임 사이트에서 관리합니다.</div>
       </div>
     </section>
 
@@ -108,7 +108,7 @@
       <div class="manifesto-copy"><p class="small-orange">NO BIG STUDIO. NO BIG RULES.</p><h2 id="about-title">작은 장난이<br><em>큰 세계가 되는 곳.</em></h2><p>오이붕 코퍼레이션은 친구들이 직접 만든 게임과 실험적인 프로젝트를 한자리에 모은 비공식 게임 아카이브야. 거창한 회사가 아니라, 우리가 즐겁게 만든 것들을 같이 즐기는 공간.</p><div class="manifesto-traits"><span>01 <strong>만들고</strong></span><span>02 <strong>공유하고</strong></span><span>03 <strong>함께 즐기자</strong></span></div></div>
     </div></section>
 
-    <section class="join-section" id="join" aria-labelledby="join-title"><div class="container join-content"><div class="join-symbol" aria-hidden="true">✳</div><div><span class="section-kicker-alone">03 / NEXT UP</span><h2 id="join-title">네 게임도<br><em>여기 올리자.</em></h2><p>친구가 만든 다음 게임도 이 컬렉션의 일부가 될 수 있어. 게임 링크와 소개를 올리고, 상세 화면에서 스크린샷과 후기를 남겨 봐.</p><button class="button-primary button-light" type="button" id="add-guide">게임 등록하기 <svg><use href="#i-arrow"/></svg></button></div><div class="join-background-text" aria-hidden="true">NEXT!</div></div></section>
+    <section class="join-section" id="join" aria-labelledby="join-title"><div class="container join-content"><div class="join-symbol" aria-hidden="true">✳</div><div><span class="section-kicker-alone">03 / NEXT UP</span><h2 id="join-title">네 게임도<br><em>여기 올리자.</em></h2><p>친구가 만든 다음 게임도 이 컬렉션의 일부가 될 수 있어. 게임 소개를 올리고, 상세 화면에서 스크린샷과 후기를 남겨 봐.</p><button class="button-primary button-light" type="button" id="add-guide">게임 등록하기 <svg><use href="#i-arrow"/></svg></button></div><div class="join-background-text" aria-hidden="true">NEXT!</div></div></section>
   </main>
 
   <footer class="site-footer"><div class="container"><div class="footer-top"><a class="brand brand-footer" href="#top"><span class="brand-mark" aria-hidden="true"><span class="brand-core"></span></span><span class="brand-copy">OIBUNG<span>CORPORATION</span></span></a><span>MADE BY FRIENDS. PLAYED BY EVERYONE.</span></div><div class="footer-bottom"><span>© <span id="year">2026</span> OIBUNG CORPORATION. UNOFFICIAL INDIE COLLECTIVE.</span><a href="#top">BACK TO TOP ↑</a></div></div></footer>
@@ -144,7 +144,8 @@
       <p id="account-status" role="status">공유 서버를 확인하는 중이야.</p>
       <form id="add-game-form" class="community-form" hidden>
         <label>게임 이름 <input name="title" required maxlength="80"></label>
-        <label>플레이 링크 <input name="playUrl" type="url" required maxlength="2048" placeholder="https://"></label>
+        <label>플레이 링크 (선택) <input name="playUrl" type="url" maxlength="2048" placeholder="https://"></label>
+        <small>APK나 마인크래프트 모드처럼 링크가 없으면 비워 둬도 돼.</small>
         <label>분류 <select name="category"><option value="action">액션</option><option value="strategy">전략</option><option value="other">기타</option></select></label>
         <label>장르 <input name="genre" required maxlength="60"></label>
         <label>게임 소개 <textarea name="description" required maxlength="1000" rows="4"></textarea></label>

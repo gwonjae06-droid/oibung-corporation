@@ -70,16 +70,19 @@ Deno.serve(async req => {
     if (action === 'game') {
       const { title, description, genre, category, play_url } = content;
       if (!required(title, 80) || !required(description, 1000) || !required(genre, 60)
-          || !['action', 'strategy', 'other'].includes(category) || !required(play_url, 2048)) {
-        return reply(400, { error: '게임 이름, 장르, 소개, 링크를 확인해 줘.' });
+          || !['action', 'strategy', 'other'].includes(category)) {
+        return reply(400, { error: '게임 이름, 장르, 소개를 확인해 줘.' });
       }
-      let link;
-      try { link = new URL(play_url); } catch { return reply(400, { error: 'HTTPS 게임 링크를 입력해 줘.' }); }
-      if (link.protocol !== 'https:' || link.username || link.password || link.href.length > 2048) {
-        return reply(400, { error: 'HTTPS 게임 링크를 확인해 줘.' });
+      let link: URL | null = null;
+      if (play_url != null && play_url !== '') {
+        if (!required(play_url, 2048)) return reply(400, { error: '플레이 링크를 확인해 줘.' });
+        try { link = new URL(play_url); } catch { return reply(400, { error: 'HTTPS 게임 링크를 입력해 줘.' }); }
+        if (link.protocol !== 'https:' || link.username || link.password || link.href.length > 2048) {
+          return reply(400, { error: 'HTTPS 게임 링크를 확인해 줘.' });
+        }
       }
       const game = { id: crypto.randomUUID(), title: title.trim(), description: description.trim(),
-        genre: genre.trim(), category, play_url: link.href };
+        genre: genre.trim(), category, play_url: link?.href ?? null };
       const result = await db.from('oc_games').insert({ ...game, author_id: author });
       if (result.error) throw result.error;
       return reply(201, { game });

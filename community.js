@@ -176,15 +176,18 @@ async function guestWrite(data, gameId) {
 }
 
 submit(gameForm, accountStatus, async () => {
-  const link = new URL(textField(gameForm, 'playUrl'));
-  if (link.protocol !== 'https:' || link.username || link.password) throw new Error('HTTPS 플레이 링크를 입력해 줘.');
+  const playUrl = textField(gameForm, 'playUrl');
+  const link = playUrl ? new URL(playUrl) : null;
+  if (link && (link.protocol !== 'https:' || link.username || link.password)) {
+    throw new Error('플레이 링크를 넣으려면 HTTPS 주소를 입력해 줘.');
+  }
   const fieldsToSave = {
     action: 'game',
     title: textField(gameForm, 'title'),
     category: textField(gameForm, 'category'),
     genre: textField(gameForm, 'genre'),
     description: textField(gameForm, 'description'),
-    play_url: link.href
+    play_url: link?.href ?? null
   };
   const { game } = await guestWrite(fieldsToSave);
   gameForm.reset();
@@ -269,7 +272,7 @@ async function connect() {
       }
     });
   gameForm.hidden = false;
-  accountStatus.textContent = '게임 정보와 플레이 링크를 입력해 줘.';
+  accountStatus.textContent = '게임 정보를 입력해 줘.';
   showParticipation();
   void loadDetails();
   window.addEventListener('focus', () => {
