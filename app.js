@@ -120,15 +120,7 @@
     guideDialog.showModal();
     document.body.classList.add('no-scroll');
   }
-  document.querySelector('#add-guide').addEventListener('click', () => {
-    delete guideDialog.dataset.returnGame;
-    openGuide();
-  });
-  document.querySelector('#detail-sign-in').addEventListener('click', () => {
-    guideDialog.dataset.returnGame = detailDialog.dataset.gameId;
-    closeDialog(detailDialog);
-    openGuide();
-  });
+  document.querySelector('#add-guide').addEventListener('click', openGuide);
   window.OIBUNG_CATALOG = {
     openDetail,
     addSharedGame(game) {

@@ -3,7 +3,6 @@ const detail = $('#game-dialog');
 const account = $('#guide-dialog');
 const accountStatus = $('#account-status');
 const detailStatus = $('#detail-status');
-const loginForm = $('#sign-in-form');
 const gameForm = $('#add-game-form');
 const imageForm = $('#image-form');
 const reviewForm = $('#review-form');
@@ -11,9 +10,7 @@ const bucket = 'oc-screenshots';
 const fileTypes = new Map([['image/jpeg', 'jpg'], ['image/png', 'png'], ['image/webp', 'webp']]);
 const pageSize = 12;
 let client;
-let session;
-let isMember = false;
-let authRevision = 0;
+let guestToken;
 let detailRevision = 0;
 let catalogRevision = 0;
 let imageLimit = pageSize;
@@ -65,9 +62,8 @@ async function loadGames() {
 }
 
 function showParticipation() {
-  imageForm.hidden = !isMember;
-  reviewForm.hidden = !isMember;
-  $('#detail-sign-in').hidden = !client || isMember;
+  imageForm.hidden = !client;
+  reviewForm.hidden = !client;
 }
 
 function drawImages(rows) {
@@ -110,7 +106,7 @@ function drawReviews(rows, summary) {
   $('#more-reviews').hidden = rows.length <= reviewLimit;
 }
 
-async function loadDetails({ fillReview = false } = {}) {
+async function loadDetails() {
   const gameId = activeGame();
   if (!gameId || !client) return;
   const revision = ++detailRevision;
@@ -130,17 +126,6 @@ async function loadDetails({ fillReview = false } = {}) {
       detailStatus.textContent = '스크린샷과 평가를 불러오지 못했어.';
     }
   }
-  if (fillReview && isMember) {
-    const userId = session.user.id;
-    const result = await client.from('oc_reviews').select('nickname,stars,body')
-      .eq('game_id', gameId).eq('author_id', userId).maybeSingle();
-    if (!result.error && result.data && gameId === activeGame() && session?.user.id === userId) {
-      for (const name of ['nickname', 'stars', 'body']) {
-        const field = reviewForm.elements.namedItem(name);
-        if (!field.value) field.value = result.data[name];
-      }
-    }
-  }
 }
 
 detail.addEventListener('game-opened', () => {
@@ -155,7 +140,7 @@ detail.addEventListener('game-opened', () => {
   $('#more-reviews').hidden = true;
   detailStatus.textContent = client ? '' : '공유 서버 연결 후 스크린샷과 평가를 이용할 수 있어.';
   showParticipation();
-  void loadDetails({ fillReview: true });
+  void loadDetails();
 });
 
 $('#more-images').addEventListener('click', () => {
@@ -167,57 +152,41 @@ $('#more-reviews').addEventListener('click', () => {
   void loadDetails();
 });
 
-async function updateAccount(next) {
-  const revision = ++authRevision;
-  session = next;
-  isMember = false;
-  const result = next
-    ? await client.from('oc_members').select('user_id').eq('user_id', next.user.id).maybeSingle()
-    : null;
-  if (revision !== authRevision) return;
-  isMember = Boolean(result?.data);
-  loginForm.hidden = Boolean(next);
-  gameForm.hidden = !isMember;
-  $('#sign-out').hidden = !next;
-  accountStatus.textContent = isMember ? '게임 정보와 플레이 링크를 입력해 줘.'
-    : next ? (result?.error ? '참여 권한을 확인하지 못했어.' : '등록 권한이 없는 계정이야.')
-    : '초대받은 친구 계정으로 로그인해 줘.';
-  showParticipation();
-  void loadDetails({ fillReview: true });
-}
-
-submit(loginForm, accountStatus, async () => {
-  const result = await client.auth.signInWithPassword({
-    email: textField(loginForm, 'email'),
-    password: loginForm.elements.namedItem('password').value
-  });
-  if (result.error) throw new Error('로그인할 수 없어. 이메일과 비밀번호를 확인해 줘.');
-  loginForm.reset();
-  await updateAccount(result.data.session);
-  if (isMember && account.open && account.dataset.returnGame) {
-    account.close();
-    window.OIBUNG_CATALOG.openDetail(account.dataset.returnGame);
+async function guestWrite(data, gameId) {
+  if (!guestToken) {
+    const generated = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, '0')).join('');
+    try {
+      const previous = localStorage.getItem('oibung-corporation:guest');
+      guestToken = /^[a-f0-9]{64}$/.test(previous || '') ? previous : generated;
+      localStorage.setItem('oibung-corporation:guest', guestToken);
+    } catch {
+      guestToken = generated;
+    }
   }
-});
-
-$('#sign-out').addEventListener('click', async () => {
-  const result = await client.auth.signOut();
-  if (result.error) accountStatus.textContent = '로그아웃에 실패했어. 다시 시도해 줘.';
-  else await updateAccount(null);
-});
+  const endpoint = new URL('/functions/v1/oibung-guest', window.OIBUNG_COMMUNITY.url);
+  if (gameId) endpoint.searchParams.set('game', gameId);
+  const headers = { 'x-oibung-guest': guestToken };
+  if (!(data instanceof FormData)) headers['content-type'] = 'application/json';
+  const response = await fetch(endpoint, {
+    method: 'POST', headers, body: data instanceof FormData ? data : JSON.stringify(data)
+  });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.error || '저장에 실패했어.');
+  return result;
+}
 
 submit(gameForm, accountStatus, async () => {
   const link = new URL(textField(gameForm, 'playUrl'));
   if (link.protocol !== 'https:' || link.username || link.password) throw new Error('HTTPS 플레이 링크를 입력해 줘.');
-  const game = {
-    id: crypto.randomUUID(),
+  const fieldsToSave = {
+    action: 'game',
     title: textField(gameForm, 'title'),
     category: textField(gameForm, 'category'),
     genre: textField(gameForm, 'genre'),
     description: textField(gameForm, 'description'),
     play_url: link.href
   };
-  unwrap(await client.from('oc_games').insert(game));
+  const { game } = await guestWrite(fieldsToSave);
   gameForm.reset();
   ++catalogRevision;
   const { play_url, ...fields } = game;
@@ -232,20 +201,18 @@ submit(gameForm, accountStatus, async () => {
 
 submit(imageForm, detailStatus, async () => {
   const gameId = activeGame();
-  const userId = session.user.id;
   const files = Array.from(imageForm.elements.namedItem('images').files);
   if (!files.length || files.length > 6 || files.some(file => !fileTypes.has(file.type) || file.size > 5242880)) {
     throw new Error('5MB 이하 JPG, PNG, WebP 이미지를 한 번에 최대 6장 골라 줘.');
   }
   let saved = 0;
-  const objects = client.storage.from(bucket);
   for (const file of files) {
-    const path = userId + '/' + gameId + '/' + crypto.randomUUID() + '.' + fileTypes.get(file.type);
-    const upload = await objects.upload(path, file, { contentType: file.type });
-    if (upload.error) continue;
-    const result = await client.from('oc_images').insert({ game_id: gameId, path });
-    if (result.error) {
-      await objects.remove([path]);
+    const form = new FormData();
+    form.set('image', file);
+    try {
+      await guestWrite(form, gameId);
+    } catch (error) {
+      if (files.length === 1) throw error;
       continue;
     }
     saved += 1;
@@ -261,12 +228,12 @@ submit(reviewForm, detailStatus, async () => {
   const gameId = activeGame();
   const displayName = textField(reviewForm, 'nickname');
   if (!displayName) throw new Error('닉네임을 입력해 줘.');
-  unwrap(await client.rpc('oc_save_review', {
-    game: gameId,
-    display_name: displayName,
-    rating: Number(textField(reviewForm, 'stars')),
-    review_text: textField(reviewForm, 'body')
-  }));
+  await guestWrite({
+    action: 'review',
+    nickname: displayName,
+    stars: Number(textField(reviewForm, 'stars')),
+    body: textField(reviewForm, 'body')
+  }, gameId);
   if (gameId === activeGame()) {
     detailStatus.textContent = '내 평가를 저장했어.';
     await loadDetails();
@@ -301,11 +268,10 @@ async function connect() {
         void loadDetails();
       }
     });
-  client.auth.onAuthStateChange((event, next) => {
-    if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-      setTimeout(() => void updateAccount(next), 0);
-    }
-  });
+  gameForm.hidden = false;
+  accountStatus.textContent = '게임 정보와 플레이 링크를 입력해 줘.';
+  showParticipation();
+  void loadDetails();
   window.addEventListener('focus', () => {
     refreshCatalog();
     void loadDetails();

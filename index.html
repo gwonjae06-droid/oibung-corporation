@@ -130,9 +130,9 @@
         <label>닉네임 <input name="nickname" required maxlength="30"></label>
         <label>별점 <select name="stars" required><option value="">별점 선택</option><option value="5">★★★★★</option><option value="4">★★★★</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select></label>
         <label>한 줄 후기 <textarea name="body" maxlength="500" rows="3"></textarea></label>
+        <small>같은 브라우저에서 다시 저장하면 이전 평가가 바뀌어.</small>
         <button class="button-primary" type="submit">내 평가 저장</button>
       </form>
-      <button class="button-outline" id="detail-sign-in" type="button" hidden>로그인하고 참여</button>
       <p id="detail-status" role="status"></p>
     </section>
   </div></div></dialog>
@@ -142,11 +142,6 @@
       <button type="button" class="dialog-close icon-button" id="close-guide" aria-label="닫기"><svg><use href="#i-close"/></svg></button>
       <h2 id="guide-title">새 게임 등록하기</h2>
       <p id="account-status" role="status">공유 서버를 확인하는 중이야.</p>
-      <form id="sign-in-form" class="community-form" hidden>
-        <label>이메일 <input name="email" type="email" autocomplete="username" required></label>
-        <label>비밀번호 <input name="password" type="password" autocomplete="current-password" required></label>
-        <button class="button-primary" type="submit">로그인</button>
-      </form>
       <form id="add-game-form" class="community-form" hidden>
         <label>게임 이름 <input name="title" required maxlength="80"></label>
         <label>플레이 링크 <input name="playUrl" type="url" required maxlength="2048" placeholder="https://"></label>
@@ -155,7 +150,6 @@
         <label>게임 소개 <textarea name="description" required maxlength="1000" rows="4"></textarea></label>
         <button class="button-primary" type="submit">게임 등록하고 상세 열기</button>
       </form>
-      <button class="button-outline" id="sign-out" type="button" hidden>로그아웃</button>
     </div>
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
