@@ -59,15 +59,24 @@ Deno.serve(async req => {
     const gameId = new URL(req.url).searchParams.get('game') ?? '';
     const content = imageRequest ? null : await req.json();
     const action = imageRequest ? 'image' : content?.action;
-    if (!['game', 'review', 'image'].includes(action) || (action !== 'game' && !gamePattern.test(gameId))) {
+    if (!['game', 'edit_game', 'viewer', 'review', 'image'].includes(action) || (action !== 'game' && !gamePattern.test(gameId))) {
       return reply(400, { error: '게임 정보가 올바르지 않아.' });
     }
+    if (action === 'viewer') {
+      const [game, review] = await Promise.all([
+        db.from('oc_games').select('id').eq('id', gameId).eq('author_id', author).maybeSingle(),
+        db.from('oc_reviews').select('nickname,stars,body').eq('game_id', gameId)
+          .eq('author_id', author).maybeSingle()
+      ]);
+      if (game.error || review.error) throw game.error ?? review.error;
+      return reply(200, { can_edit: Boolean(game.data), review: review.data });
+    }
     const address = req.headers.get('cf-connecting-ip') ?? req.headers.get('x-real-ip') ?? 'unknown';
-    const quota = await db.rpc('oc_guest_quota', { address_hash: await hash('ip:' + address), operation: action });
+    const quota = await db.rpc('oc_guest_quota', { address_hash: await hash('ip:' + address), operation: action === 'edit_game' ? 'game' : action });
     if (quota.error) throw quota.error;
     if (!quota.data) return reply(429, { error: '오늘 등록 한도에 도달했어. 내일 다시 시도해 줘.' });
 
-    if (action === 'game') {
+    if (action === 'game' || action === 'edit_game') {
       const { title, description, genre, category, play_url } = content;
       if (!required(title, 80) || !required(description, 1000) || !required(genre, 60)
           || !['action', 'strategy', 'other'].includes(category)) {
@@ -81,8 +90,16 @@ Deno.serve(async req => {
           return reply(400, { error: 'HTTPS 게임 링크를 확인해 줘.' });
         }
       }
-      const game = { id: crypto.randomUUID(), title: title.trim(), description: description.trim(),
+      const fields = { title: title.trim(), description: description.trim(),
         genre: genre.trim(), category, play_url: link?.href ?? null };
+      if (action === 'edit_game') {
+        const result = await db.from('oc_games').update(fields)
+          .eq('id', gameId).eq('author_id', author).select('id').maybeSingle();
+        if (result.error) throw result.error;
+        if (!result.data) return reply(403, { error: '게임을 등록한 브라우저에서 수정할 수 있어.' });
+        return reply(200, { game: { id: gameId, ...fields } });
+      }
+      const game = { id: crypto.randomUUID(), ...fields };
       const result = await db.from('oc_games').insert({ ...game, author_id: author });
       if (result.error) throw result.error;
       return reply(201, { game });

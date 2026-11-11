@@ -6,7 +6,6 @@
   const grid = document.querySelector('#game-grid');
   const searchInput = document.querySelector('#game-search');
   const tabs = [...document.querySelectorAll('[data-filter]')];
-  const count = document.querySelector('#games-count');
   const allCount = document.querySelector('#filter-all-count');
   const emptyState = document.querySelector('#empty-state');
   const detailDialog = document.querySelector('#game-dialog');
@@ -47,13 +46,10 @@
     });
     render();
   }
-  function cardTemplate(game, index) {
+  function cardTemplate(game) {
     const favorite = favorites.has(game.id);
     const playUrl = safeSourceUrl(game.playUrl);
-    const cover = `
-      ${coverArt(game)}<span class="game-card-number">${formatCount(index + 1)} / ${formatCount(games.length)}</span>
-      ${game.badge || playUrl ? `<span class="game-card-badge">${escapeHTML(game.badge || 'PLAY NOW')}</span>` : ''}
-      <div class="cover-content"><div class="cover-english">${escapeHTML(game.english || game.title)}</div><div class="cover-sub">${escapeHTML(game.tagline)}</div></div>`;
+    const cover = coverArt(game);
     return `<article class="game-card" data-game-id="${escapeHTML(game.id)}">
       ${playUrl
         ? `<a class="game-cover" href="${escapeHTML(playUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHTML(game.title)} 플레이하기">${cover}</a>`
@@ -71,14 +67,11 @@
       const searchMatch = [game.title, game.english, game.genre, game.description, game.tagline, ...(game.tags || [])].join(' ').toLocaleLowerCase('ko-KR').includes(query);
       return categoryMatch && searchMatch;
     });
-    grid.innerHTML = filtered.map(game => cardTemplate(game, games.indexOf(game))).join('');
+    grid.innerHTML = filtered.map(cardTemplate).join('');
     emptyState.hidden = filtered.length > 0;
-    count.textContent = formatCount(games.length);
     allCount.textContent = formatCount(games.length);
   }
-  function openDetail(id) {
-    const game = byId.get(id);
-    if (!game) return;
+  function renderDetail(game) {
     const detailCover = document.querySelector('#dialog-cover');
     detailCover.innerHTML = coverArt(game);
     document.querySelector('#detail-genre').textContent = game.genre || 'GAME';
@@ -94,12 +87,18 @@
     source.hidden = !safeSourceUrl(game.sourceUrl);
     if (!source.hidden) source.href = game.sourceUrl;
     play.parentElement.hidden = play.hidden && source.hidden;
+  }
+  function openDetail(id) {
+    const game = byId.get(id);
+    if (!game) return;
+    renderDetail(game);
     detailDialog.dataset.gameId = id;
     detailDialog.showModal();
+    detailDialog.scrollTop = 0;
     detailDialog.dispatchEvent(new Event('game-opened'));
     document.body.classList.add('no-scroll');
   }
-  function closeDialog(dialog) { dialog.close(); document.body.classList.remove('no-scroll'); }
+  function closeDialog(dialog) { dialog.close(); }
   grid.addEventListener('click', event => {
     const favoriteButton = event.target.closest('[data-favorite]');
     if (favoriteButton) {
@@ -124,23 +123,31 @@
       document.body.classList.toggle('no-scroll', detailDialog.open || guideDialog.open);
     });
   }
-  function openGuide() {
-    guideDialog.showModal();
-    document.body.classList.add('no-scroll');
+  function syncOpenDetail() {
+    if (!detailDialog.open) return;
+    const game = byId.get(detailDialog.dataset.gameId);
+    if (game) renderDetail(game);
   }
-  document.querySelector('#add-guide').addEventListener('click', openGuide);
   window.OIBUNG_CATALOG = {
     openDetail,
-    addSharedGame(game) {
-      if (!byId.has(game.id)) games.push(game);
-      byId.set(game.id, game);
+    getGame: id => byId.get(id),
+    saveSharedGame(game) {
+      const index = games.findIndex(current => current.id === game.id);
+      const merged = { ...byId.get(game.id), ...game };
+      if (index === -1) games.push(merged);
+      else games[index] = merged;
+      byId.set(game.id, merged);
       render();
+      syncOpenDetail();
     },
     setSharedGames(shared) {
-      games.splice(0, games.length, ...new Map([...initialGames, ...shared.map(game => ({...initialGames.find(initial => initial.id === game.id), ...game}))].map(game => [game.id, game])).values());
+      const next = new Map(initialGames.map(game => [game.id, game]));
+      shared.forEach(game => next.set(game.id, { ...next.get(game.id), ...game }));
+      games.splice(0, games.length, ...next.values());
       byId.clear();
-      games.forEach(game => byId.set(game.id, game));
+      next.forEach((game, id) => byId.set(id, game));
       render();
+      syncOpenDetail();
     }
   };
   document.addEventListener('keydown', event => {

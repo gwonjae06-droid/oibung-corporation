@@ -3,6 +3,12 @@ const detail = $('#game-dialog');
 const account = $('#guide-dialog');
 const accountStatus = $('#account-status');
 const detailStatus = $('#detail-status');
+const imageStatus = $('#image-status');
+const reviewStatus = $('#review-status');
+const editStatus = $('#edit-status');
+const editButton = $('#edit-game');
+const imagePanel = $('#image-panel');
+const reviewPanel = $('#review-panel');
 const gameForm = $('#add-game-form');
 const imageForm = $('#image-form');
 const reviewForm = $('#review-form');
@@ -12,6 +18,7 @@ const pageSize = 12;
 let client;
 let guestToken;
 let detailRevision = 0;
+let viewerRevision = 0;
 let catalogRevision = 0;
 let imageLimit = pageSize;
 let reviewLimit = pageSize;
@@ -62,8 +69,8 @@ async function loadGames() {
 }
 
 function showParticipation() {
-  imageForm.hidden = !client;
-  reviewForm.hidden = !client;
+  imagePanel.hidden = !client;
+  reviewPanel.hidden = !client;
 }
 
 function drawImages(rows) {
@@ -133,6 +140,13 @@ detail.addEventListener('game-opened', () => {
   reviewLimit = pageSize;
   imageForm.reset();
   reviewForm.reset();
+  imagePanel.open = false;
+  reviewPanel.open = false;
+  reviewPanel.querySelector('summary').textContent = '평가 남기기';
+  editButton.hidden = true;
+  editStatus.textContent = '';
+  imageStatus.textContent = '';
+  reviewStatus.textContent = '';
   $('#community-gallery').replaceChildren();
   $('#community-reviews').replaceChildren();
   $('#review-summary').textContent = '';
@@ -141,6 +155,7 @@ detail.addEventListener('game-opened', () => {
   detailStatus.textContent = client ? '' : '공유 서버 연결 후 스크린샷과 평가를 이용할 수 있어.';
   showParticipation();
   void loadDetails();
+  void loadViewer();
 });
 
 $('#more-images').addEventListener('click', () => {
@@ -152,16 +167,73 @@ $('#more-reviews').addEventListener('click', () => {
   void loadDetails();
 });
 
+function getStoredGuest() {
+  if (guestToken) return guestToken;
+  try {
+    const token = localStorage.getItem('oibung-corporation:guest');
+    if (/^[a-f0-9]{64}$/.test(token || '')) guestToken = token;
+  } catch {
+    return null;
+  }
+  return guestToken;
+}
+
+async function loadViewer() {
+  const gameId = activeGame();
+  const revision = ++viewerRevision;
+  if (!gameId || !client || !getStoredGuest()) return;
+  try {
+    const viewer = await guestWrite({ action: 'viewer' }, gameId);
+    if (revision !== viewerRevision || activeGame() !== gameId) return;
+    editButton.hidden = !viewer.can_edit;
+    if (viewer.review) {
+      reviewPanel.querySelector('summary').textContent = '내 평가 수정';
+      if (!['nickname', 'stars', 'body'].some(name => textField(reviewForm, name))) {
+        for (const name of ['nickname', 'stars', 'body']) {
+          reviewForm.elements.namedItem(name).value = viewer.review[name];
+        }
+      }
+    }
+  } catch {
+    if (revision === viewerRevision && activeGame() === gameId) {
+      editStatus.textContent = '내 게시물 정보를 확인하지 못했어.';
+    }
+  }
+}
+
+function openEditor(game) {
+  if (gameForm.querySelector('[type="submit"]').disabled) return;
+  gameForm.reset();
+  gameForm.dataset.gameId = game?.id ?? '';
+  $('#guide-title').textContent = game ? '게임 정보 수정' : '새 게임 등록하기';
+  gameForm.querySelector('[type="submit"]').textContent = game ? '수정 저장' : '게임 등록하고 상세 열기';
+  accountStatus.textContent = client ? '' : '공유 서버를 연결하는 중이야.';
+  if (game) {
+    for (const name of ['title', 'description', 'category', 'genre', 'playUrl']) {
+      gameForm.elements.namedItem(name).value = game[name] ?? '';
+    }
+  }
+  account.showModal();
+  document.body.classList.add('no-scroll');
+}
+
+document.querySelectorAll('[data-open-editor]').forEach(button => {
+  button.addEventListener('click', () => openEditor());
+});
+editButton.addEventListener('click', () => {
+  const game = window.OIBUNG_CATALOG.getGame(activeGame());
+  if (game) openEditor(game);
+});
+
 async function guestWrite(data, gameId) {
-  if (!guestToken) {
+  if (!getStoredGuest()) {
     const generated = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, '0')).join('');
     try {
-      const previous = localStorage.getItem('oibung-corporation:guest');
-      guestToken = /^[a-f0-9]{64}$/.test(previous || '') ? previous : generated;
-      localStorage.setItem('oibung-corporation:guest', guestToken);
+      localStorage.setItem('oibung-corporation:guest', generated);
     } catch {
-      guestToken = generated;
+      // The current page can still use the guest token.
     }
+    guestToken = generated;
   }
   const endpoint = new URL('/functions/v1/oibung-guest', window.OIBUNG_COMMUNITY.url);
   if (gameId) endpoint.searchParams.set('game', gameId);
@@ -181,28 +253,29 @@ submit(gameForm, accountStatus, async () => {
   if (link && (link.protocol !== 'https:' || link.username || link.password)) {
     throw new Error('플레이 링크를 넣으려면 HTTPS 주소를 입력해 줘.');
   }
+  const gameId = gameForm.dataset.gameId;
   const fieldsToSave = {
-    action: 'game',
+    action: gameId ? 'edit_game' : 'game',
     title: textField(gameForm, 'title'),
     category: textField(gameForm, 'category'),
     genre: textField(gameForm, 'genre'),
     description: textField(gameForm, 'description'),
     play_url: link?.href ?? null
   };
-  const { game } = await guestWrite(fieldsToSave);
+  const { game } = await guestWrite(fieldsToSave, gameId);
   gameForm.reset();
   ++catalogRevision;
   const { play_url, ...fields } = game;
-  window.OIBUNG_CATALOG.addSharedGame({ ...fields, playUrl: play_url });
+  window.OIBUNG_CATALOG.saveSharedGame({ ...fields, playUrl: play_url });
   refreshCatalog();
-  accountStatus.textContent = '게임을 등록했어.';
   if (account.open) {
     account.close();
-    window.OIBUNG_CATALOG.openDetail(game.id);
+    if (gameId) editStatus.textContent = '게임 정보를 수정했어.';
+    else window.OIBUNG_CATALOG.openDetail(game.id);
   }
 });
 
-submit(imageForm, detailStatus, async () => {
+submit(imageForm, imageStatus, async () => {
   const gameId = activeGame();
   const files = Array.from(imageForm.elements.namedItem('images').files);
   if (!files.length || files.length > 6 || files.some(file => !fileTypes.has(file.type) || file.size > 5242880)) {
@@ -222,12 +295,12 @@ submit(imageForm, detailStatus, async () => {
   }
   if (gameId !== activeGame()) return;
   imageForm.reset();
-  detailStatus.textContent = saved === files.length ? saved + '장을 올렸어.'
+  imageStatus.textContent = saved === files.length ? saved + '장을 올렸어.'
     : saved + '장 등록, ' + (files.length - saved) + '장 실패. 실패한 파일을 다시 선택해 줘.';
   await loadDetails();
 });
 
-submit(reviewForm, detailStatus, async () => {
+submit(reviewForm, reviewStatus, async () => {
   const gameId = activeGame();
   const displayName = textField(reviewForm, 'nickname');
   if (!displayName) throw new Error('닉네임을 입력해 줘.');
@@ -238,7 +311,8 @@ submit(reviewForm, detailStatus, async () => {
     body: textField(reviewForm, 'body')
   }, gameId);
   if (gameId === activeGame()) {
-    detailStatus.textContent = '내 평가를 저장했어.';
+    reviewStatus.textContent = '내 평가를 저장했어.';
+    reviewPanel.querySelector('summary').textContent = '내 평가 수정';
     await loadDetails();
   }
 });
@@ -272,9 +346,10 @@ async function connect() {
       }
     });
   gameForm.hidden = false;
-  accountStatus.textContent = '게임 정보를 입력해 줘.';
+  accountStatus.textContent = '';
   showParticipation();
   void loadDetails();
+  void loadViewer();
   window.addEventListener('focus', () => {
     refreshCatalog();
     void loadDetails();
