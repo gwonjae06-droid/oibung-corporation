@@ -62,7 +62,7 @@ Deno.serve(async req => {
     const metadata = form?.get('metadata');
     const content = typeof metadata === 'string' ? JSON.parse(metadata) : form ? null : await req.json();
     const action = form && metadata == null ? 'image' : content?.action;
-    if (!['game', 'edit_game', 'viewer', 'review', 'image', 'delete_image'].includes(action) || (action !== 'game' && !gamePattern.test(gameId))) {
+    if (!['game', 'edit_game', 'viewer', 'review', 'image', 'delete_image', 'update_game', 'report'].includes(action) || (action !== 'game' && !gamePattern.test(gameId))) {
       return reply(400, { error: '게임 정보가 올바르지 않아.' });
     }
     if (action === 'viewer') {
@@ -88,9 +88,32 @@ Deno.serve(async req => {
     }
 
     const address = req.headers.get('cf-connecting-ip') ?? req.headers.get('x-real-ip') ?? 'unknown';
-    const quota = await db.rpc('oc_guest_quota', { address_hash: await hash('ip:' + address), operation: action === 'edit_game' ? 'game' : action });
+    const quota = await db.rpc('oc_guest_quota', { address_hash: await hash('ip:' + address), operation: ['edit_game', 'update_game'].includes(action) ? 'game' : action === 'report' ? 'review' : action });
     if (quota.error) throw quota.error;
     if (!quota.data) return reply(429, { error: '오늘 등록 한도에 도달했어. 내일 다시 시도해 줘.' });
+
+    if (action === 'update_game') {
+      const title = content?.title;
+      const body = content?.body;
+      if (!required(title, 60) || !required(body, 1000)) {
+        return reply(400, { error: '소식 제목과 내용을 확인해 주세요.' });
+      }
+      const result = await db.from('oc_game_updates')
+        .insert({ game_id: gameId, title: title.trim(), body: body.trim() })
+        .select('id,game_id,title,body,created_at').single();
+      if (result.error) throw result.error;
+      return reply(201, { update: result.data });
+    }
+    if (action === 'report') {
+      const reason = content?.reason;
+      if (!['incorrect','inappropriate','spam','other'].includes(reason)) {
+        return reply(400, { error: '신고 사유를 골라 주세요.' });
+      }
+      const result = await db.from('oc_content_reports')
+        .upsert({ game_id: gameId, reason, reporter_hash: identity }, { onConflict: 'game_id,reporter_hash', ignoreDuplicates: true });
+      if (result.error) throw result.error;
+      return reply(200, { submitted: true });
+    }
 
     if (action === 'game' || action === 'edit_game') {
       const { title, description, genre, play_url, developer, development_status, remove_thumbnail, intro_tone } = content;
