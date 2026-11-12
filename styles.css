@@ -202,7 +202,7 @@ body { background: radial-gradient(ellipse at 50% 8%, #2b392d 0, transparent 45r
 .game-cover {
   margin: 14px 14px 0;
   height: auto;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 16 / 10;
   border: 5px ridge #ad915e;
   outline: 1px solid #1a140d;
   box-shadow: 0 9px 20px #080b09a8;
