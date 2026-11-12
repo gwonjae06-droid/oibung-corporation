@@ -13,11 +13,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=finished-status-1">
+  <link rel="stylesheet" href="styles.css?v=review-board-1">
   <script src="games.js" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=finished-status-1" defer></script>
-  <script type="module" src="community.js?v=public-edit-1"></script>
+  <script src="app.js?v=review-board-1" defer></script>
+  <script type="module" src="community.js?v=review-board-1"></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -42,7 +42,7 @@
         <span class="brand-copy">OIBUNG<span>CORPORATION</span></span>
       </a>
       <nav class="desktop-nav" aria-label="주요 메뉴">
-        <a href="#games">게임 컬렉션</a><a href="#about">우리는 누구?</a>
+        <a href="#games">게임 컬렉션</a><a href="#reviews">평가·후기</a><a href="#about">우리는 누구?</a>
       </nav>
       <div class="header-actions">
         <span class="live-pill"><span class="live-dot"></span> INDIE GAME HUB</span>
@@ -50,12 +50,16 @@
       </div>
     </div>
     <nav class="mobile-nav container" id="mobile-nav" aria-label="모바일 메뉴" hidden>
-      <a href="#games">게임 컬렉션</a><a href="#about">우리는 누구?</a>
+      <a href="#games">게임 컬렉션</a><a href="#reviews">평가·후기</a><a href="#about">우리는 누구?</a>
     </nav>
   </header>
 
   <main>
-    <section class="library section-pad" id="games" aria-labelledby="games-title">
+    <nav class="page-switcher container" role="tablist" aria-label="콘텐츠 선택">
+      <button id="tab-games" type="button" class="page-tab is-active" role="tab" aria-selected="true" aria-controls="games" data-page-tab="games">게임 컬렉션</button>
+      <button id="tab-reviews" type="button" class="page-tab" role="tab" aria-selected="false" aria-controls="reviews" data-page-tab="reviews">평가 · 후기</button>
+    </nav>
+    <section class="library section-pad" id="games" role="tabpanel" aria-labelledby="tab-games">
       <div class="container">
         <div class="section-heading-row">
           <div><h1 id="games-title">게임 <span>컬렉션</span></h1><p>친구들이 만든 게임을 둘러보고 소개와 스크린샷을 확인해 봐.</p></div>
@@ -76,6 +80,38 @@
         <div id="game-grid" class="game-grid" aria-live="polite"></div>
         <div id="empty-state" class="empty-state" hidden><span class="empty-glyph">✳</span><h3>아직 게임이 없네!</h3><p>검색어나 필터를 바꿔서 다시 찾아봐.</p><button type="button" id="reset-filters" class="button-outline">전체 게임 보기 <svg><use href="#i-right"/></svg></button></div>
         <div class="library-footnote"><span>✳</span> 플레이 링크는 새 탭에서 열려요. 각 게임의 저장 데이터는 해당 게임 사이트에서 관리합니다.</div>
+      </div>
+    </section>
+
+
+    <section class="review-board section-pad" id="reviews" role="tabpanel" aria-labelledby="tab-reviews" hidden>
+      <div class="container">
+        <div class="section-heading-row">
+          <div>
+            <span class="board-eyebrow">PLAYER VOICES / REVIEWS</span>
+            <h1>평가 <span>&amp; 후기</span></h1>
+            <p>게임을 직접 해 본 이야기들을 모았어. 별점부터 사진, 긴 후기까지 자유롭게 남겨 봐.</p>
+          </div>
+          <button id="write-review" class="button-primary" type="button">후기 작성하기 <svg aria-hidden="true"><use href="#i-pencil"/></svg></button>
+        </div>
+        <div class="review-board-layout">
+          <aside class="review-sidebar">
+            <h2>게임 선택</h2>
+            <label class="review-filter-label" for="reviews-game-filter">모아 볼 게임</label>
+            <select id="reviews-game-filter"><option value="">전체 게임 후기</option></select>
+            <p id="reviews-stats" class="review-stats" aria-live="polite">후기를 불러오는 중…</p>
+            <p class="review-sidebar-note">별점과 작성한 글은 게임별로 저장돼. 같은 브라우저에서 해당 게임의 후기를 다시 작성하면 수정할 수 있어.</p>
+          </aside>
+          <div class="review-feed-column">
+            <div class="review-feed-heading">
+              <h2>플레이어 후기 <span id="reviews-count"></span></h2>
+              <span>최근 작성 순</span>
+            </div>
+            <div id="reviews-feed" class="reviews-feed" aria-live="polite"><p class="review-feed-empty">후기를 불러오는 중…</p></div>
+            <button id="reviews-more" class="button-outline review-more" type="button" hidden>후기 더 보기</button>
+            <p id="reviews-load-status" role="status"></p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -123,22 +159,11 @@
         <p id="image-status" role="status"></p>
       </details>
     </section>
-    <section class="community-section" aria-labelledby="reviews-title">
-      <h3 id="reviews-title">평가</h3><p id="review-summary"></p><div id="community-reviews"></div>
-      <button id="more-reviews" class="button-outline" type="button" hidden>후기 더 보기</button>
-      <details id="review-panel" class="contribution-panel" hidden>
-        <summary>평가 남기기</summary>
-        <form id="review-form" class="community-form">
-        <label>닉네임 <input name="nickname" required maxlength="30"></label>
-        <label>별점 <select name="stars" required><option value="">별점 선택</option><option value="5">★★★★★</option><option value="4">★★★★</option><option value="3">★★★</option><option value="2">★★</option><option value="1">★</option></select></label>
-        <label>한 줄 후기 <textarea name="body" maxlength="500" rows="3"></textarea></label>
-        <small>같은 브라우저에서 다시 저장하면 이전 평가가 바뀌어.</small>
-        <button class="button-primary" type="submit">내 평가 저장</button>
-        </form>
-        <p id="review-status" role="status"></p>
-      </details>
-      <p id="detail-status" role="status"></p>
+    <section class="community-section detail-review-teaser" aria-label="게임 후기">
+      <div><h3>플레이어들의 평가·후기</h3><p>별점, 사진, 후기는 메인 후기 게시판에서 볼 수 있어.</p></div>
+      <button id="detail-open-reviews" class="button-outline" type="button">이 게임 후기 보기 <svg aria-hidden="true"><use href="#i-right"/></svg></button>
     </section>
+    <p id="detail-status" role="status"></p>
   </div></div></dialog>
 
   <dialog class="guide-dialog" id="guide-dialog" aria-labelledby="guide-title">
@@ -161,6 +186,32 @@
         <label>플레이 링크 (선택) <input name="playUrl" type="url" maxlength="2048" placeholder="https://"></label>
         <small>APK나 마인크래프트 모드처럼 링크가 없으면 비워 둬도 돼.</small>
         <button class="button-primary" type="submit">게임 등록하고 상세 열기</button>
+      </form>
+    </div>
+  </dialog>
+  <dialog class="guide-dialog review-editor-dialog" id="review-dialog" aria-labelledby="review-dialog-title">
+    <div class="guide-inner">
+      <button type="button" class="dialog-close icon-button" id="close-review" aria-label="후기 작성 창 닫기"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
+      <span class="board-eyebrow">SHARE YOUR PLAY</span>
+      <h2 id="review-dialog-title">게임 후기 남기기</h2>
+      <p class="review-editor-intro">게임 하나를 선택해 별점과 경험을 공유해 봐. 사진 없이 글만 남겨도 괜찮아.</p>
+      <form id="review-form" class="community-form">
+        <label>어떤 게임인가요?
+          <select name="gameId" required><option value="">게임 선택</option></select>
+        </label>
+        <div class="review-form-pair">
+          <label>닉네임 <input name="nickname" required maxlength="30" placeholder="이름 또는 닉네임"></label>
+          <label>별점 <select name="stars" required><option value="">별점 선택</option><option value="5">★★★★★ (5점)</option><option value="4">★★★★ (4점)</option><option value="3">★★★ (3점)</option><option value="2">★★ (2점)</option><option value="1">★ (1점)</option></select></label>
+        </div>
+        <label>플레이 후기 <textarea name="body" maxlength="2000" rows="5" placeholder="재밌었던 순간, 아쉬운 점, 공략 팁 등 자유롭게 써 봐."></textarea></label>
+        <label>사진 첨부 (선택, 최대 3장)
+          <input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+        </label>
+        <small>JPG · PNG · WebP, 장당 5MB까지. 사진은 3장까지 올릴 수 있어.</small>
+        <div id="review-existing" class="review-existing" hidden></div>
+        <p class="review-editor-note">기존 후기가 있다면 여기서 수정할 수 있어. 기존 사진은 체크를 해제하면 삭제돼.</p>
+        <button class="button-primary" type="submit">후기 저장하기 <svg aria-hidden="true"><use href="#i-arrow"/></svg></button>
+        <p id="review-status" role="status"></p>
       </form>
     </div>
   </dialog>
