@@ -1,0 +1,358 @@
+/*
+ * OIBUNG GALLERY · Museum daylight edition
+ * A warm stone gallery with ivory artwork labels and quiet bronze framing.
+ * Loaded after the base and motion styles; functional layouts are unchanged.
+ */
+:root{
+  color-scheme:light;
+  --bg:#dedcd6;
+  --panel:#faf9f6;
+  --line:#c9c5bd;
+  --muted:#666963;
+  --white:#262b29;
+  --lime:#776b54;
+  --orange:#986f55;
+  --gallery-surface:#fbfaf7;
+  --gallery-surface-raised:#ffffff;
+  --gallery-ivory:#262b29;
+  --gallery-gold:#a18762;
+  --gallery-secondary:#626760;
+  --gallery-rule:#d2cec6;
+  --museum-wall:#e4e1db;
+  --museum-paper:#fbfaf7;
+  --museum-ink:#262b29;
+  --museum-muted:#666a65;
+  --museum-line:#cdc8bf;
+  --museum-bronze:#8b7657;
+}
+html{background:var(--museum-wall)}
+body{
+  color:var(--museum-ink);
+  background:linear-gradient(180deg,#eeece7 0,#e1ded8 32rem,#dedbd5 100%);
+}
+::selection{background:#cfc3ae;color:#222624}
+.noise{opacity:.024;mix-blend-mode:multiply}
+.site-header{
+  background:rgba(249,248,244,.93);
+  border-bottom:1px solid #c8c2b7;
+  box-shadow:0 4px 22px #37332a0a;
+}
+.brand{color:var(--museum-ink)}
+.brand-copy span{color:var(--museum-bronze)}
+.brand-mark{border-color:#a38e6b}
+.brand-core{border-color:#a38e6b}
+.gallery-about-link,.mobile-nav a{color:var(--museum-muted)}
+.gallery-about-link:hover,.mobile-nav a:hover{color:var(--museum-ink)}
+.mobile-nav{background:#f9f8f4}
+.page-switcher{border-color:#c9c6bf}
+.page-tab{color:#777771}
+.page-tab:hover{color:#353a37}
+.page-tab.is-active,.page-tab:hover.is-active{
+  color:#292e2b;
+  border-bottom-color:#8c795d;
+}
+:is(.library,.review-board){background:transparent}
+.library.section-pad,.review-board.section-pad{padding-top:clamp(42px,5.5vw,74px)}
+.section-heading-row h1,.review-board h1,.library h1,
+.section-heading-row h2,.gallery-about h2{color:#2a2e2b}
+.library h1 span,.review-board h1 span{color:#827054}
+.section-heading-row p,.gallery-about p{color:#686b65}
+.section-kicker,.board-eyebrow,.featured-eyebrow{color:#796748}
+.section-heading-row{margin-bottom:clamp(26px,3vw,40px)}
+.button-primary,.game-card-footer .details-link,.play-link{
+  color:#fffefa;
+  background:#4b514d;
+  border:1px solid #4b514d;
+  box-shadow:none;
+}
+.button-primary:hover,.game-card-footer .details-link:hover,.play-link:hover{
+  color:#fff;
+  background:#343b37;
+  border-color:#343b37;
+}
+.button-outline,.game-card-footer .play-link{
+  color:#424a43;
+  background:transparent;
+  border:1px solid #9f9b91;
+}
+.button-outline:hover,.game-card-footer .play-link:hover{
+  color:#242a26;
+  background:#ece9e2;
+  border-color:#6b6d65;
+}
+.icon-button,.favorite-button{
+  background:#f7f6f2;
+  border-color:#d0ccc4;
+  color:#565f58;
+}
+.icon-button:hover,.favorite-button:hover{border-color:#99896e;color:#272c28}
+.favorite-button.is-favorite{background:#f6eee7;color:#a06f55;border-color:#c39b7c}
+.favorite-button.is-favorite svg{fill:currentColor}
+:where(button,a,input,select,textarea,summary):focus-visible{
+  outline:2px solid #877455;
+  outline-offset:3px;
+}
+.filter-chip{color:#626760;border-color:transparent}
+.filter-chip:hover{background:#efede7;color:#2b302d}
+.filter-chip.is-active{
+  background:#f9f8f4;
+  color:#2b302d;
+  border-color:#bdb5a8;
+  box-shadow:0 2px 7px #302c2408;
+}
+.library-toolbar,.review-feed-heading{border-color:#c7c4bc}
+.search-field,.library-sort select,#reviews-game-filter{
+  background:#fbfaf7;
+  border-color:#c3beb5;
+  color:#2e3430;
+}
+.search-field input{color:#2e3430}
+.search-field input::placeholder{color:#777d75}
+.search-field svg,.search-field kbd{color:#6f756e}
+.search-field kbd{border-color:#c9c6be}
+.search-field:focus-within{border-color:#8e8168}
+.catalog-count,.library-sort,.review-feed-heading>span{color:#656a64}
+
+/* The featured work is a framed exhibit against the plaster wall. */
+.featured-exhibit{
+  background:linear-gradient(125deg,#f6f4ef,#eeece5);
+  border:1px solid #c9c4ba;
+  box-shadow:0 18px 40px #47413913,0 2px 5px #48403308;
+}
+.featured-exhibit::before{
+  background:linear-gradient(125deg,#fff9ef55,transparent 44%);
+}
+.featured-cover{
+  background:#dbd7ce;
+  border:5px solid #8d806b;
+  outline:1px solid #c9beb0;
+  box-shadow:inset 0 0 0 1px #51473b,0 12px 25px #3d362c36;
+}
+.featured-content h2{color:#2b302d}
+.featured-content>p,.featured-meta{color:#606760}
+.featured-meta .game-status{color:#675640;border-color:#b7ae9f}
+.featured-position{color:#77756d}
+.featured-play-toggle,.featured-nav-button{
+  background:#faf9f6;
+  color:#4f554f;
+  border-color:#c2bdb3;
+}
+.featured-play-toggle:hover,.featured-play-toggle[aria-pressed="true"],
+.featured-nav-button:hover{background:#eae6de;border-color:#96876f}
+.featured-progress{background:#d8d4cb}
+.featured-progress>span{background:#948266;box-shadow:none}
+
+/* Museum cards: artwork occupies the upper frame, captions on white paper. */
+.game-grid{gap:clamp(18px,2.7vw,32px)}
+.game-card{
+  background:var(--museum-paper);
+  border:1px solid #c7c2b9;
+  box-shadow:0 6px 18px #48443b0f,0 1px 3px #48443b0a;
+  color:var(--museum-ink);
+}
+.game-card::before{display:none!important}
+.motion-active .game-card::after{display:none!important}
+.motion-card-spotlight,.motion-ambient-layer{display:none!important}
+.game-card:hover,.game-card:focus-within,
+.motion-active .game-card:hover,.motion-active .game-card:focus-within{
+  border-color:#a89c88;
+  box-shadow:0 19px 35px #48443b25,0 2px 6px #48443b12;
+}
+.game-card .game-cover{
+  height:auto;
+  aspect-ratio:16/11;
+  border:4px solid #a69b8c;
+  outline:1px solid #dad3c7;
+  margin:14px 14px 0;
+  width:calc(100% - 28px);
+  background:#dad6ce;
+  box-shadow:0 6px 15px #36312824;
+}
+.game-card:hover .game-cover,.game-card:focus-within .game-cover{
+  box-shadow:0 9px 19px #34302836;
+}
+.game-card-body{
+  position:relative;
+  isolation:isolate;
+  background-color:var(--intro-background,var(--museum-paper));
+  color:#292e2b;
+  border-top:1px solid #e2ded6;
+  padding:22px 24px 23px;
+}
+.game-card-body::after{
+  content:"";
+  position:absolute;inset:-1px;
+  border:1px solid transparent;
+  pointer-events:none;z-index:2;
+  background:
+    linear-gradient(90deg,#a8906b5c,#e5d6b435,#a8906b67) top/100% 1px no-repeat,
+    linear-gradient(180deg,#a8906b45,transparent 70%,#a8906b30) left/1px 100% no-repeat,
+    linear-gradient(180deg,#a8906b45,transparent 70%,#a8906b30) right/1px 100% no-repeat,
+    linear-gradient(90deg,#a8906b30,transparent,#a8906b40) bottom/100% 1px no-repeat;
+  opacity:.53;
+  transition:opacity .35s ease,box-shadow .35s ease;
+}
+.game-card:hover .game-card-body::after,
+.game-card:focus-within .game-card-body::after{
+  opacity:1;
+  box-shadow:inset 0 0 17px #aa8b4b11,0 0 10px #aa8b4b1b;
+}
+.motion-active .game-card.motion-onstage .game-card-body::after{
+  animation:museum-caption-light 5.6s ease-in-out infinite alternate;
+}
+.motion-active .game-card:hover .game-card-body::after,
+.motion-active .game-card:focus-within .game-card-body::after{animation-play-state:paused;opacity:1}
+@keyframes museum-caption-light{from{opacity:.38}to{opacity:.79}}
+.game-card-body h3,.motion-active .game-card:hover .game-card-title-row h3{color:#262b29}
+.game-card-desc,.game-meta{color:#626760}
+.game-genre,.artwork-sequence{color:#826f52}
+.artwork-caption .game-genre{border-left-color:#c6bba8}
+.game-card-score .review-mini,.review-mini{color:#8c7655}
+.review-mini small,.review-mini--empty{color:#73766f}
+.game-card-footer{border-top-color:#d9d5cd}
+.game-meta .game-status{
+  color:#596259;
+  background:#f0f0eb;
+  border-color:#c9cec7;
+}
+.game-meta .game-status--live{
+  color:#346748;background:#e5f0e6;border-color:#9cbeaa;
+}
+.game-meta .game-status--live::before{background:#57956f;box-shadow:0 0 0 2px #d4e6d6}
+.game-meta .game-status--finished{
+  color:#5e6068;background:#ececf1;border-color:#c8c9d0;
+}
+.game-card-actions .icon-button,.game-card-actions .favorite-button{
+  background:#f7f6f2;color:#545b54;border-color:#d0ccc4;
+}
+/* Intentionally preserve the author's custom dark introduction colors. */
+.game-card-body[data-intro-tone]:not([data-intro-tone="gallery"]),
+.detail-introduction[data-intro-tone]:not([data-intro-tone="gallery"]){
+  color:#f7f3e9;
+  border-color:#bfae926b;
+}
+.game-card-body[data-intro-tone]:not([data-intro-tone="gallery"]) :is(h3,.game-genre,.game-meta,.game-card-desc,.artwork-sequence,.review-mini,.review-mini small),
+.detail-introduction[data-intro-tone]:not([data-intro-tone="gallery"]) :is(h2,.dialog-kicker,.game-meta,#detail-summary,.dialog-tags span,.detail-specs span){
+  color:#f7f3e9;
+}
+.game-card-body[data-intro-tone]:not([data-intro-tone="gallery"]) .game-card-footer{
+  border-color:#f6ead23b;
+}
+.game-card-body[data-intro-tone]:not([data-intro-tone="gallery"]) .game-card-footer .details-link{
+  background:#f3ede2;color:#292d2b;border-color:#f3ede2;
+}
+.game-card-body[data-intro-tone]:not([data-intro-tone="gallery"]) .game-card-footer .play-link{
+  color:#f7f3e9;border-color:#f7f3e98c;background:transparent;
+}
+.game-card-body[data-intro-tone]:not([data-intro-tone="gallery"]) .game-card-actions :is(.icon-button,.favorite-button){
+  background:#fffdfa17;color:#f7f3e9;border-color:#f7f3e96b;
+}
+.game-card-body[data-intro-tone]:not([data-intro-tone="gallery"]) .game-meta .game-status{
+  background:#fffdfa18;color:#f7f3e9;border-color:#f7f3e96b;
+}
+
+/* Text labels, wall notices and all editorial dialogs use paper, not dark glass. */
+.manifesto{background:#f0eee8;border-top:1px solid #c9c5bd;border-bottom:1px solid #c9c5bd}
+.gallery-about p{color:#646963}
+.site-footer{background:#e7e4de;color:#424944;border-top:1px solid #d2cec5}
+.footer-top,.footer-bottom{border-color:#cbc7bf}
+.footer-bottom{color:#6b716a}
+.footer-bottom a:hover{color:#2f3631}
+dialog:not(.media-lightbox){
+  background:#faf9f6;color:#2b302d;
+  border:1px solid #b8b1a5;
+  box-shadow:0 28px 85px #2828234a;
+}
+dialog:not(.media-lightbox)::backdrop{background:#262824a4;backdrop-filter:blur(6px)}
+.dialog-body,.guide-inner{color:#292e2a}
+.dialog-kicker{color:#806d50}
+.dialog-body h2,.guide-inner h2{color:#292e2a}
+.dialog-body p,.guide-inner p,.review-editor-intro{color:#646a64}
+.dialog-tags span,.detail-specs span{color:#535b54;border-color:#c9c3b8}
+.detail-introduction:not([data-intro-tone="gallery"]){border-color:#bfae9278}
+#detail-summary{color:#343b35}
+.detail-overview .dialog-cover,.dialog-cover{border:4px solid #a39887;box-shadow:0 11px 23px #34302628}
+.detail-dialog .community-section,.community-section{border-color:#d2cec6}
+.detail-dialog .community-section h3{color:#353b36}
+.detail-management{background:#f0eee9;border-color:#d4d0c8}
+.detail-management>summary,.exhibition-revisions summary,.editor-optional summary{
+  color:#5b615b;
+}
+.detail-management>summary:hover{color:#292e2b}
+.activity-item,.revision-entry{border-color:#d9d6cf}
+.activity-item time,.activity-item p{color:#666b65}
+.text-action,.contribution-panel summary{color:#6d624f}
+.text-action:hover{color:#2f3831}
+.report-link{color:#6f6660;border-color:#bfb7ad}
+.report-link:hover{color:#8e5848;border-color:#8e5848}
+.contribution-panel[open]{background:#eeece5}
+.gallery-screenshot{background:#f3f1eb;border-color:#cec8be}
+.review-sidebar,.review-post{
+  background:#fbfaf7;
+  border-color:#cbc7be;
+  color:#2e3430;
+  box-shadow:0 6px 20px #3c383012;
+}
+.review-sidebar h2,.review-post-author strong,.review-feed-heading h2{color:#303630}
+.review-filter-label,.review-sidebar-note{color:#666d66}
+.review-stats{color:#736346;border-color:#d4d0c8}
+.review-post-game{
+  background:#eeece5;border-color:#d1c5b3;color:#6e5e48;
+}
+.review-post-game:hover{border-color:#a48c65}
+.review-post time{color:#757a73}
+.review-post-body{color:#454b45}
+.review-post-stars{color:#a17c42}
+.review-feed-empty{color:#666b64;border-color:#c8c3bb}
+.review-post-photos a{background:#ebe7df;border-color:#d4cdc2}
+#reviews-load-status,#review-status{color:#6d634f}
+.community-form :is(input,select,textarea),
+.community-form input:not([type="checkbox"]),.community-form select,.community-form textarea,
+.review-sidebar select{
+  background:#fffefa;
+  color:#2c342e;
+  border:1px solid #bcb9b0;
+}
+.community-form :is(input,select,textarea):focus-visible{border-color:#948062}
+.community-form :is(input,textarea)::placeholder{color:#818880}
+.editor-optional{border-color:#d2ccc3}
+.review-old-photo{color:#616961}
+.review-star-choices label span:not(.sr-only){color:#a6a8a1}
+.review-star-choices label:hover span:not(.sr-only),
+.review-star-choices label:hover ~ label span:not(.sr-only),
+.review-star-choices label:has(input:checked) span:not(.sr-only),
+.review-star-choices label:has(input:checked) ~ label span:not(.sr-only){color:#a5834c}
+.screenshot-delete{color:#944f49}
+.guide-inner pre{background:#eeece7;color:#484d47;border-color:#c7c0b4}
+.toast{background:#444c45;color:#fffefa}
+.media-lightbox{background:#222523ed;color:#f3f1eb}
+.media-lightbox::backdrop{background:#171a19df}
+.media-lightbox-frame figcaption{color:#e8e0d3}
+.empty-state{border-color:#b9b5ac}
+.empty-state p{color:#6c726a}
+.motion-control{border-color:#c0bbae;color:#4c544d;background:#f7f6f2}
+.motion-control:hover{border-color:#8e7d61;background:#ece9e2}
+.motion-ripple{background:#ffffff35}
+
+/* Less atmospheric haze, more precise architectural light. */
+.motion-orb{display:none!important}
+.motion-active .review-post:hover,.motion-active .review-sidebar:hover{
+  border-color:#ada494;
+}
+@media(max-width:760px){
+  .game-card .game-cover{
+    width:calc(100% - 20px);
+    margin:10px 10px 0;
+    aspect-ratio:16/11;
+    border-width:3px;
+  }
+  .game-card-body{padding:18px 19px 20px}
+  .featured-exhibit{background:#f5f3ee}
+  .featured-cover{border-width:4px}
+  .site-header{backdrop-filter:blur(12px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .motion-active .game-card-body::after{animation:none!important;opacity:.7}
+}
+html.motion-off .game-card-body::after{animation:none!important;opacity:.62}
+html.motion-suspended .game-card-body::after{animation-play-state:paused!important}
