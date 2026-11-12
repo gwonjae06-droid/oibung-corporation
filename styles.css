@@ -377,3 +377,13 @@ body { background: radial-gradient(ellipse at 50% 8%, #2b392d 0, transparent 45r
 @media(prefers-reduced-motion:reduce){
  .review-star-choices label span:not(.sr-only),.review-preview-item img{transition:none}
 }
+
+
+/* Optional metadata stays within the details view, never crowded onto cards. */
+.detail-specs{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 12px}
+.detail-specs:empty{display:none}
+.detail-specs span{display:inline-flex;padding:5px 9px;border:1px solid #bea46c65;color:#cfceb9;font-size:11px;line-height:1.3}
+.editor-optional{border-top:1px solid #aa966b45;border-bottom:1px solid #aa966b45;padding:10px 0}
+.editor-optional summary{cursor:pointer;color:#e0c99a;font:600 13px var(--body);padding:7px 0}
+.editor-optional-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 0 3px}
+@media(max-width:540px){.editor-optional-fields{grid-template-columns:1fr}}
