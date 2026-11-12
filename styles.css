@@ -396,3 +396,29 @@ body { background: radial-gradient(ellipse at 50% 8%, #2b392d 0, transparent 45r
   .filter-tabs .filter-chip{flex:none;white-space:nowrap}
   .library-controls{flex:1 1 100%}
 }
+
+
+/* Rotating lead exhibition: small, museum-like navigation without visual clutter. */
+.featured-actions{display:flex;align-items:center;justify-content:space-between;gap:18px;width:100%;flex-wrap:wrap}
+.featured-navigation{display:flex;align-items:center;gap:7px;margin-left:auto}
+.featured-position{font:600 11px var(--body);letter-spacing:.07em;color:#c5b897;margin-right:7px;white-space:nowrap}
+.featured-nav-button{display:grid;place-items:center;width:38px;height:38px;padding:0;border:1px solid #bba06e85;background:transparent;color:#e6d2ac;font:400 26px/1 var(--display);cursor:pointer;transition:background .2s,border-color .2s}
+.featured-nav-button:hover{background:#e0c28a22;border-color:#e0c28a}
+.featured-nav-button:focus-visible{outline:2px solid #e4cd9e;outline-offset:3px}
+.featured-nav-button:disabled{opacity:.4;cursor:default}
+.featured-exhibit.featured-animate .featured-cover,
+.featured-exhibit.featured-animate .featured-content{animation:exhibition-artwork-arrive .55s ease-out both}
+@keyframes exhibition-artwork-arrive{
+  from{opacity:.4;transform:translateY(7px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(max-width:760px){
+  .featured-actions{gap:12px}
+  .featured-navigation{margin-left:auto}
+  .featured-nav-button{width:36px;height:36px}
+}
+@media(prefers-reduced-motion:reduce){
+  .featured-exhibit.featured-animate .featured-cover,
+  .featured-exhibit.featured-animate .featured-content{animation:none}
+  .featured-nav-button{transition:none}
+}
