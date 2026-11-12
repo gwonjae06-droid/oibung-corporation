@@ -392,3 +392,76 @@ html.motion-suspended .game-card-body::after{animation-play-state:paused!importa
 .motion-active .game-card:focus-within .game-card-body[data-intro-tone]:not([data-intro-tone="gallery"]) h3{
   color:#f7f3e9;
 }
+
+/* ===================================================================
+   Museum room · darker plaster walls and a restrained 3D oak floor
+   Entirely CSS: static gradients and perspective, no canvas/WebGL,
+   tracking lights, layout dependencies or additional assets.
+   =================================================================== */
+:root{--museum-wall:#c6c0b8}
+html{background:#b9b2a9}
+body{
+  position:relative;
+  isolation:isolate;
+  background:#c6c0b8;
+}
+/* Keep every interactive gallery element above the architectural backdrop. */
+body>main,body>.site-footer{position:relative;z-index:1}
+/* Stationary wall illumination, gentle corner vignette and baseboard. */
+body::before{
+  content:"";
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 46% 56% at 29% 24%,#f4f0e65e,transparent 75%),
+    radial-gradient(ellipse 36% 45% at 76% 32%,#f7f1e34d,transparent 79%),
+    linear-gradient(90deg,#746b5b20 0%,transparent 12%,transparent 88%,#6a61551e 100%),
+    linear-gradient(180deg,transparent 69.4%,#65584938 69.65%,#e6dfd2ab 69.9%,#766b5938 70.6%,transparent 71.7%),
+    linear-gradient(180deg,#d2cdc5 0%,#c6c0b7 55%,#b4ada3 100%);
+}
+/* Long oak planks converge subtly toward the wall/floor junction. */
+body::after{
+  content:"";
+  position:fixed;
+  z-index:0;pointer-events:none;
+  top:69vh;left:-16vw;width:132vw;height:67vh;
+  transform-origin:50% 0;
+  transform:perspective(1000px) rotateX(57deg);
+  opacity:.76;
+  background:
+    linear-gradient(180deg,#3f33284f 0%,transparent 17%,#3a2b1c24 100%),
+    repeating-linear-gradient(90deg,transparent 0 136px,#4a37243d 137px,#e6c69b50 139px,transparent 141px,transparent 274px),
+    repeating-linear-gradient(0deg,transparent 0 115px,#36291d3d 116px,#e4c69d38 118px,transparent 120px),
+    repeating-linear-gradient(94deg,#ffffff11 0 2px,transparent 3px 15px,#352b210d 16px 17px,transparent 19px 37px),
+    linear-gradient(100deg,#897159,#a38a6d 28%,#8d755b 53%,#a58a6e 76%,#81694f 100%);
+  box-shadow:0 -15px 33px #5b4d3d23;
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,#000 9%,#000 100%);
+  mask-image:linear-gradient(to bottom,transparent 0%,#000 9%,#000 100%);
+}
+/* Paper labels and bright framed artworks stay distinct from the wall. */
+.game-card{
+  box-shadow:0 10px 27px #40372f20,0 2px 7px #40372f0c;
+}
+.game-card:hover,.game-card:focus-within,
+.motion-active .game-card:hover,.motion-active .game-card:focus-within{
+  box-shadow:0 18px 38px #3b342b35,0 3px 7px #3b342b16;
+}
+.featured-exhibit{
+  box-shadow:0 16px 37px #453d321e,0 2px 7px #453d3211;
+}
+@media(max-width:760px){
+  body::before{
+    background:
+      radial-gradient(ellipse 70% 40% at 50% 20%,#f1eee55b,transparent 100%),
+      linear-gradient(180deg,transparent 74%,#6558492c 74.2%,#e1d7c69c 74.5%,transparent 75.4%),
+      linear-gradient(180deg,#d0cbc3,#b9b2a9);
+  }
+  body::after{
+    top:74vh;left:-26vw;width:152vw;height:59vh;
+    transform:perspective(760px) rotateX(57deg);
+    opacity:.53;
+  }
+}
+@media(prefers-contrast:more){
+  body::after{opacity:.34}
+  .game-card{border-color:#7e776f}
+}
