@@ -422,3 +422,226 @@ body { background: radial-gradient(ellipse at 50% 8%, #2b392d 0, transparent 45r
   .featured-exhibit.featured-animate .featured-content{animation:none}
   .featured-nav-button{transition:none}
 }
+
+
+/* ===================================================================
+   OIBUNG GALLERY / Curatorial design system
+   Art first: quiet type, predictable spacing, restrained museum light.
+   =================================================================== */
+:root{
+  --gallery-surface:#19251d;
+  --gallery-surface-raised:#223027;
+  --gallery-ivory:#f3eedf;
+  --gallery-gold:#dbc291;
+  --gallery-secondary:#bdc2b4;
+  --gallery-rule:#d5bc8950;
+  --gallery-radius:3px;
+  --gallery-space-1:8px;
+  --gallery-space-2:14px;
+  --gallery-space-3:22px;
+  --gallery-space-4:32px;
+  --gallery-space-5:48px;
+}
+html{scroll-padding-top:24px}
+body{color:var(--gallery-ivory);-webkit-font-smoothing:antialiased}
+:where(button,a,input,select,textarea,summary):focus-visible{
+  outline:2px solid var(--gallery-gold);outline-offset:3px
+}
+:is(.section-heading-row h1,.gallery-about h2,.detail-introduction h2){text-wrap:balance}
+:is(.section-heading-row p,.featured-content p,.game-card-desc,.review-post-body,.detail-dialog p){overflow-wrap:anywhere}
+.section-heading-row{align-items:end}
+.section-heading-row p{font-size:14px;line-height:1.8;max-width:660px}
+.button-primary,.button-outline,.play-link{min-height:43px;border-radius:var(--gallery-radius);font-weight:650;letter-spacing:0}
+.page-switcher{margin-top:1px}
+.page-tab{min-height:51px;letter-spacing:.005em}
+.featured-exhibit{
+  position:relative;
+  overflow:hidden;
+  padding-bottom:clamp(25px,3vw,39px);
+  box-shadow:0 15px 42px #090f0c36;
+  border-color:var(--gallery-rule);
+}
+.featured-exhibit::before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 38% 48% at 31% 11%,#f6d5a115,transparent 100%);
+}
+.featured-cover,.featured-content{z-index:1;position:relative}
+.featured-cover{
+  border:5px solid #a68a5d;
+  outline:1px solid #edd0a64d;
+  outline-offset:3px;
+  box-shadow:inset 0 0 0 2px #403124,0 10px 27px #080c0aa8,0 -9px 34px #e6c18119;
+}
+.featured-cover::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,#f2d6a60d,transparent 38%,#0c120d26);
+}
+.featured-content h2{line-height:1.13;margin-top:13px}
+.featured-content>p{line-height:1.75}
+.featured-actions{padding-top:4px}
+.featured-navigation{gap:6px}
+.featured-play-toggle{
+  display:grid;place-items:center;width:35px;height:38px;
+  background:transparent;color:var(--gallery-gold);
+  border:1px solid #c0a77563;cursor:pointer;
+  font:600 15px/1 var(--body);
+}
+.featured-play-toggle:hover,.featured-play-toggle[aria-pressed="true"]{background:#dbc29122;border-color:#c3a878}
+.featured-play-toggle:disabled{opacity:.45;cursor:not-allowed}
+.featured-play-toggle span{transform:translateY(-.5px)}
+.featured-progress{
+  position:absolute;left:0;bottom:0;width:100%;height:3px;
+  background:#d7bd8b24;z-index:2;overflow:hidden
+}
+.featured-progress>span{
+  display:block;height:100%;width:100%;background:var(--gallery-gold);
+  transform:scaleX(0);transform-origin:left center;transition:transform .1s linear;
+  box-shadow:0 0 9px #e9c27b79
+}
+.featured-exhibit.featured-animate .featured-progress>span{transition:none}
+.featured-exhibit.is-paused .featured-progress>span{background:#b8b7a2}
+.catalog-count{font-variant-numeric:tabular-nums}
+.filter-viewport{position:relative;min-width:0;flex:1 1 490px}
+.filter-viewport .filter-tabs{min-width:0;width:100%;margin:0}
+.filter-viewport::after{content:"";display:none;position:absolute;pointer-events:none;top:0;bottom:0;right:0;width:48px;background:linear-gradient(90deg,transparent,var(--bg));z-index:2}
+.filter-chip{border-radius:var(--gallery-radius);font-size:12px;min-height:38px}
+.library-controls{gap:14px}
+.library-sort select,.search-field{border-radius:var(--gallery-radius)}
+.game-grid{align-items:stretch}
+.game-card{
+  position:relative;isolation:isolate;
+  border:1px solid var(--gallery-rule);
+  background:var(--gallery-surface);
+  transition:border-color .25s ease,transform .25s ease,box-shadow .3s ease;
+}
+.game-card::before{
+  content:"";position:absolute;inset:0 0 auto;height:62%;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 5%,#eecf8c0d,transparent 68%);
+  opacity:.75;transition:opacity .3s ease
+}
+.game-card:hover,.game-card:focus-within{
+  transform:translateY(-2px);border-color:#d6ba8788;
+  box-shadow:0 16px 28px #05080545
+}
+.game-card:hover::before,.game-card:focus-within::before{opacity:1}
+.game-card .game-cover{
+  border-width:4px;outline-color:#b59a6473;box-shadow:0 9px 20px #080b09a1;
+  transition:box-shadow .3s ease,filter .3s ease
+}
+.game-card:hover .game-cover,.game-card:focus-within .game-cover{
+  box-shadow:0 12px 23px #020603b8,0 0 26px #dfc18e25;
+  filter:brightness(1.065)
+}
+.game-card-body{padding:20px 22px 21px}
+.game-card-title-row{gap:12px}
+.artwork-identity{min-width:0}
+.artwork-caption{
+  display:flex;align-items:center;flex-wrap:wrap;gap:7px 12px;
+  margin-bottom:8px
+}
+.artwork-sequence{
+  color:#c9b889;font:700 10px/1.4 var(--body);
+  letter-spacing:.1em;white-space:nowrap;font-variant-numeric:tabular-nums
+}
+.artwork-caption .game-genre{
+  margin:0;padding-left:12px;border-left:1px solid #beaa806b;
+  font-size:10px;letter-spacing:.045em;line-height:1.3
+}
+.game-card-body h3{margin:0;font-size:clamp(23px,2.5vw,29px);line-height:1.25;text-wrap:balance}
+.game-meta{margin:11px 0 8px;gap:7px 10px;font-size:12px;line-height:1.5}
+.game-meta .game-status{font-size:10px;padding:3px 7px;border-radius:2px}
+.game-card-desc{font-size:13px;line-height:1.75;color:var(--gallery-secondary);margin:6px 0 0}
+.game-card-score{margin:13px 0 14px}
+.game-card-footer{gap:8px;padding-top:14px}
+.game-card-footer .details-link,.game-card-footer .play-link{min-height:42px;display:inline-flex;align-items:center;justify-content:center;padding:10px 14px}
+.game-card-actions{gap:5px}
+.game-card-actions .icon-button,.game-card-actions .favorite-button{
+  width:35px;height:35px;opacity:.78;border-color:#ab9a7152
+}
+.game-card-actions .icon-button:hover,.game-card-actions .favorite-button:hover,
+.game-card-actions .icon-button:focus-visible,.game-card-actions .favorite-button:focus-visible{opacity:1}
+.detail-dialog{border:1px solid #d8bb835b}
+.detail-overview{gap:clamp(18px,3vw,34px)}
+.detail-overview .dialog-cover{border-width:4px;box-shadow:0 14px 32px #080b096b}
+.detail-introduction h2{font-size:clamp(30px,4.4vw,44px);letter-spacing:-.035em;line-height:1.18}
+.detail-introduction .dialog-kicker{font-size:11px;letter-spacing:.08em}
+#detail-summary{font-size:14px;line-height:1.9;max-width:62ch}
+.detail-dialog .community-section{margin-top:28px;padding-top:22px;border-color:var(--gallery-rule)}
+.detail-dialog .community-section h3{
+  font:650 clamp(18px,2vw,23px)/1.4 var(--display);
+  letter-spacing:-.02em;margin:0 0 12px
+}
+.detail-dialog .community-section h3::before{
+  content:"";display:inline-block;width:15px;height:1px;background:var(--gallery-gold);
+  vertical-align:middle;margin-right:11px
+}
+.detail-review-teaser{gap:14px}
+.detail-review-teaser p{font-size:13px;line-height:1.75}
+.exhibition-section-header h3{margin:0!important}
+.detail-management{
+  margin:20px 0 0;border-top:1px solid #c7aa7853;border-bottom:1px solid #c7aa7853;
+  background:#15201750
+}
+.detail-management>summary{
+  cursor:pointer;padding:13px 5px;color:#d0c7ad;font-size:12px;font-weight:600;
+  list-style-position:inside
+}
+.detail-management>summary:hover{color:var(--gallery-ivory)}
+.detail-management-inner{padding:0 10px 15px;display:grid;justify-items:start;gap:10px}
+.detail-management-inner #edit-game{
+  display:inline-flex;align-items:center;gap:7px;text-decoration:none;
+  font-size:12px
+}
+.detail-management-inner #edit-game svg{width:14px;height:14px;stroke:currentColor;fill:none}
+.detail-management-inner .exhibition-revisions{padding:0}
+.detail-management-inner .report-link{margin:0;padding:6px 2px}
+.detail-management-inner .revision-entry{max-width:100%;gap:16px}
+.detail-management-inner #game-revision-list{max-width:100%}
+.review-board-layout{align-items:start}
+.review-sidebar{border:1px solid var(--gallery-rule);padding:22px;background:#1a251d}
+.review-sidebar h2{font-size:17px;line-height:1.4}
+.review-sidebar-note{font-size:12px;line-height:1.85}
+.review-feed-column{max-width:920px}
+.review-feed-heading{padding:0 0 15px;border-color:var(--gallery-rule)}
+.review-post{
+  padding:clamp(18px,3vw,29px);border:1px solid var(--gallery-rule);
+  background:#1a251d;box-shadow:0 7px 24px #070d0930
+}
+.review-post-top{margin-bottom:16px}
+.review-post-game{border-radius:2px;font-size:12px;letter-spacing:.01em}
+.review-post-author strong{font-size:15px}
+.review-post-stars{font-size:16px;letter-spacing:.03em}
+.review-post-body{max-width:68ch;font-size:14px;line-height:1.9;color:#e1e3d7}
+.review-post-photos{gap:8px}
+.review-post-photos a{border:1px solid #d4b98648}
+.review-feed-empty{padding:35px 22px;line-height:1.75;color:var(--gallery-secondary)}
+.media-lightbox-frame{touch-action:pan-y}
+@media(max-width:900px){
+  .filter-viewport{flex:1 1 100%}
+}
+@media(max-width:760px){
+  .featured-exhibit{padding-bottom:31px}
+  .featured-content h2{font-size:clamp(30px,8vw,38px)}
+  .featured-meta{gap:8px 12px}
+  .featured-play-toggle{width:35px;height:36px}
+  .filter-viewport::after{display:block;opacity:1}
+  .filter-viewport.is-end::after{opacity:0}
+  .filter-viewport .filter-tabs{padding-right:24px}
+  .library-toolbar{gap:12px}
+  .library-controls{gap:9px}
+  .game-card-body{padding:17px 18px 19px}
+  .game-card .game-cover{border-width:3px}
+  .game-card-actions .icon-button,.game-card-actions .favorite-button{
+    width:40px;height:40px;opacity:1
+  }
+  .review-sidebar{padding:16px 18px}
+  .review-post{padding:17px}
+  .review-post-body{font-size:13.5px}
+  .detail-overview .dialog-cover{border-width:3px}
+  .detail-dialog .community-section{margin-top:22px;padding-top:19px}
+  .page-switcher{margin-top:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .game-card,.game-card::before,.game-card .game-cover{transition:none!important;transform:none!important}
+  .featured-progress>span{transition:none!important}
+}
