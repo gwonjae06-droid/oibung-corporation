@@ -1,7 +1,7 @@
 /*
  * Oibung Gallery motion controller — optional, non-blocking presentation layer.
- * One IntersectionObserver, one delegated pointer tracker, one MutationObserver.
- * No per-card loops, timers, canvas or external animation dependencies.
+ * One IntersectionObserver and one MutationObserver.
+ * No per-card pointer tracking, timers, canvas or external animation dependencies.
  */
 (() => {
   'use strict';
@@ -19,9 +19,6 @@
   const tracked = new WeakSet();
   let userDisabled = false;
   let scanFrame = 0;
-  let pointerFrame = 0;
-  let currentCard = null;
-  let pointerPosition = null;
   let visibleObserver;
 
   try { userDisabled = localStorage.getItem(savedKey) === 'off'; }
@@ -41,15 +38,13 @@
         '동작 감소 적용 중' : active ? '움직임 줄이기' : '움직임 켜기';
     }
     if (!active) {
-      clearPointer();
       document.querySelectorAll('.motion-reveal').forEach(el => el.classList.add('motion-visible'));
     }
     window.dispatchEvent(new Event('oibung-motion-preference'));
   }
   function visibilityChange() {
     root.classList.toggle('motion-suspended', document.hidden);
-    if (document.hidden) clearPointer();
-    else scheduleScan();
+    if (!document.hidden) scheduleScan();
   }
   document.addEventListener('visibilitychange', visibilityChange, { passive: true });
   lowMotion.addEventListener('change', () => { setPreferenceUI(); scheduleScan(); });
@@ -109,7 +104,6 @@
   }
   function scan() {
     if (document.hidden) return;
-    if (currentCard && !currentCard.isConnected) clearPointer();
     const elements = document.querySelectorAll(
       '.game-card,.review-post,.review-sidebar,.gallery-screenshot,.activity-item,.section-heading-row,' +
       '.featured-exhibit,.library,.review-board'
@@ -132,60 +126,7 @@
   scan();
   setPreferenceUI();
 
-  // Fine-pointer lighting and almost imperceptible frame tilt.
-  function clearPointer() {
-    if (pointerFrame) cancelAnimationFrame(pointerFrame);
-    pointerFrame = 0;
-    pointerPosition = null;
-    if (!currentCard) return;
-    currentCard.style.removeProperty('--card-tilt-x');
-    currentCard.style.removeProperty('--card-tilt-y');
-    currentCard.querySelector('.motion-card-spotlight')?.style.setProperty('opacity', '0');
-    currentCard = null;
-  }
-  function movePointer() {
-    pointerFrame = 0;
-    if (!pointerPosition || !currentCard || !enabled() || lightweight || document.hidden) return;
-    const rect = currentCard.getBoundingClientRect();
-    const x = Math.max(0, Math.min(rect.width, pointerPosition.x - rect.left));
-    const y = Math.max(0, Math.min(rect.height, pointerPosition.y - rect.top));
-    const nx = x / Math.max(1, rect.width) - .5;
-    const ny = y / Math.max(1, rect.height) - .5;
-    currentCard.style.setProperty('--card-tilt-x', (-ny * 2.4).toFixed(2) + 'deg');
-    currentCard.style.setProperty('--card-tilt-y', (nx * 2.4).toFixed(2) + 'deg');
-    const spot = currentCard.querySelector('.motion-card-spotlight');
-    if (spot) {
-      spot.style.transform = 'translate3d(' + Math.round(x - 112) + 'px,' +
-        Math.round(y - 112) + 'px,0)';
-      spot.style.opacity = '1';
-    }
-  }
-  const grid = document.getElementById('game-grid');
-  grid?.addEventListener('pointermove', event => {
-    if (!enabled() || lightweight || !finePointer.matches || document.hidden) return;
-    const card = event.target.closest('.game-card');
-    if (!card) return;
-    if (currentCard !== card) {
-      clearPointer();
-      currentCard = card;
-      if (!card.querySelector('.motion-card-spotlight')) {
-        const light = document.createElement('span');
-        light.className = 'motion-card-spotlight';
-        light.setAttribute('aria-hidden', 'true');
-        card.append(light);
-      }
-    }
-    pointerPosition = { x: event.clientX, y: event.clientY };
-    if (!pointerFrame) pointerFrame = requestAnimationFrame(movePointer);
-  }, { passive: true });
-  grid?.addEventListener('pointerout', event => {
-    if (!currentCard) return;
-    const stillInside = event.relatedTarget?.closest?.('.game-card') === currentCard;
-    if (!stillInside) clearPointer();
-  }, { passive: true });
-  grid?.addEventListener('pointercancel', clearPointer, { passive: true });
-  grid?.addEventListener('pointerleave', clearPointer, { passive: true });
-  document.addEventListener('oibung-page-changed', clearPointer);
+  // Artwork lighting is attached to the caption frame; no cursor-following light.
 
   // Delegated ripple on primary interactions. One transient node per click only.
   document.addEventListener('pointerdown', event => {
