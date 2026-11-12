@@ -223,10 +223,12 @@
   function updateFeaturedControls() {
     const canRotate = featuredOrder.length > 1;
     featuredToggle.hidden = !canRotate;
-    featuredToggle.disabled = !canRotate || reducedMotion.matches;
-    const paused = featuredPaused || reducedMotion.matches;
+    const userReduced = document.documentElement.classList.contains('motion-off');
+    featuredToggle.disabled = !canRotate || reducedMotion.matches || userReduced;
+    const paused = featuredPaused || reducedMotion.matches || userReduced;
     featuredToggle.setAttribute('aria-pressed', String(featuredPaused));
     const label = reducedMotion.matches ? '자동 전환 사용 안 함 (동작 감소 설정)' :
+      userReduced ? '자동 전환 사용 안 함 (움직임 줄이기)' :
       featuredPaused ? '자동 전환 재생' : '자동 전환 일시정지';
     featuredToggle.setAttribute('aria-label', label);
     featuredToggle.title = label;
@@ -258,6 +260,10 @@
     featuredLastTick = performance.now();
     updateFeaturedControls();
   });
+  window.addEventListener('oibung-motion-preference', () => {
+    featuredLastTick = performance.now();
+    updateFeaturedControls();
+  });
   // Maintain real elapsed viewing time, without skipping artworks when tabs/windows are hidden.
   // Hover and keyboard focus pause timing without resetting the visitor's progress.
   window.setInterval(() => {
@@ -273,7 +279,8 @@
       document.querySelector('#media-lightbox')?.open ||
       (window.matchMedia('(hover: hover)').matches && featuredSection.matches(':hover')) ||
       (featuredKeyboardFocus && featuredSection.matches(':focus-within')) ||
-      featuredPaused || reducedMotion.matches;
+      featuredPaused || reducedMotion.matches ||
+      document.documentElement.classList.contains('motion-off');
     if (blocked) return;
     featuredElapsed += delta;
     if (featuredElapsed >= featuredIntervalMs) moveFeatured(1);
