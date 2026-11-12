@@ -17,6 +17,7 @@ const headers = {
 };
 const bucket = 'oc-screenshots';
 const maxImage = 5242880;
+const maxReviewImages = 3;
 const mimeExtensions = new Map([['image/jpeg', 'jpg'], ['image/png', 'png'], ['image/webp', 'webp']]);
 const gamePattern = /^[a-z0-9-]{1,64}$/;
 
@@ -52,7 +53,7 @@ Deno.serve(async req => {
   try {
     const imageRequest = req.headers.get('content-type')?.startsWith('multipart/form-data');
     const length = Number(req.headers.get('content-length'));
-    if (length > (imageRequest ? maxImage + 16384 : 12000)) return reply(413, { error: '파일이나 글이 너무 커.' });
+    if (length > (imageRequest ? maxReviewImages * maxImage + 32768 : 12000)) return reply(413, { error: '파일이나 글이 너무 커.' });
     const identity = await hash('guest:' + token);
     const author = [identity.slice(0, 8), identity.slice(8, 12), identity.slice(12, 16),
       identity.slice(16, 20), identity.slice(20, 32)].join('-');
@@ -65,7 +66,7 @@ Deno.serve(async req => {
       return reply(400, { error: '게임 정보가 올바르지 않아.' });
     }
     if (action === 'viewer') {
-      const review = await db.from('oc_reviews').select('nickname,stars,body').eq('game_id', gameId)
+      const review = await db.from('oc_reviews').select('nickname,stars,body,image_paths').eq('game_id', gameId)
         .eq('author_id', author).maybeSingle();
       if (review.error) throw review.error;
       return reply(200, { review: review.data });
@@ -138,16 +139,59 @@ Deno.serve(async req => {
     }
 
     if (action === 'review') {
-      const { nickname, stars, body } = content;
+      const { nickname, stars, body, keep_paths } = content;
       if (!required(nickname, 30) || !Number.isInteger(stars) || stars < 1 || stars > 5
-          || typeof body !== 'string' || body.length > 500) {
-        return reply(400, { error: '닉네임과 별점을 확인해 줘.' });
+          || typeof body !== 'string' || body.length > 2000) {
+        return reply(400, { error: '닉네임과 별점, 후기 내용을 확인해 줘.' });
       }
-      const result = await db.from('oc_reviews').upsert({
-        game_id: gameId, author_id: author, nickname: nickname.trim(), stars, body: body.trim()
-      }, { onConflict: 'game_id,author_id' });
-      if (result.error) throw result.error;
-      return reply(200, { saved: true });
+      const previous = await db.from('oc_reviews').select('image_paths')
+        .eq('game_id', gameId).eq('author_id', author).maybeSingle();
+      if (previous.error) throw previous.error;
+      const oldPaths: string[] = previous.data?.image_paths || [];
+      if (keep_paths !== undefined && (!Array.isArray(keep_paths)
+          || keep_paths.some((path: unknown) => typeof path !== 'string' || !oldPaths.includes(path))
+          || new Set(keep_paths).size !== keep_paths.length)) {
+        return reply(400, { error: '유지할 사진 정보가 올바르지 않아.' });
+      }
+      const retained: string[] = keep_paths === undefined ? oldPaths : keep_paths;
+      const photos = form?.getAll('photos') ?? [];
+      if (photos.length > maxReviewImages || photos.length + retained.length > maxReviewImages) {
+        return reply(400, { error: '후기 사진은 최대 3장까지 등록할 수 있어.' });
+      }
+      const verified: File[] = [];
+      for (const photo of photos) {
+        if (!(photo instanceof File) || !photo.size || photo.size > maxImage
+            || !mimeExtensions.has(photo.type) || await detectImage(photo) !== photo.type) {
+          return reply(400, { error: '사진은 5MB 이하 JPG, PNG, WebP만 올릴 수 있어.' });
+        }
+        verified.push(photo);
+      }
+      const storage = db.storage.from(bucket);
+      const uploaded: string[] = [];
+      try {
+        for (const photo of verified) {
+          const path = 'reviews/' + gameId + '/' + author + '/' + crypto.randomUUID()
+            + '.' + mimeExtensions.get(photo.type);
+          const upload = await storage.upload(path, photo, { contentType: photo.type });
+          if (upload.error) throw upload.error;
+          uploaded.push(path);
+        }
+        const nextPaths = [...retained, ...uploaded];
+        const result = await db.from('oc_reviews').upsert({
+          game_id: gameId, author_id: author, nickname: nickname.trim(),
+          stars, body: body.trim(), image_paths: nextPaths
+        }, { onConflict: 'game_id,author_id' });
+        if (result.error) throw result.error;
+        const obsolete = oldPaths.filter(path => !nextPaths.includes(path));
+        if (obsolete.length) {
+          const removed = await storage.remove(obsolete);
+          if (removed.error) console.error('Review photo cleanup failed');
+        }
+        return reply(200, { saved: true });
+      } catch (error) {
+        if (uploaded.length) await storage.remove(uploaded);
+        throw error;
+      }
     }
 
     const file = form?.get('image');
