@@ -681,6 +681,27 @@ submit(updateForm, $('#update-status'), async () => {
   }
 });
 
+const reportDialog = $('#report-dialog');
+const reportForm = $('#report-form');
+$('#report-game').addEventListener('click', () => {
+  if (!client || !activeGame()) { detailStatus.textContent = '공유 서버에 연결해 주세요.'; return; }
+  reportForm.reset();
+  reportForm.dataset.gameId = activeGame();
+  $('#report-status').textContent = '';
+  reportDialog.showModal();
+  document.body.classList.add('no-scroll');
+});
+$('#close-report').addEventListener('click', () => reportDialog.close());
+reportDialog.addEventListener('click', event => { if (event.target === reportDialog) reportDialog.close(); });
+reportDialog.addEventListener('close', () => {
+  document.body.classList.toggle('no-scroll', detail.open || account.open || reviewDialog.open || updateDialog.open);
+});
+submit(reportForm, $('#report-status'), async () => {
+  await guestWrite({ action: 'report', reason: textField(reportForm, 'reason') }, reportForm.dataset.gameId);
+  reportDialog.close();
+  if (detail.open) detailStatus.textContent = '신고가 접수되었습니다. 알려 주셔서 감사합니다.';
+});
+
 function refreshCatalog() {
   void loadGames().catch(() => {
     accountStatus.textContent = '공유 게임 목록에 연결하지 못했어. 잠시 후 새로고침해 줘.';
