@@ -356,3 +356,11 @@ dialog:not(.media-lightbox)::backdrop{background:#262824a4;backdrop-filter:blur(
 }
 html.motion-off .game-card-body::after{animation:none!important;opacity:.62}
 html.motion-suspended .game-card-body::after{animation-play-state:paused!important}
+
+/* Artwork titles on top of dark images remain light in the daylight scheme. */
+.cover-content .cover-english,.cover-content .cover-sub{color:#fffaf1}
+.game-card-number,.game-card-badge{color:#fffaf1}
+.motion-active .game-card:hover .game-card-body[data-intro-tone]:not([data-intro-tone="gallery"]) h3,
+.motion-active .game-card:focus-within .game-card-body[data-intro-tone]:not([data-intro-tone="gallery"]) h3{
+  color:#f7f3e9;
+}
