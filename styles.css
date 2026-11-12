@@ -40,7 +40,7 @@
 .detail-overview .dialog-tags { margin: 0; }
 .detail-overview .dialog-tags:not(:empty) { margin-bottom: 1rem; }
 #detail-summary { color: var(--white); white-space: pre-wrap; font-size: 1rem; line-height: 1.75; margin-block: .8rem 1.2rem; }
-#edit-game { margin-top: .8rem; }
+
 .detail-dialog p[role="status"]:empty { display: none; }
 .community-section { border-color: #3b3b44; margin-top: 1.75rem; padding-top: 1.25rem; }
 .contribution-panel { margin-top: .85rem; }
@@ -60,3 +60,9 @@
 #thumbnail-preview { width: min(100%, 240px); aspect-ratio: 16 / 9; object-fit: cover; border-radius: .45rem; }
 .community-form .thumbnail-remove { display: flex; align-items: center; }
 .community-form .thumbnail-remove input { width: auto; }
+
+.game-card-actions { display: flex; align-items: center; gap: .4rem; flex: none; }
+.detail-title-row { display: flex; align-items: center; gap: .65rem; }
+.edit-button { width: 40px; height: 40px; flex: none; }
+.edit-button:hover { border-color: var(--lime); color: var(--lime); }
+.edit-button svg { width: 18px; height: 18px; }

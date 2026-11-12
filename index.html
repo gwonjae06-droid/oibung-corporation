@@ -13,11 +13,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=game-meta-1">
+  <link rel="stylesheet" href="styles.css?v=public-edit-1">
   <script src="games.js" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=game-meta-1" defer></script>
-  <script type="module" src="community.js?v=game-meta-1"></script>
+  <script src="app.js?v=public-edit-1" defer></script>
+  <script type="module" src="community.js?v=public-edit-1"></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -26,6 +26,7 @@
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="7.2"/><path d="m16.5 16.5 4 4"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M5 5 19 19M19 5 5 19"/></symbol>
     <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.3"/><rect x="14" y="3" width="7" height="7" rx="1.3"/><rect x="3" y="14" width="7" height="7" rx="1.3"/><rect x="14" y="14" width="7" height="7" rx="1.3"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="m14 6 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/></symbol>
     <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 8.5c0 4.5-8.8 10.4-8.8 10.4S3.2 13 3.2 8.5a4.8 4.8 0 0 1 8.8-2.6 4.8 4.8 0 0 1 8.8 2.6Z"/></symbol>
     <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19c-4.5 1.3-4.5-2.6-6.2-3M15 21v-3.5c0-1.1.1-1.6-.5-2.3 3.3-.4 6.7-1.6 6.7-7.3 0-1.6-.6-2.9-1.6-3.9.2-.5.7-2.5-.2-4-1.8 0-3.3 1.2-4 1.6a14.6 14.6 0 0 0-7.4 0C7.3 1.2 5.8 0 4 0c-.9 1.5-.4 3.5-.2 4C2.8 5 2.2 6.3 2.2 7.9c0 5.7 3.4 6.9 6.7 7.3-.6.7-.6 1.4-.6 2.3V21" transform="translate(1 1) scale(.9)"/></symbol>
     <symbol id="i-menu" viewBox="0 0 24 24"><path d="M3 7h18M3 12h18M3 17h18"/></symbol>
@@ -91,7 +92,10 @@
         <header class="detail-overview">
           <div class="detail-introduction">
             <span class="dialog-kicker" id="detail-genre"></span>
-            <h2 id="detail-title"></h2>
+            <div class="detail-title-row">
+              <h2 id="detail-title"></h2>
+              <button id="edit-game" class="icon-button edit-button" type="button" aria-label="게임 정보 수정" title="게임 정보 수정"><svg aria-hidden="true"><use href="#i-pencil"/></svg></button>
+            </div>
             <div id="detail-meta" class="game-meta"></div>
             <div class="dialog-tags" id="detail-tags"></div>
             <p id="detail-summary"></p>
@@ -99,7 +103,6 @@
               <a id="detail-play" class="button-primary" href="#" target="_blank" rel="noopener noreferrer">지금 플레이 <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
               <a id="detail-source" class="button-outline" href="#" target="_blank" rel="noopener noreferrer">GitHub <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
             </div>
-            <button id="edit-game" class="button-outline" type="button" hidden>게임 정보 수정</button>
             <p id="edit-status" role="status"></p>
           </div>
           <div id="dialog-cover" class="dialog-cover" aria-hidden="true"></div>
@@ -156,14 +159,6 @@
         <small>APK나 마인크래프트 모드처럼 링크가 없으면 비워 둬도 돼.</small>
         <button class="button-primary" type="submit">게임 등록하고 상세 열기</button>
       </form>
-      <details id="claim-panel" class="contribution-panel" hidden>
-        <summary>기존 게시물 관리 연결</summary>
-        <form id="claim-form" class="community-form">
-          <label>일회용 관리 코드 <input name="code" type="password" autocomplete="off" required minlength="48" maxlength="48"></label>
-          <button class="button-outline" type="submit">이 브라우저에 연결</button>
-        </form>
-        <p id="claim-status" role="status"></p>
-      </details>
     </div>
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

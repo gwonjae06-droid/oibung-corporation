@@ -10,9 +10,6 @@ const editButton = $('#edit-game');
 const imagePanel = $('#image-panel');
 const reviewPanel = $('#review-panel');
 const gameForm = $('#add-game-form');
-const claimPanel = $('#claim-panel');
-const claimForm = $('#claim-form');
-const claimStatus = $('#claim-status');
 const thumbnailInput = gameForm.elements.namedItem('thumbnail');
 const removeThumbnail = gameForm.elements.namedItem('removeThumbnail');
 const thumbnailPreview = $('#thumbnail-preview');
@@ -156,7 +153,6 @@ detail.addEventListener('game-opened', () => {
   imagePanel.open = false;
   reviewPanel.open = false;
   reviewPanel.querySelector('summary').textContent = '평가 남기기';
-  editButton.hidden = true;
   editStatus.textContent = '';
   imageStatus.textContent = '';
   reviewStatus.textContent = '';
@@ -198,7 +194,6 @@ async function loadViewer() {
   try {
     const viewer = await guestWrite({ action: 'viewer' }, gameId);
     if (revision !== viewerRevision || activeGame() !== gameId) return;
-    editButton.hidden = !viewer.can_edit;
     if (viewer.review) {
       reviewPanel.querySelector('summary').textContent = '내 평가 수정';
       if (!['nickname', 'stars', 'body'].some(name => textField(reviewForm, name))) {
@@ -209,7 +204,7 @@ async function loadViewer() {
     }
   } catch {
     if (revision === viewerRevision && activeGame() === gameId) {
-      editStatus.textContent = '내 게시물 정보를 확인하지 못했어.';
+      reviewStatus.textContent = '내 평가를 불러오지 못했어.';
     }
   }
 }
@@ -248,10 +243,6 @@ account.addEventListener('close', releaseThumbnailPreview);
 function openEditor(game) {
   if (gameForm.querySelector('[type="submit"]').disabled) return;
   gameForm.reset();
-  claimPanel.hidden = Boolean(game) || !client;
-  claimPanel.open = false;
-  claimForm.reset();
-  claimStatus.textContent = '';
   releaseThumbnailPreview();
   showThumbnailPreview(game?.thumbnailUrl);
   $('#thumbnail-remove').hidden = !game?.thumbnailUrl;
@@ -272,9 +263,14 @@ function openEditor(game) {
 document.querySelectorAll('[data-open-editor]').forEach(button => {
   button.addEventListener('click', () => openEditor());
 });
-editButton.addEventListener('click', () => {
-  const game = window.OIBUNG_CATALOG.getGame(activeGame());
+function editGame(id) {
+  const game = window.OIBUNG_CATALOG.getGame(id);
   if (game) openEditor(game);
+}
+editButton.addEventListener('click', () => editGame(activeGame()));
+$('#game-grid').addEventListener('click', event => {
+  const button = event.target.closest('[data-edit-game]');
+  if (button) editGame(button.dataset.editGame);
 });
 
 async function guestWrite(data, gameId) {
@@ -333,16 +329,9 @@ submit(gameForm, accountStatus, async () => {
   refreshCatalog();
   if (account.open) {
     account.close();
+    if (activeGame() !== game.id) window.OIBUNG_CATALOG.openDetail(game.id);
     if (gameId) editStatus.textContent = '게임 정보를 수정했어.';
-    else window.OIBUNG_CATALOG.openDetail(game.id);
   }
-});
-
-submit(claimForm, claimStatus, async () => {
-  const { count } = await guestWrite({ action: 'claim_games', code: textField(claimForm, 'code').toLowerCase() });
-  claimForm.reset();
-  claimStatus.textContent = count + '개 게임을 연결했어. 각 게임의 상세 화면에서 수정할 수 있어.';
-  refreshCatalog();
 });
 
 submit(imageForm, imageStatus, async () => {
@@ -416,7 +405,6 @@ async function connect() {
       }
     });
   gameForm.hidden = false;
-  claimPanel.hidden = Boolean(gameForm.dataset.gameId);
   accountStatus.textContent = '';
   showParticipation();
   void loadDetails();

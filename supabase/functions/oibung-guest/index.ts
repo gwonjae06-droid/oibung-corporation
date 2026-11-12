@@ -61,29 +61,14 @@ Deno.serve(async req => {
     const metadata = form?.get('metadata');
     const content = typeof metadata === 'string' ? JSON.parse(metadata) : form ? null : await req.json();
     const action = form && metadata == null ? 'image' : content?.action;
-    if (action === 'claim_games') {
-      const code = content.code;
-      if (typeof code !== 'string' || !/^[a-f0-9]{48}$/.test(code)) {
-        return reply(400, { error: '관리 코드를 확인해 줘.' });
-      }
-      const bytes = await crypto.subtle.digest('SHA-256', encoder.encode(code));
-      const digest = Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');
-      const claim = await db.rpc('oc_claim_games', { claim_digest: digest, guest_author: author });
-      if (claim.error) throw claim.error;
-      if (!claim.data) return reply(403, { error: '이미 사용했거나 유효하지 않은 관리 코드야.' });
-      return reply(200, { count: claim.data });
-    }
     if (!['game', 'edit_game', 'viewer', 'review', 'image'].includes(action) || (action !== 'game' && !gamePattern.test(gameId))) {
       return reply(400, { error: '게임 정보가 올바르지 않아.' });
     }
     if (action === 'viewer') {
-      const [game, review] = await Promise.all([
-        db.from('oc_games').select('id').eq('id', gameId).eq('author_id', author).maybeSingle(),
-        db.from('oc_reviews').select('nickname,stars,body').eq('game_id', gameId)
-          .eq('author_id', author).maybeSingle()
-      ]);
-      if (game.error || review.error) throw game.error ?? review.error;
-      return reply(200, { can_edit: Boolean(game.data), review: review.data });
+      const review = await db.from('oc_reviews').select('nickname,stars,body').eq('game_id', gameId)
+        .eq('author_id', author).maybeSingle();
+      if (review.error) throw review.error;
+      return reply(200, { review: review.data });
     }
     const address = req.headers.get('cf-connecting-ip') ?? req.headers.get('x-real-ip') ?? 'unknown';
     const quota = await db.rpc('oc_guest_quota', { address_hash: await hash('ip:' + address), operation: action === 'edit_game' ? 'game' : action });
@@ -114,9 +99,9 @@ Deno.serve(async req => {
       let previousThumbnail: string | null = null;
       if (editing) {
         const existing = await db.from('oc_games').select('thumbnail_path')
-          .eq('id', id).eq('author_id', author).maybeSingle();
+          .eq('id', id).maybeSingle();
         if (existing.error) throw existing.error;
-        if (!existing.data) return reply(403, { error: '게임을 등록한 브라우저에서 수정할 수 있어.' });
+        if (!existing.data) return reply(404, { error: '게임을 찾을 수 없어.' });
         previousThumbnail = existing.data.thumbnail_path;
       }
       const thumbnail = form?.get('thumbnail');
@@ -136,7 +121,7 @@ Deno.serve(async req => {
       }
       const games = db.from('oc_games');
       let update = editing
-        ? games.update(fields).eq('id', id).eq('author_id', author)
+        ? games.update(fields).eq('id', id)
         : games.insert({ id, ...fields, category: 'other', author_id: author });
       if (editing && 'thumbnail_path' in fields) {
         update = previousThumbnail === null
