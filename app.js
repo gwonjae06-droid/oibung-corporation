@@ -17,7 +17,17 @@
   let featuredOrder = [];
   let featuredCurrentId = null;
   let featuredRenderedId = null;
-  let lastFeaturedInteraction = 0;
+  let featuredPaused = false;
+  let featuredElapsed = 0;
+  let featuredLastTick = performance.now();
+  let featuredKeyboardFocus = false;
+  const featuredToggle = document.querySelector('#featured-toggle');
+  const featuredProgressBar = document.querySelector('#featured-progress-bar');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  document.addEventListener('keydown', event => {
+    if (['Tab','ArrowLeft','ArrowRight'].includes(event.key)) featuredKeyboardFocus = true;
+  });
+  document.addEventListener('pointerdown', () => { featuredKeyboardFocus = false; });
   const stats = new Map();
   const recentKey = 'oibung-gallery:recent-v1';
   const readRecent = () => { try { const a = JSON.parse(localStorage.getItem(recentKey) || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
@@ -125,20 +135,22 @@
     });
     render();
   }
-  function cardTemplate(game) {
+  function cardTemplate(game, displayIndex) {
     const favorite = favorites.has(game.id);
     const playUrl = safeSourceUrl(game.playUrl);
     const cover = coverArt(game);
     return `<article class="game-card" data-game-id="${escapeHTML(game.id)}">
       <button type="button" class="game-cover" data-details="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} 상세 보기">${cover}</button>
-      <div class="game-card-body" data-intro-tone="${escapeHTML(game.introTone ?? 'gallery')}"><div class="game-card-title-row"><div><div class="game-genre">${escapeHTML(game.genre)}</div><h3>${escapeHTML(game.title)}</h3></div>
+      <div class="game-card-body" data-intro-tone="${escapeHTML(game.introTone ?? 'gallery')}"><div class="game-card-title-row"><div class="artwork-identity">
+        <div class="artwork-caption"><span class="artwork-sequence">전시 ${String(displayIndex).padStart(2,'0')}</span><span class="game-genre">${escapeHTML(game.genre)}</span></div>
+        <h3>${escapeHTML(game.title)}</h3></div>
       <div class="game-card-actions">
       <button class="icon-button edit-button" type="button" data-edit-game="${escapeHTML(game.id)}" title="게임 정보 수정" aria-label="${escapeHTML(game.title)} 정보 수정">${icon('pencil')}</button>
       <button class="favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} ${favorite ? '찜 해제' : '찜하기'}" aria-pressed="${favorite}">${icon('heart')}</button></div></div>
       <div class="game-meta">${metadata(game)}</div>
       <p class="game-card-desc">${escapeHTML(game.description)}</p>
       <div class="game-card-score">${reviewBadge(game.id)}</div>
-      <div class="game-card-footer"><button class="details-link" type="button" data-details="${escapeHTML(game.id)}">게임 자세히 보기 ↗</button>
+      <div class="game-card-footer"><button class="details-link" type="button" data-details="${escapeHTML(game.id)}">작품 보기</button>
       ${playUrl ? `<a class="play-link" href="${escapeHTML(playUrl)}" target="_blank" rel="noopener noreferrer">플레이하기 ${icon('arrow')}</a>` : ''}</div></div></article>`;
   }
   function render() {
@@ -159,7 +171,7 @@
       if (activeFilter === 'recent') return recent.indexOf(a.id) - recent.indexOf(b.id);
       return defaultOrder.get(a.id) - defaultOrder.get(b.id);
     });
-    grid.innerHTML = filtered.map(cardTemplate).join('');
+    grid.innerHTML = filtered.map((game, index) => cardTemplate(game, index + 1)).join('');
     document.querySelector('#catalog-count').textContent = `전시 작품 ${filtered.length}점 · 전체 ${games.length}점`;
     renderFeatured();
     emptyState.hidden = filtered.length > 0;
@@ -177,12 +189,15 @@
       featuredSection.hidden = true;
       featuredCurrentId = null;
       featuredRenderedId = null;
+      featuredElapsed = 0;
+      updateFeaturedControls();
       return;
     }
     const choice = ranked.find(game => game.id === featuredCurrentId) || ranked[0];
     featuredCurrentId = choice.id;
     const changed = featuredRenderedId !== null && featuredRenderedId !== choice.id;
     featuredRenderedId = choice.id;
+    if (changed) featuredElapsed = 0;
     featuredSection.hidden = false;
     document.querySelector('#featured-cover').innerHTML = coverArt(choice);
     document.querySelector('#featured-title').textContent = choice.title;
@@ -197,6 +212,7 @@
     const index = featuredOrder.indexOf(choice.id) + 1;
     document.querySelector('#featured-position').textContent =
       String(index).padStart(2, '0') + ' / ' + String(featuredOrder.length).padStart(2, '0');
+    updateFeaturedControls();
 
     if (changed && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       featuredSection.classList.remove('featured-animate');
@@ -204,34 +220,65 @@
       featuredSection.classList.add('featured-animate');
     }
   }
+  function updateFeaturedControls() {
+    const canRotate = featuredOrder.length > 1;
+    featuredToggle.hidden = !canRotate;
+    featuredToggle.disabled = !canRotate || reducedMotion.matches;
+    const paused = featuredPaused || reducedMotion.matches;
+    featuredToggle.setAttribute('aria-pressed', String(featuredPaused));
+    const label = reducedMotion.matches ? '자동 전환 사용 안 함 (동작 감소 설정)' :
+      featuredPaused ? '자동 전환 재생' : '자동 전환 일시정지';
+    featuredToggle.setAttribute('aria-label', label);
+    featuredToggle.title = label;
+    featuredToggle.querySelector('span').textContent = paused ? '▶' : 'Ⅱ';
+    featuredProgressBar.style.transform =
+      'scaleX(' + (canRotate ? Math.min(1, featuredElapsed / featuredIntervalMs) : 0) + ')';
+    document.querySelector('#featured-progress').hidden = !canRotate;
+    featuredSection.classList.toggle('is-paused', paused);
+  }
   function moveFeatured(direction) {
     if (featuredOrder.length < 2) return;
     const index = featuredOrder.indexOf(featuredCurrentId);
     featuredCurrentId = featuredOrder[(index + direction + featuredOrder.length) % featuredOrder.length];
+    featuredElapsed = 0;
+    featuredLastTick = performance.now();
     renderFeatured();
   }
   document.querySelector('#featured-detail').addEventListener('click', event => openDetail(event.currentTarget.dataset.details));
   for (const [id, direction] of [['#featured-prev', -1], ['#featured-next', 1]]) {
-    document.querySelector(id).addEventListener('click', event => {
-      lastFeaturedInteraction = Date.now();
-      moveFeatured(direction);
-      // Touch taps should not leave the carousel permanently focused and paused.
-      if (event.detail > 0 && window.matchMedia('(hover: none)').matches) event.currentTarget.blur();
-    });
+    document.querySelector(id).addEventListener('click', () => moveFeatured(direction));
   }
-
-  // Automatically advance while the gallery is visible and nobody is interacting with the exhibit.
-  // Reduced-motion settings disable autoplay; manual controls remain available.
+  featuredToggle.addEventListener('click', () => {
+    if (reducedMotion.matches) return;
+    featuredPaused = !featuredPaused;
+    featuredLastTick = performance.now();
+    updateFeaturedControls();
+  });
+  reducedMotion.addEventListener('change', () => {
+    featuredLastTick = performance.now();
+    updateFeaturedControls();
+  });
+  // Maintain real elapsed viewing time, without skipping artworks when tabs/windows are hidden.
+  // Hover and keyboard focus pause timing without resetting the visitor's progress.
   window.setInterval(() => {
-    if (featuredOrder.length < 2 || featuredSection.hidden ||
-        window.OIBUNG_CURRENT_VIEW !== 'games' || document.hidden ||
-        detailDialog.open || guideDialog.open ||
-        (window.matchMedia('(hover: hover)').matches && featuredSection.matches(':hover')) ||
-        featuredSection.matches(':focus-within') ||
-        Date.now() - lastFeaturedInteraction < featuredIntervalMs ||
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    moveFeatured(1);
-  }, featuredIntervalMs);
+    const now = performance.now();
+    const delta = Math.max(0, Math.min(250, now - featuredLastTick));
+    featuredLastTick = now;
+    const blocked = featuredOrder.length < 2 || featuredSection.hidden ||
+      window.OIBUNG_CURRENT_VIEW !== 'games' || document.hidden ||
+      detailDialog.open || guideDialog.open ||
+      document.querySelector('#review-dialog')?.open ||
+      document.querySelector('#update-dialog')?.open ||
+      document.querySelector('#report-dialog')?.open ||
+      document.querySelector('#media-lightbox')?.open ||
+      (window.matchMedia('(hover: hover)').matches && featuredSection.matches(':hover')) ||
+      (featuredKeyboardFocus && featuredSection.matches(':focus-within')) ||
+      featuredPaused || reducedMotion.matches;
+    if (blocked) return;
+    featuredElapsed += delta;
+    if (featuredElapsed >= featuredIntervalMs) moveFeatured(1);
+    else featuredProgressBar.style.transform = 'scaleX(' + (featuredElapsed / featuredIntervalMs) + ')';
+  }, 100);
 
   function renderDetail(game) {
     detailDialog.querySelector('.detail-introduction').dataset.introTone = game.introTone ?? 'gallery';
