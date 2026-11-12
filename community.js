@@ -369,6 +369,7 @@ async function loadViewer() {
   displayExistingPhotos([]);
   for (const name of ['nickname', 'stars', 'body']) reviewForm.elements.namedItem(name).value = '';
   reviewForm.elements.namedItem('photos').value = '';
+  reviewForm.dispatchEvent(new Event('oibung-review-photo-reset'));
   $('#review-dialog-title').textContent = '게임 후기 남기기';
   reviewStatus.textContent = '';
   if (!gameId || !client || !getStoredGuest()) return;
@@ -385,6 +386,7 @@ async function loadViewer() {
       }
       displayExistingPhotos(viewer.review.image_paths || []);
     }
+    reviewForm.dispatchEvent(new Event('oibung-review-loaded'));
   } catch {
     if (revision === viewerRevision && reviewDialog.open) {
       reviewViewerFailed = true;
