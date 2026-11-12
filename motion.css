@@ -1,0 +1,273 @@
+/*
+ * Oibung Gallery — motion language.
+ * Transform/opacity only for continuous movement; no per-frame layout or shadows.
+ * Motion is enabled only once motion.js has attached observers.
+ */
+html.motion-active{
+  --motion-ease:cubic-bezier(.22,1,.36,1);
+  --motion-amber:#e8d1a0;
+}
+/* Ambient stage lights. A few large composited layers, never one particle per pixel. */
+.motion-active .library,.motion-active .review-board{position:relative;isolation:isolate}
+.motion-active .library>.container,.motion-active .review-board>.container{position:relative;z-index:1}
+.motion-ambient-layer{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none;contain:paint}
+.motion-orb{
+  position:absolute;width:clamp(220px,35vw,580px);aspect-ratio:1;
+  border-radius:50%;opacity:.34;
+  background:radial-gradient(circle,#d6ba8460 0%,#b4a16c1b 38%,transparent 70%);
+  transform:translate3d(0,0,0);
+  animation:motion-orb-drift 23s ease-in-out infinite alternate;
+  animation-play-state:paused;
+}
+.motion-onstage>.motion-ambient-layer .motion-orb{animation-play-state:running}
+.motion-orb:nth-child(1){top:5%;left:-16%;animation-duration:27s}
+.motion-orb:nth-child(2){top:39%;right:-17%;animation-delay:-9s;animation-duration:33s;opacity:.23}
+.motion-orb:nth-child(3){bottom:8%;left:12%;animation-delay:-15s;animation-duration:38s;opacity:.18}
+@keyframes motion-orb-drift{
+  0%{transform:translate3d(-24px,-17px,0) scale(.92);opacity:.16}
+  50%{opacity:.30}
+  100%{transform:translate3d(43px,51px,0) scale(1.07);opacity:.26}
+}
+/* Card lighting extends beyond the frame: do not clip it at the card edge. */
+.motion-active .game-grid{overflow:visible}
+.motion-active .game-card{
+  overflow:visible;
+  isolation:isolate;
+  --card-lift:0px;
+  --card-tilt-x:0deg;
+  --card-tilt-y:0deg;
+  --reveal-y:0px;
+  transform:perspective(1200px) translate3d(0,calc(var(--card-lift) + var(--reveal-y)),0)
+    rotateX(var(--card-tilt-x)) rotateY(var(--card-tilt-y));
+  transition:transform .33s var(--motion-ease),opacity .64s ease,
+    border-color .26s ease,box-shadow .28s ease;
+  backface-visibility:hidden;
+}
+.motion-active .game-card::after{
+  content:"";position:absolute;inset:-42px -34px -49px;z-index:-1;pointer-events:none;
+  border-radius:38%;
+  background:radial-gradient(ellipse at 50% 50%,#f1d29f40 0%,#d1b77d18 35%,transparent 72%);
+  opacity:.48;
+  transform:translate3d(0,0,0) scale(.94);
+  transition:opacity .6s ease,transform .6s ease;
+  animation:motion-gallery-halo 5.8s ease-in-out infinite alternate;
+  animation-play-state:paused;
+}
+.motion-active .game-card.motion-onstage::after{animation-play-state:running}
+.motion-active .game-card:hover,
+.motion-active .game-card:focus-within{
+  --card-lift:-5px;
+  box-shadow:0 18px 40px #04090656;
+}
+.motion-active .game-card:hover::after,
+.motion-active .game-card:focus-within::after{opacity:.92;transform:translate3d(0,-2px,0) scale(1.11)}
+.motion-active .game-card:nth-child(3n+2)::after{animation-delay:-1.7s}
+.motion-active .game-card:nth-child(3n+3)::after{animation-delay:-3.2s}
+@keyframes motion-gallery-halo{
+  from{opacity:.24;transform:translate3d(-7px,5px,0) scale(.91)}
+  to{opacity:.55;transform:translate3d(7px,-5px,0) scale(1.07)}
+}
+.motion-card-spotlight{
+  position:absolute;z-index:2;pointer-events:none;
+  width:225px;height:225px;left:0;top:0;border-radius:50%;
+  background:radial-gradient(circle,#ffe5ae30 0%,#ffe1a60e 39%,transparent 69%);
+  opacity:0;
+  transform:translate3d(-400px,-400px,0);
+  transition:opacity .32s ease;
+}
+.motion-active .game-card:hover .motion-card-spotlight{opacity:1}
+.motion-active .game-cover{overflow:hidden;transform:translateZ(0)}
+.motion-active .game-cover .game-thumbnail,
+.motion-active .game-cover .cover-art{
+  transition:transform 1.05s var(--motion-ease),filter .65s ease;
+  transform:translateZ(0) scale(1.005);
+}
+.motion-active .game-card:hover .game-thumbnail,
+.motion-active .game-card:hover .cover-art,
+.motion-active .game-card:focus-within .game-thumbnail,
+.motion-active .game-card:focus-within .cover-art{
+  transform:translateZ(0) scale(1.075);
+}
+/* A thin moving highlight across the image, only on interaction. */
+.motion-active .game-cover::before{
+  content:"";position:absolute;z-index:7;inset:-30% auto -30% 0;width:34%;
+  pointer-events:none;
+  background:linear-gradient(90deg,transparent,#fff4dc16 43%,#fff4dc39 50%,transparent);
+  transform:translate3d(-180%,0,0) skewX(-14deg);
+}
+.motion-active .game-card:hover .game-cover::before,
+.motion-active .game-card:focus-within .game-cover::before{
+  animation:motion-frame-shine 1.35s var(--motion-ease) both;
+}
+@keyframes motion-frame-shine{
+  from{transform:translate3d(-180%,0,0) skewX(-14deg)}
+  to{transform:translate3d(450%,0,0) skewX(-14deg)}
+}
+.motion-active .game-card-title-row h3,
+.motion-active .review-post-game{
+  transition:color .24s ease,transform .3s var(--motion-ease);
+}
+.motion-active .game-card:hover .game-card-title-row h3{color:#fff5e0}
+.motion-active .game-card-footer svg,
+.motion-active .button-primary svg,
+.motion-active .button-outline svg{
+  transition:transform .32s var(--motion-ease);
+}
+.motion-active .game-card-footer a:hover svg,
+.motion-active .button-primary:hover svg,
+.motion-active .button-outline:hover svg{transform:translate3d(3px,-2px,0)}
+/* Reveal-on-scroll animation stays static until visible, then plays once. */
+.motion-active .motion-reveal:not(.motion-visible){
+  opacity:0;
+  --reveal-y:22px;
+}
+.motion-active .game-card.motion-reveal:not(.motion-visible){
+  --reveal-y:22px;
+}
+.motion-active .motion-reveal.motion-visible{
+  opacity:1;
+  --reveal-y:0px;
+}
+.motion-active :is(.review-post,.review-sidebar,.section-heading-row,.activity-item,.gallery-screenshot).motion-reveal{
+  transform:translate3d(0,var(--reveal-y,0px),0);
+  transition:opacity .65s ease,transform .7s var(--motion-ease);
+}
+.motion-active .review-post.motion-onstage{
+  transition:transform .65s var(--motion-ease),opacity .65s ease,border-color .3s ease;
+}
+.motion-active .review-post:hover{border-color:#cfb98882}
+.motion-active .gallery-screenshot img,
+.motion-active .review-post-photos img{transition:transform .55s var(--motion-ease),filter .4s ease}
+.motion-active .gallery-screenshot a:hover img,
+.motion-active .review-post-photos a:hover img{transform:scale(1.045);filter:brightness(1.09)}
+/* Hero composition: slow light, cinematic zoom and confident stagger. */
+.motion-active .featured-exhibit::before{
+  animation:motion-featured-light 15s ease-in-out infinite alternate;
+  animation-play-state:paused;
+}
+.motion-active .featured-exhibit.motion-onstage::before{animation-play-state:running}
+@keyframes motion-featured-light{
+  from{transform:translate3d(-35px,-12px,0) scale(.95);opacity:.55}
+  to{transform:translate3d(40px,8px,0) scale(1.07);opacity:1}
+}
+.motion-active .featured-cover{transform:translateZ(0);backface-visibility:hidden}
+.motion-active .featured-cover .game-thumbnail,
+.motion-active .featured-cover .cover-art{
+  animation:motion-featured-zoom 6.5s linear both;
+  animation-play-state:paused;
+  will-change:transform;
+}
+.motion-active .featured-exhibit.motion-onstage:not(.is-paused) .featured-cover .game-thumbnail,
+.motion-active .featured-exhibit.motion-onstage:not(.is-paused) .featured-cover .cover-art{
+  animation-play-state:running;
+}
+@keyframes motion-featured-zoom{
+  from{transform:translate3d(0,0,0) scale(1)}
+  to{transform:translate3d(0,0,0) scale(1.085)}
+}
+.motion-active .featured-content h2{animation:motion-title-arrive .65s var(--motion-ease) both}
+.motion-active .featured-content>p{animation:motion-title-arrive .75s var(--motion-ease) .08s both}
+.motion-active .featured-content .featured-meta{animation:motion-title-arrive .75s var(--motion-ease) .14s both}
+@keyframes motion-title-arrive{
+  from{opacity:0;transform:translate3d(0,10px,0)}
+  to{opacity:1;transform:translate3d(0,0,0)}
+}
+/* Navigation, controls, surface feedback. */
+.motion-active .page-tab{position:relative;border-bottom-color:transparent!important}
+.motion-active .page-tab::after{
+  content:"";position:absolute;left:6px;right:6px;bottom:0;height:2px;
+  background:var(--gallery-gold);
+  transform:scaleX(0);transform-origin:center;
+  transition:transform .38s var(--motion-ease);
+}
+.motion-active .page-tab.is-active::after,
+.motion-active .page-tab:hover::after{transform:scaleX(1)}
+.motion-active .filter-chip,
+.motion-active .featured-nav-button,
+.motion-active .featured-play-toggle{
+  transition:transform .22s var(--motion-ease),background-color .22s ease,border-color .22s ease,color .22s ease;
+}
+.motion-active .filter-chip:hover,
+.motion-active .featured-nav-button:hover,
+.motion-active .featured-play-toggle:hover{transform:translate3d(0,-2px,0)}
+.motion-active .filter-chip:active,
+.motion-active .featured-nav-button:active,
+.motion-active .featured-play-toggle:active{transform:scale(.96)}
+.motion-active .brand-mark{transition:transform .55s var(--motion-ease),box-shadow .5s ease}
+.motion-active .brand:hover .brand-mark{transform:translate3d(0,-2px,0);box-shadow:0 0 22px #e9c78b52}
+.motion-active .search-field:focus-within{box-shadow:0 0 0 3px #dec38e15;transition:box-shadow .28s ease}
+.motion-active .button-primary,.motion-active .button-outline,
+.motion-active .details-link{position:relative;overflow:hidden;isolation:isolate}
+.motion-ripple{
+  position:absolute;pointer-events:none;z-index:0;border-radius:50%;
+  background:#fff9e864;transform:scale(0);opacity:.9;
+  animation:motion-ripple-expand .65s ease-out forwards;
+}
+@keyframes motion-ripple-expand{to{transform:scale(3.8);opacity:0}}
+/* Dialogs should materialize gently, never slide across the screen. */
+.motion-active dialog[open]>.dialog-inner,
+.motion-active dialog[open]>.guide-inner,
+.motion-active dialog[open]>.media-lightbox-frame{
+  animation:motion-dialog-in .42s var(--motion-ease) both;
+}
+.motion-active dialog[open]::backdrop{
+  animation:motion-backdrop-in .35s ease-out both;
+}
+@keyframes motion-dialog-in{
+  from{opacity:.1;transform:translate3d(0,16px,0) scale(.985)}
+  to{opacity:1;transform:translate3d(0,0,0) scale(1)}
+}
+@keyframes motion-backdrop-in{from{opacity:0}to{opacity:1}}
+.motion-active .toast.is-visible{animation:motion-toast-in .36s var(--motion-ease) both}
+@keyframes motion-toast-in{
+  from{opacity:0;transform:translate3d(-50%,12px,0)}
+  to{opacity:1;transform:translate3d(-50%,0,0)}
+}
+.motion-active .review-post-photos a{overflow:hidden}
+.motion-active .review-preview-item{animation:motion-photo-in .32s var(--motion-ease) both}
+@keyframes motion-photo-in{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+/* Footer control keeps animation tuning discoverable but outside the artworks. */
+.motion-control{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:6px 0;border:0;background:none;color:#c1b99e;
+  font:500 11px/1.5 var(--body);cursor:pointer;
+  transition:color .2s ease
+}
+.motion-control:hover{color:#f0d3a3}
+.motion-control svg{width:14px;height:14px}
+.motion-control:disabled{opacity:.6;cursor:not-allowed}
+/* Hide/pause continuously moving layers while tab is invisible or effect preference is off. */
+.motion-suspended .motion-orb,
+.motion-suspended .game-card::after,
+.motion-suspended .featured-exhibit::before,
+.motion-suspended .featured-cover .game-thumbnail,
+.motion-suspended .featured-cover .cover-art{animation-play-state:paused!important}
+@media(hover:none),(pointer:coarse){
+  .motion-active .game-card{--card-tilt-x:0deg!important;--card-tilt-y:0deg!important}
+  .motion-card-spotlight{display:none}
+  .motion-active .game-card:hover .game-cover::before{animation:none}
+}
+@media(max-width:760px){
+  .motion-orb{width:270px;opacity:.16}
+  .motion-active .game-card::after{inset:-24px -19px -26px;opacity:.35}
+  .motion-active .game-card:hover,
+  .motion-active .game-card:focus-within{--card-lift:-2px}
+  .motion-active .featured-cover .game-thumbnail,
+  .motion-active .featured-cover .cover-art{animation-duration:6.5s}
+}
+@media(prefers-reduced-motion:reduce){
+  .motion-orb{animation:none!important}
+  .motion-active .game-card::after,
+  .motion-active .featured-cover .game-thumbnail,
+  .motion-active .featured-cover .cover-art,
+  .motion-active .featured-exhibit::before{animation:none!important}
+  .motion-active .motion-reveal{opacity:1!important;--reveal-y:0px!important}
+}
+html.motion-off *,html.motion-off *::before,html.motion-off *::after{
+  animation-duration:.001ms!important;
+  animation-iteration-count:1!important;
+  transition-duration:.001ms!important;
+  scroll-behavior:auto!important;
+}
+html.motion-off .motion-reveal{opacity:1!important;--reveal-y:0px!important}
+html.motion-off .motion-orb{display:none}
