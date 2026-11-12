@@ -44,6 +44,7 @@
       clearPointer();
       document.querySelectorAll('.motion-reveal').forEach(el => el.classList.add('motion-visible'));
     }
+    window.dispatchEvent(new Event('oibung-motion-preference'));
   }
   function visibilityChange() {
     root.classList.toggle('motion-suspended', document.hidden);
