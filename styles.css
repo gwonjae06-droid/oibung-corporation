@@ -387,3 +387,12 @@ body { background: radial-gradient(ellipse at 50% 8%, #2b392d 0, transparent 45r
 .editor-optional summary{cursor:pointer;color:#e0c99a;font:600 13px var(--body);padding:7px 0}
 .editor-optional-fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:12px 0 3px}
 @media(max-width:540px){.editor-optional-fields{grid-template-columns:1fr}}
+
+
+/* On narrow screens, keep status filters on one quiet, swipeable line. */
+@media (max-width:760px) {
+  .library-toolbar{gap:12px}
+  .filter-tabs{flex:1 1 100%;display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;-webkit-overflow-scrolling:touch;white-space:nowrap;padding-bottom:5px}
+  .filter-tabs .filter-chip{flex:none;white-space:nowrap}
+  .library-controls{flex:1 1 100%}
+}
