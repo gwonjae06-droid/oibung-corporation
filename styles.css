@@ -73,3 +73,76 @@
 
 /* Finished projects: visibly distinct from actively operated games. */
 .game-meta .game-status--finished{color:#ced0dc;border-color:#565966;background:#252630}
+
+
+/* Main collection / reviews navigation */
+.page-switcher{display:flex;gap:1.15rem;padding-top:1.6rem;border-bottom:1px solid #38383e}
+.page-tab{appearance:none;border:0;border-bottom:3px solid transparent;background:transparent;color:#999aa4;padding:.85rem 1.1rem 1rem;font-size:clamp(1rem,1.5vw,1.15rem);font-weight:800;transition:color .18s,border-color .18s}
+.page-tab:hover{color:#fff}
+.page-tab.is-active{color:var(--lime);border-bottom-color:var(--lime)}
+.page-tab:focus-visible{outline:2px solid var(--lime);outline-offset:-2px}
+
+/* Shared review board: legible, photo-first community cards */
+.review-board{padding-block:clamp(2rem,5vw,4.5rem) 5rem}
+.review-board .section-heading-row{margin:0 0 2rem;align-items:center}
+.review-board h1{font-size:clamp(2.2rem,5vw,4.6rem);letter-spacing:-.075em;line-height:1.1;margin:.45rem 0}
+.review-board h1 span{color:var(--lime)}
+.review-board .section-heading-row p{max-width:670px}
+.board-eyebrow{color:var(--lime);font:700 .67rem var(--display);letter-spacing:.15em}
+.review-board-layout{display:grid;grid-template-columns:minmax(205px,280px) minmax(0,1fr);gap:2rem;align-items:start}
+.review-sidebar{border:1px solid #383940;background:#17171b;padding:1.45rem}
+.review-sidebar h2{font-size:1.15rem;margin:0 0 1.2rem}
+.review-filter-label{display:block;margin-bottom:.5rem;font-size:.81rem;font-weight:700;color:#bec0c6}
+#reviews-game-filter{display:block;width:100%;min-width:0;padding:.8rem .75rem;border:1px solid #58585e;border-radius:.3rem;background:#24252c;color:#f7f6ef;font:inherit}
+.review-stats{border-top:1px solid #3c3c43;padding-top:1rem;margin:1.35rem 0 .8rem;font-weight:800;color:var(--lime)}
+.review-sidebar-note{font-size:.8rem;line-height:1.8;color:#a4a5ad;margin:0}
+.review-feed-column{min-width:0}
+.review-feed-heading{display:flex;align-items:center;justify-content:space-between;gap:1rem;border-bottom:1px solid #44454b;padding:0 0 1.15rem}
+.review-feed-heading h2{font-size:1.4rem;margin:0}
+.review-feed-heading h2 span{font-size:.75rem;color:var(--lime);margin-left:.55rem}
+.review-feed-heading>span{font-size:.78rem;color:#a6a6ac}
+.reviews-feed{display:grid;gap:1.15rem;padding-top:1.25rem}
+.review-post{background:#191a20;border:1px solid #393a42;padding:clamp(1rem,2.5vw,1.55rem);min-width:0}
+.review-post-top,.review-post-author{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.review-post-top{margin-bottom:1.15rem}
+.review-post-game{border:1px solid #484e38;background:#25291b;color:var(--lime);font-size:.8rem;font-weight:800;padding:.42rem .67rem}
+.review-post-game:hover{border-color:var(--lime)}
+.review-post time{font-size:.78rem;color:#8f929a}
+.review-post-author strong{font-size:1rem;overflow-wrap:anywhere}
+.review-post-stars{color:#eddf71;letter-spacing:.05em;white-space:nowrap;font-size:1.18rem}
+.review-post-body{color:#e3e2e6;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.94rem;margin:1.05rem 0 .3rem}
+.review-post-photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.6rem;margin-top:1.15rem}
+.review-post-photos a{min-width:0;overflow:hidden;display:block;background:#292a30;aspect-ratio:4 / 3}
+.review-post-photos img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s}
+.review-post-photos a:hover img{transform:scale(1.035)}
+.review-post-photos a:only-child{grid-column:span 2;max-width:460px}
+.review-feed-empty{padding:2.2rem 1rem;border:1px dashed #454650;text-align:center;color:#b5b5be;line-height:1.7;margin:0}
+.review-more{margin-top:1.35rem}
+#reviews-load-status{color:var(--lime);font-size:.84rem}
+.detail-review-teaser{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.detail-review-teaser h3{margin:0 0 .45rem}
+.detail-review-teaser p{color:#aeb0b9;line-height:1.65;margin:0}
+.detail-review-teaser button{flex:none}
+.review-editor-dialog{width:min(calc(100% - 24px),680px)}
+.review-editor-dialog .guide-inner{width:100%;max-height:90dvh;overflow-y:auto}
+.review-editor-dialog h2{margin:.65rem 0}
+.review-editor-intro{color:#b5b6bc;font-size:.91rem;line-height:1.6}
+.review-form-pair{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.review-existing{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.7rem}
+.review-old-photo{display:grid;gap:.3rem;font-size:.8rem;color:#c7c7cd}
+.review-old-photo img{width:100%;aspect-ratio:4 / 3;object-fit:cover;border-radius:.35rem}
+.community-form .review-old-photo input{width:auto;justify-self:start}
+.review-editor-note{margin:0;color:#a3a5ae;line-height:1.65;font-size:.79rem}
+#review-status{color:var(--lime);margin:.2rem 0}
+@media(max-width:760px){
+ .review-board-layout{grid-template-columns:1fr;gap:1.2rem}
+ .review-sidebar{padding:1.1rem}
+ .review-board .section-heading-row{flex-direction:column;align-items:start;gap:1.15rem}
+ .review-form-pair{grid-template-columns:1fr}
+ .review-post-photos{gap:.4rem}
+ .page-switcher{padding-top:.65rem}
+}
+@media(max-width:420px){
+ .page-tab{padding:.9rem .7rem}
+ .review-post-photos a:only-child{grid-column:span 3}
+}
