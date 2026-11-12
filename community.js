@@ -5,10 +5,13 @@ const accountStatus = $('#account-status');
 const detailStatus = $('#detail-status');
 const imageStatus = $('#image-status');
 const reviewStatus = $('#review-status');
+const reviewDialog = $('#review-dialog');
+const reviewGameFilter = $('#reviews-game-filter');
+const reviewFeed = $('#reviews-feed');
+const reviewExisting = $('#review-existing');
 const editStatus = $('#edit-status');
 const editButton = $('#edit-game');
 const imagePanel = $('#image-panel');
-const reviewPanel = $('#review-panel');
 const gameForm = $('#add-game-form');
 const thumbnailInput = gameForm.elements.namedItem('thumbnail');
 const removeThumbnail = gameForm.elements.namedItem('removeThumbnail');
@@ -26,6 +29,7 @@ let viewerRevision = 0;
 let catalogRevision = 0;
 let imageLimit = pageSize;
 let reviewLimit = pageSize;
+let reviewsRevision = 0;
 
 function unwrap(result) {
   if (result.error) throw result.error;
@@ -76,11 +80,11 @@ async function loadGames() {
   }
   if (revision !== catalogRevision) return;
   window.OIBUNG_CATALOG.setSharedGames(games.map(asCatalogGame));
+  syncReviewGames();
 }
 
 function showParticipation() {
   imagePanel.hidden = !client;
-  reviewPanel.hidden = !client;
 }
 
 function drawImages(rows) {
@@ -102,25 +106,113 @@ function drawImages(rows) {
   $('#more-images').hidden = rows.length <= imageLimit;
 }
 
-function drawReviews(rows, summary) {
-  $('#review-summary').textContent = summary.total
-    ? '★ ' + Number(summary.average).toFixed(1) + ' / 5 · 평가 ' + summary.total + '개'
-    : '아직 등록된 평가가 없어.';
-  const reviews = rows.slice(0, reviewLimit).map(row => {
-    const item = document.createElement('article');
-    item.className = 'community-review';
-    const author = document.createElement('strong');
-    author.textContent = row.nickname + ' · ' + '★'.repeat(row.stars) + '☆'.repeat(5 - row.stars);
-    item.append(author);
-    if (row.body) {
-      const comment = document.createElement('p');
-      comment.textContent = row.body;
-      item.append(comment);
+function syncReviewGames() {
+  const games = window.OIBUNG_CATALOG.listGames().filter(game => game?.id && game?.title);
+  const selectors = [reviewGameFilter, reviewForm.elements.namedItem('gameId')];
+  for (const select of selectors) {
+    const old = select.value;
+    const initial = select.options[0]?.cloneNode(true);
+    select.replaceChildren(initial);
+    for (const game of games) {
+      const option = document.createElement('option');
+      option.value = game.id;
+      option.textContent = game.title;
+      select.append(option);
     }
-    return item;
-  });
-  $('#community-reviews').replaceChildren(...reviews);
-  $('#more-reviews').hidden = rows.length <= reviewLimit;
+    if ([...select.options].some(option => option.value === old)) select.value = old;
+  }
+}
+
+function photoUrl(path) {
+  return client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+}
+
+function reviewCard(row) {
+  const item = document.createElement('article');
+  item.className = 'review-post';
+  const header = document.createElement('div');
+  header.className = 'review-post-top';
+  const game = document.createElement('button');
+  game.type = 'button';
+  game.className = 'review-post-game';
+  game.textContent = window.OIBUNG_CATALOG.getGame(row.game_id)?.title || '게임 정보 보기';
+  game.addEventListener('click', () => window.OIBUNG_CATALOG.openDetail(row.game_id));
+  const date = document.createElement('time');
+  date.dateTime = row.created_at;
+  date.textContent = new Date(row.created_at).toLocaleDateString('ko-KR');
+  header.append(game, date);
+  const author = document.createElement('div');
+  author.className = 'review-post-author';
+  const name = document.createElement('strong');
+  name.textContent = row.nickname;
+  const stars = document.createElement('span');
+  stars.className = 'review-post-stars';
+  stars.setAttribute('aria-label', '별점 ' + row.stars + '점');
+  stars.textContent = '★'.repeat(row.stars) + '☆'.repeat(5 - row.stars);
+  author.append(name, stars);
+  item.append(header, author);
+  if (row.body) {
+    const body = document.createElement('p');
+    body.className = 'review-post-body';
+    body.textContent = row.body;
+    item.append(body);
+  }
+  if (Array.isArray(row.image_paths) && row.image_paths.length) {
+    const photos = document.createElement('div');
+    photos.className = 'review-post-photos';
+    row.image_paths.forEach((path, i) => {
+      const link = document.createElement('a');
+      link.href = photoUrl(path);
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      const image = document.createElement('img');
+      image.src = link.href;
+      image.loading = 'lazy';
+      image.alt = '후기 첨부 사진 ' + (i + 1);
+      link.append(image);
+      photos.append(link);
+    });
+    item.append(photos);
+  }
+  return item;
+}
+
+async function loadReviewFeed() {
+  if (!client) {
+    reviewFeed.textContent = '공유 서버에 연결한 후 후기를 볼 수 있어.';
+    return;
+  }
+  const revision = ++reviewsRevision;
+  const gameId = reviewGameFilter.value;
+  $('#reviews-load-status').textContent = '';
+  try {
+    let query = client.from('oc_reviews')
+      .select('game_id,nickname,stars,body,created_at,image_paths', { count: 'exact' })
+      .order('created_at', { ascending: false }).order('game_id')
+      .range(0, reviewLimit - 1);
+    if (gameId) query = query.eq('game_id', gameId);
+    const result = await query;
+    const rows = unwrap(result);
+    if (revision !== reviewsRevision) return;
+    reviewFeed.replaceChildren(...rows.map(reviewCard));
+    if (!rows.length) {
+      const empty = document.createElement('p');
+      empty.className = 'review-feed-empty';
+      empty.textContent = '아직 후기가 없어. 첫 번째 후기를 남겨 봐!';
+      reviewFeed.append(empty);
+    }
+    const total = result.count || 0;
+    $('#reviews-count').textContent = String(total);
+    $('#reviews-stats').textContent = gameId
+      ? (window.OIBUNG_CATALOG.getGame(gameId)?.title || '선택한 게임') + ' · ' + total + '개 후기'
+      : '전체 ' + total + '개 후기';
+    $('#reviews-more').hidden = rows.length >= total;
+  } catch {
+    if (revision === reviewsRevision) {
+      reviewFeed.textContent = '후기를 불러오지 못했어.';
+      $('#reviews-load-status').textContent = '연결을 확인하고 다시 시도해 줘.';
+    }
+  }
 }
 
 async function loadDetails() {
@@ -128,52 +220,50 @@ async function loadDetails() {
   if (!gameId || !client) return;
   const revision = ++detailRevision;
   try {
-    const [images, reviews, summary] = await Promise.all([
-      client.from('oc_images').select('path').eq('game_id', gameId)
-        .order('created_at', { ascending: false }).order('path').range(0, imageLimit),
-      client.from('oc_reviews').select('nickname,stars,body').eq('game_id', gameId)
-        .order('created_at', { ascending: false }).order('author_id').range(0, reviewLimit),
-      client.rpc('oc_review_summary', { game: gameId }).single()
-    ]);
+    const images = await client.from('oc_images').select('path').eq('game_id', gameId)
+      .order('created_at', { ascending: false }).order('path').range(0, imageLimit);
     if (gameId !== activeGame() || revision !== detailRevision) return;
     drawImages(unwrap(images));
-    drawReviews(unwrap(reviews), unwrap(summary));
   } catch {
     if (gameId === activeGame() && revision === detailRevision) {
-      detailStatus.textContent = '스크린샷과 평가를 불러오지 못했어.';
+      detailStatus.textContent = '스크린샷을 불러오지 못했어.';
     }
   }
 }
 
 detail.addEventListener('game-opened', () => {
   imageLimit = pageSize;
-  reviewLimit = pageSize;
   imageForm.reset();
-  reviewForm.reset();
   imagePanel.open = false;
-  reviewPanel.open = false;
-  reviewPanel.querySelector('summary').textContent = '평가 남기기';
   editStatus.textContent = '';
   imageStatus.textContent = '';
-  reviewStatus.textContent = '';
   $('#community-gallery').replaceChildren();
-  $('#community-reviews').replaceChildren();
-  $('#review-summary').textContent = '';
   $('#more-images').hidden = true;
-  $('#more-reviews').hidden = true;
-  detailStatus.textContent = client ? '' : '공유 서버 연결 후 스크린샷과 평가를 이용할 수 있어.';
+  detailStatus.textContent = client ? '' : '공유 서버 연결 후 스크린샷을 이용할 수 있어.';
   showParticipation();
   void loadDetails();
-  void loadViewer();
 });
 
 $('#more-images').addEventListener('click', () => {
   imageLimit += pageSize;
   void loadDetails();
 });
-$('#more-reviews').addEventListener('click', () => {
+$('#reviews-more').addEventListener('click', () => {
   reviewLimit += pageSize;
-  void loadDetails();
+  void loadReviewFeed();
+});
+reviewGameFilter.addEventListener('change', () => {
+  reviewLimit = pageSize;
+  void loadReviewFeed();
+});
+document.addEventListener('oibung-page-changed', event => {
+  if (event.detail.page === 'reviews') void loadReviewFeed();
+});
+document.addEventListener('oibung-review-game', event => {
+  syncReviewGames();
+  reviewGameFilter.value = event.detail.gameId;
+  reviewLimit = pageSize;
+  void loadReviewFeed();
 });
 
 function getStoredGuest() {
@@ -187,27 +277,78 @@ function getStoredGuest() {
   return guestToken;
 }
 
+function displayExistingPhotos(paths) {
+  reviewExisting.replaceChildren();
+  for (const path of paths) {
+    const label = document.createElement('label');
+    label.className = 'review-old-photo';
+    const image = document.createElement('img');
+    image.src = photoUrl(path);
+    image.alt = '기존 후기 사진';
+    const keep = document.createElement('input');
+    keep.type = 'checkbox';
+    keep.name = 'keepPhoto';
+    keep.value = path;
+    keep.checked = true;
+    const hint = document.createElement('span');
+    hint.textContent = '이 사진 유지';
+    label.append(image, keep, hint);
+    reviewExisting.append(label);
+  }
+  reviewExisting.hidden = !paths.length;
+}
+
 async function loadViewer() {
-  const gameId = activeGame();
+  const gameId = textField(reviewForm, 'gameId');
   const revision = ++viewerRevision;
+  displayExistingPhotos([]);
+  for (const name of ['nickname', 'stars', 'body']) reviewForm.elements.namedItem(name).value = '';
+  reviewForm.elements.namedItem('photos').value = '';
+  $('#review-dialog-title').textContent = '게임 후기 남기기';
+  reviewStatus.textContent = '';
   if (!gameId || !client || !getStoredGuest()) return;
   try {
     const viewer = await guestWrite({ action: 'viewer' }, gameId);
-    if (revision !== viewerRevision || activeGame() !== gameId) return;
+    if (revision !== viewerRevision || !reviewDialog.open || textField(reviewForm, 'gameId') !== gameId) return;
     if (viewer.review) {
-      reviewPanel.querySelector('summary').textContent = '내 평가 수정';
-      if (!['nickname', 'stars', 'body'].some(name => textField(reviewForm, name))) {
-        for (const name of ['nickname', 'stars', 'body']) {
-          reviewForm.elements.namedItem(name).value = viewer.review[name];
-        }
+      $('#review-dialog-title').textContent = '내 게임 후기 수정';
+      for (const name of ['nickname', 'stars', 'body']) {
+        reviewForm.elements.namedItem(name).value = viewer.review[name] ?? '';
       }
+      displayExistingPhotos(viewer.review.image_paths || []);
     }
   } catch {
-    if (revision === viewerRevision && activeGame() === gameId) {
-      reviewStatus.textContent = '내 평가를 불러오지 못했어.';
+    if (revision === viewerRevision && reviewDialog.open) {
+      reviewStatus.textContent = '기존 후기를 불러오지 못했어. 다시 열어 줘.';
     }
   }
 }
+
+function openReviewEditor(gameId = '') {
+  if (!client) {
+    $('#reviews-load-status').textContent = '공유 서버에 연결한 후 작성할 수 있어.';
+    return;
+  }
+  syncReviewGames();
+  reviewForm.reset();
+  reviewStatus.textContent = '';
+  displayExistingPhotos([]);
+  const gameSelect = reviewForm.elements.namedItem('gameId');
+  if ([...gameSelect.options].some(option => option.value === gameId)) gameSelect.value = gameId;
+  reviewDialog.showModal();
+  document.body.classList.add('no-scroll');
+  if (gameSelect.value) void loadViewer();
+}
+$('#write-review').addEventListener('click', () => openReviewEditor(reviewGameFilter.value));
+reviewForm.elements.namedItem('gameId').addEventListener('change', () => { void loadViewer(); });
+$('#close-review').addEventListener('click', () => reviewDialog.close());
+reviewDialog.addEventListener('click', event => {
+  if (event.target === reviewDialog) reviewDialog.close();
+});
+reviewDialog.addEventListener('close', () => {
+  ++viewerRevision;
+  document.body.classList.toggle('no-scroll', detail.open || account.open);
+});
 
 function showThumbnailPreview(url) {
   thumbnailPreview.hidden = !url;
@@ -360,20 +501,34 @@ submit(imageForm, imageStatus, async () => {
 });
 
 submit(reviewForm, reviewStatus, async () => {
-  const gameId = activeGame();
-  const displayName = textField(reviewForm, 'nickname');
-  if (!displayName) throw new Error('닉네임을 입력해 줘.');
-  await guestWrite({
-    action: 'review',
-    nickname: displayName,
-    stars: Number(textField(reviewForm, 'stars')),
-    body: textField(reviewForm, 'body')
-  }, gameId);
-  if (gameId === activeGame()) {
-    reviewStatus.textContent = '내 평가를 저장했어.';
-    reviewPanel.querySelector('summary').textContent = '내 평가 수정';
-    await loadDetails();
+  const gameId = textField(reviewForm, 'gameId');
+  const nickname = textField(reviewForm, 'nickname');
+  const photos = [...reviewForm.elements.namedItem('photos').files];
+  const keepPaths = [...reviewExisting.querySelectorAll('input[name="keepPhoto"]:checked')].map(input => input.value);
+  if (!gameId || !nickname) throw new Error('게임과 닉네임을 입력해 줘.');
+  if (photos.length + keepPaths.length > 3 || photos.some(file =>
+    !fileTypes.has(file.type) || !file.size || file.size > 5242880)) {
+    throw new Error('후기 사진은 최대 3장, 한 장당 5MB 이하 JPG·PNG·WebP만 가능해.');
   }
+  const fields = {
+    action: 'review',
+    nickname,
+    stars: Number(textField(reviewForm, 'stars')),
+    body: textField(reviewForm, 'body'),
+    keep_paths: keepPaths
+  };
+  let data = fields;
+  if (photos.length) {
+    data = new FormData();
+    data.set('metadata', JSON.stringify(fields));
+    photos.forEach(file => data.append('photos', file));
+  }
+  await guestWrite(data, gameId);
+  reviewDialog.close();
+  reviewGameFilter.value = gameId;
+  reviewLimit = pageSize;
+  await loadReviewFeed();
+  $('#reviews-load-status').textContent = '후기를 저장했어.';
 });
 
 function refreshCatalog() {
@@ -397,7 +552,9 @@ async function connect() {
   client.channel('oibung-community')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'oc_games' }, refreshCatalog)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'oc_images' }, refreshDetails)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'oc_reviews' }, refreshDetails)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'oc_reviews' }, () => {
+      if (window.OIBUNG_CURRENT_VIEW === 'reviews') void loadReviewFeed();
+    })
     .subscribe(status => {
       if (status === 'SUBSCRIBED') {
         refreshCatalog();
@@ -408,10 +565,12 @@ async function connect() {
   accountStatus.textContent = '';
   showParticipation();
   void loadDetails();
-  void loadViewer();
+  syncReviewGames();
+  if (window.OIBUNG_CURRENT_VIEW === 'reviews') void loadReviewFeed();
   window.addEventListener('focus', () => {
     refreshCatalog();
     void loadDetails();
+    if (window.OIBUNG_CURRENT_VIEW === 'reviews') void loadReviewFeed();
   });
   refreshCatalog();
 }
