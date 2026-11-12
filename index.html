@@ -187,6 +187,7 @@
         <summary>수정 기록 보기</summary>
         <div id="game-revision-list"></div>
       </details>
+      <button id="report-game" type="button" class="report-link">작품 정보 신고</button>
     </section>
     <p id="detail-status" role="status"></p>
   </div></div></dialog>
@@ -227,7 +228,13 @@
         </label>
         <div class="review-form-pair">
           <label>닉네임 <input name="nickname" required maxlength="30" placeholder="이름 또는 닉네임"></label>
-          <label>별점 <select name="stars" required><option value="">별점 선택</option><option value="5">★★★★★ (5점)</option><option value="4">★★★★ (4점)</option><option value="3">★★★ (3점)</option><option value="2">★★ (2점)</option><option value="1">★ (1점)</option></select></label>
+          <fieldset class="review-stars"><legend>별점</legend><div class="review-star-choices" aria-label="별점 선택">
+            <label title="5점"><input name="stars" type="radio" value="5" required><span aria-hidden="true">★</span><span class="sr-only">5점</span></label>
+            <label title="4점"><input name="stars" type="radio" value="4"><span aria-hidden="true">★</span><span class="sr-only">4점</span></label>
+            <label title="3점"><input name="stars" type="radio" value="3"><span aria-hidden="true">★</span><span class="sr-only">3점</span></label>
+            <label title="2점"><input name="stars" type="radio" value="2"><span aria-hidden="true">★</span><span class="sr-only">2점</span></label>
+            <label title="1점"><input name="stars" type="radio" value="1"><span aria-hidden="true">★</span><span class="sr-only">1점</span></label>
+          </div></fieldset>
         </div>
         <label>플레이 후기 <textarea name="body" maxlength="2000" rows="5" placeholder="재밌었던 순간, 아쉬운 점, 공략 팁 등 자유롭게 써 봐."></textarea></label>
         <span id="review-character-count" class="editor-counter">0 / 2,000</span>
@@ -258,6 +265,24 @@
         <label>내용 <textarea name="body" maxlength="1000" rows="5" required placeholder="업데이트나 제작 소식을 적어 주세요."></textarea></label>
         <button class="button-primary" type="submit">소식 등록</button>
         <p id="update-status" role="status"></p>
+      </form>
+    </div>
+  </dialog>
+  <dialog class="guide-dialog report-dialog" id="report-dialog" aria-labelledby="report-title">
+    <div class="guide-inner">
+      <button class="dialog-close icon-button" type="button" id="close-report" aria-label="닫기"><svg><use href="#i-close"/></svg></button>
+      <h2 id="report-title">작품 정보 신고</h2>
+      <p class="report-intro">문제가 있는 작품 정보를 알려 주세요. 신고 내역은 공개되지 않습니다.</p>
+      <form id="report-form" class="community-form">
+        <label>신고 사유 <select name="reason" required>
+          <option value="">선택해 주세요</option>
+          <option value="incorrect">잘못된 작품 정보</option>
+          <option value="inappropriate">부적절한 내용</option>
+          <option value="spam">광고 또는 도배</option>
+          <option value="other">기타</option>
+        </select></label>
+        <button class="button-primary" type="submit">신고 접수</button>
+        <p id="report-status" role="status"></p>
       </form>
     </div>
   </dialog>
