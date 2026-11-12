@@ -12,6 +12,11 @@
   const detailDialog = document.querySelector('#game-dialog');
   const guideDialog = document.querySelector('#guide-dialog');
   const sortSelect = document.querySelector('#game-sort');
+  const featuredSection = document.querySelector('#featured-exhibit');
+  const featuredIntervalMs = 6500;
+  let featuredOrder = [];
+  let featuredCurrentId = null;
+  let featuredRenderedId = null;
   const stats = new Map();
   const recentKey = 'oibung-gallery:recent-v1';
   const readRecent = () => { try { const a = JSON.parse(localStorage.getItem(recentKey) || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
@@ -160,22 +165,65 @@
     allCount.textContent = formatCount(games.length);
   }
   function renderFeatured() {
-    const section = document.querySelector('#featured-exhibit');
-    if (!games.length) { section.hidden = true; return; }
-    const choice = [...games].sort((a,b) => {
+    const ranked = [...games].sort((a, b) => {
       const ar = reviewStat(a.id), br = reviewStat(b.id);
       const av = ar.count >= 2 ? ar.average * 2 + Math.log2(ar.count + 1) : 0;
       const bv = br.count >= 2 ? br.average * 2 + Math.log2(br.count + 1) : 0;
       return bv - av || Number(Boolean(b.badge)) - Number(Boolean(a.badge));
-    })[0];
-    section.hidden = false;
+    });
+    featuredOrder = ranked.map(game => game.id);
+    if (!ranked.length) {
+      featuredSection.hidden = true;
+      featuredCurrentId = null;
+      featuredRenderedId = null;
+      return;
+    }
+    const choice = ranked.find(game => game.id === featuredCurrentId) || ranked[0];
+    featuredCurrentId = choice.id;
+    const changed = featuredRenderedId !== null && featuredRenderedId !== choice.id;
+    featuredRenderedId = choice.id;
+    featuredSection.hidden = false;
     document.querySelector('#featured-cover').innerHTML = coverArt(choice);
     document.querySelector('#featured-title').textContent = choice.title;
     document.querySelector('#featured-description').textContent = (choice.description || '').slice(0, 170);
     document.querySelector('#featured-meta').innerHTML = metadata(choice) + reviewBadge(choice.id);
     document.querySelector('#featured-detail').dataset.details = choice.id;
+
+    const multiple = featuredOrder.length > 1;
+    document.querySelector('.featured-navigation').hidden = !multiple;
+    document.querySelector('#featured-prev').disabled = !multiple;
+    document.querySelector('#featured-next').disabled = !multiple;
+    const index = featuredOrder.indexOf(choice.id) + 1;
+    document.querySelector('#featured-position').textContent =
+      String(index).padStart(2, '0') + ' / ' + String(featuredOrder.length).padStart(2, '0');
+
+    if (changed && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      featuredSection.classList.remove('featured-animate');
+      void featuredSection.offsetWidth; // Restart the subtle entrance animation only when the artwork changes.
+      featuredSection.classList.add('featured-animate');
+    }
+  }
+  function moveFeatured(direction) {
+    if (featuredOrder.length < 2) return;
+    const index = featuredOrder.indexOf(featuredCurrentId);
+    featuredCurrentId = featuredOrder[(index + direction + featuredOrder.length) % featuredOrder.length];
+    renderFeatured();
   }
   document.querySelector('#featured-detail').addEventListener('click', event => openDetail(event.currentTarget.dataset.details));
+  document.querySelector('#featured-prev').addEventListener('click', () => moveFeatured(-1));
+  document.querySelector('#featured-next').addEventListener('click', () => moveFeatured(1));
+
+  // Automatically advance while the gallery is visible and nobody is interacting with the exhibit.
+  // Reduced-motion settings disable autoplay; manual controls remain available.
+  window.setInterval(() => {
+    if (featuredOrder.length < 2 || featuredSection.hidden ||
+        window.OIBUNG_CURRENT_VIEW !== 'games' || document.hidden ||
+        detailDialog.open || guideDialog.open ||
+        featuredSection.matches(':hover') || featuredSection.matches(':focus-within') ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    moveFeatured(1);
+  }, featuredIntervalMs);
+
   function renderDetail(game) {
     detailDialog.querySelector('.detail-introduction').dataset.introTone = game.introTone ?? 'gallery';
     const detailCover = document.querySelector('#dialog-cover');
