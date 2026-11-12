@@ -31,6 +31,7 @@ let imageLimit = pageSize;
 const pendingImageDeletes = new Set();
 let reviewLimit = pageSize;
 let reviewsRevision = 0;
+let activityRevision = 0;
 let reviewViewerFailed = false;
 let reviewViewerLoading = false;
 
@@ -63,12 +64,13 @@ function activeGame() {
   return detail.open ? detail.dataset.gameId : '';
 }
 
-function asCatalogGame({ play_url, development_status, thumbnail_path, intro_tone, ...game }) {
+function asCatalogGame({ play_url, development_status, thumbnail_path, intro_tone, created_at, ...game }) {
   return {
     ...game,
     playUrl: play_url,
     developmentStatus: development_status,
     introTone: intro_tone,
+    createdAt: created_at,
     thumbnailUrl: thumbnail_path ? client.storage.from(bucket).getPublicUrl(thumbnail_path).data.publicUrl : null
   };
 }
@@ -77,7 +79,7 @@ async function loadGames() {
   const revision = ++catalogRevision;
   const games = [];
   for (let offset = 0; ; offset += 100) {
-    const page = unwrap(await client.from('oc_games').select('id,title,description,genre,play_url,developer,development_status,thumbnail_path,intro_tone')
+    const page = unwrap(await client.from('oc_games').select('id,title,description,genre,play_url,developer,development_status,thumbnail_path,intro_tone,created_at')
       .order('created_at').order('id').range(offset, offset + 99));
     games.push(...page);
     if (page.length < 100) break;
@@ -87,6 +89,24 @@ async function loadGames() {
   syncReviewGames();
 }
 
+async function loadRatingStats() {
+  if (!client) return;
+  const map = new Map();
+  for (let offset = 0; offset < 5000; offset += 500) {
+    const page = unwrap(await client.from('oc_reviews').select('game_id,stars')
+      .order('game_id').order('author_id').range(offset, offset + 499));
+    for (const row of page) {
+      const entry = map.get(row.game_id) || { count: 0, sum: 0 };
+      entry.count += 1;
+      entry.sum += Number(row.stars) || 0;
+      map.set(row.game_id, entry);
+    }
+    if (page.length < 500) break;
+  }
+  window.OIBUNG_CATALOG.setReviewStats([...map].map(([id, value]) => ({
+    id, count: value.count, average: value.sum / value.count
+  })));
+}
 function showParticipation() {
   imagePanel.hidden = !client;
 }
@@ -284,6 +304,7 @@ detail.addEventListener('game-opened', () => {
   detailStatus.textContent = client ? '' : '공유 서버 연결 후 스크린샷을 이용할 수 있어.';
   showParticipation();
   void loadDetails();
+  void loadGameActivity();
 });
 
 $('#more-images').addEventListener('click', () => {
@@ -587,6 +608,79 @@ submit(reviewForm, reviewStatus, async () => {
   $('#reviews-load-status').textContent = '후기를 저장했어.';
 });
 
+async function loadGameActivity() {
+  const gameId = activeGame();
+  if (!client || !gameId) return;
+  const revision = ++activityRevision;
+  const updatesBox = $('#game-updates');
+  const revisionsBox = $('#game-revision-list');
+  updatesBox.textContent = '소식을 불러오는 중…';
+  revisionsBox.textContent = '';
+  const [updates, logs] = await Promise.all([
+    client.from('oc_game_updates').select('title,body,created_at').eq('game_id', gameId)
+      .order('created_at', { ascending: false }).limit(5),
+    client.from('oc_game_revisions').select('id,snapshot,changed_at').eq('game_id', gameId)
+      .order('id', { ascending: false }).limit(10)
+  ]);
+  if (revision !== activityRevision || gameId !== activeGame()) return;
+  updatesBox.replaceChildren();
+  revisionsBox.replaceChildren();
+  if (updates.error) updatesBox.textContent = '소식을 불러오지 못했어.';
+  else if (!updates.data.length) {
+    const empty = document.createElement('p');
+    empty.className = 'activity-empty';
+    empty.textContent = '아직 등록된 작품 소식이 없어요.';
+    updatesBox.append(empty);
+  } else {
+    for (const post of updates.data) {
+      const item = document.createElement('article'); item.className = 'activity-item';
+      const heading = document.createElement('strong'); heading.textContent = post.title;
+      const time = document.createElement('time'); time.textContent = new Date(post.created_at).toLocaleDateString('ko-KR');
+      const body = document.createElement('p'); body.textContent = post.body;
+      item.append(heading, time, body); updatesBox.append(item);
+    }
+  }
+  if (logs.error) revisionsBox.textContent = '수정 기록을 불러오지 못했어요.';
+  else if (!logs.data.length) revisionsBox.textContent = '아직 수정 기록이 없습니다.';
+  else for (const entry of logs.data) {
+    const row = document.createElement('div'); row.className = 'revision-entry';
+    const title = document.createElement('span');
+    title.textContent = new Date(entry.changed_at).toLocaleString('ko-KR') + ' · ' + (entry.snapshot?.title || '이전 작품 정보');
+    const restore = document.createElement('button');
+    restore.type = 'button'; restore.className = 'text-action'; restore.textContent = '내용 복원';
+    restore.addEventListener('click', () => {
+      const current = window.OIBUNG_CATALOG.getGame(gameId);
+      if (!current) return;
+      openEditor({ ...current, ...entry.snapshot, id: current.id });
+      accountStatus.textContent = '이전 기록을 불러왔습니다. 내용을 확인하고 저장해 주세요. 사진은 현재 상태로 유지됩니다.';
+    });
+    row.append(title, restore); revisionsBox.append(row);
+  }
+}
+
+const updateDialog = $('#update-dialog');
+const updateForm = $('#update-form');
+$('#open-update-editor').addEventListener('click', () => {
+  if (!client || !activeGame()) { detailStatus.textContent = '공유 서버에 연결해 주세요.'; return; }
+  updateForm.reset();
+  updateForm.dataset.gameId = activeGame();
+  $('#update-status').textContent = '';
+  updateDialog.showModal();
+  document.body.classList.add('no-scroll');
+});
+$('#close-update').addEventListener('click', () => updateDialog.close());
+updateDialog.addEventListener('click', event => { if (event.target === updateDialog) updateDialog.close(); });
+updateDialog.addEventListener('close', () => { document.body.classList.toggle('no-scroll', detail.open || account.open || reviewDialog.open); });
+submit(updateForm, $('#update-status'), async () => {
+  const gameId = updateForm.dataset.gameId;
+  await guestWrite({ action: 'update_game', title: textField(updateForm, 'title'), body: textField(updateForm, 'body') }, gameId);
+  updateDialog.close();
+  if (activeGame() === gameId) {
+    await loadGameActivity();
+    detailStatus.textContent = '새 작품 소식을 등록했습니다.';
+  }
+});
+
 function refreshCatalog() {
   void loadGames().catch(() => {
     accountStatus.textContent = '공유 게임 목록에 연결하지 못했어. 잠시 후 새로고침해 줘.';
@@ -610,7 +704,9 @@ async function connect() {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'oc_images' }, refreshDetails)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'oc_reviews' }, () => {
       if (window.OIBUNG_CURRENT_VIEW === 'reviews') void loadReviewFeed();
+      void loadRatingStats().catch(() => {});
     })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'oc_game_updates' }, () => { if (detail.open) void loadGameActivity(); })
     .subscribe(status => {
       if (status === 'SUBSCRIBED') {
         refreshCatalog();
@@ -621,6 +717,7 @@ async function connect() {
   accountStatus.textContent = '';
   showParticipation();
   void loadDetails();
+  void loadRatingStats().catch(() => {});
   syncReviewGames();
   if (window.OIBUNG_CURRENT_VIEW === 'reviews') void loadReviewFeed();
   window.addEventListener('focus', () => {
