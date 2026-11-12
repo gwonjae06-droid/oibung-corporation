@@ -17,6 +17,7 @@
   let featuredOrder = [];
   let featuredCurrentId = null;
   let featuredRenderedId = null;
+  let lastFeaturedInteraction = 0;
   const stats = new Map();
   const recentKey = 'oibung-gallery:recent-v1';
   const readRecent = () => { try { const a = JSON.parse(localStorage.getItem(recentKey) || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
@@ -210,8 +211,14 @@
     renderFeatured();
   }
   document.querySelector('#featured-detail').addEventListener('click', event => openDetail(event.currentTarget.dataset.details));
-  document.querySelector('#featured-prev').addEventListener('click', () => moveFeatured(-1));
-  document.querySelector('#featured-next').addEventListener('click', () => moveFeatured(1));
+  for (const [id, direction] of [['#featured-prev', -1], ['#featured-next', 1]]) {
+    document.querySelector(id).addEventListener('click', event => {
+      lastFeaturedInteraction = Date.now();
+      moveFeatured(direction);
+      // Touch taps should not leave the carousel permanently focused and paused.
+      if (event.detail > 0 && window.matchMedia('(hover: none)').matches) event.currentTarget.blur();
+    });
+  }
 
   // Automatically advance while the gallery is visible and nobody is interacting with the exhibit.
   // Reduced-motion settings disable autoplay; manual controls remain available.
@@ -219,7 +226,9 @@
     if (featuredOrder.length < 2 || featuredSection.hidden ||
         window.OIBUNG_CURRENT_VIEW !== 'games' || document.hidden ||
         detailDialog.open || guideDialog.open ||
-        featuredSection.matches(':hover') || featuredSection.matches(':focus-within') ||
+        (window.matchMedia('(hover: hover)').matches && featuredSection.matches(':hover')) ||
+        featuredSection.matches(':focus-within') ||
+        Date.now() - lastFeaturedInteraction < featuredIntervalMs ||
         window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     moveFeatured(1);
   }, featuredIntervalMs);
