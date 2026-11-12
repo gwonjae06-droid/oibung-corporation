@@ -89,6 +89,11 @@
     counter.textContent = body.value.length.toLocaleString('ko-KR') + ' / 2,000';
   }
   body.addEventListener('input', updateCounter);
+  form.addEventListener('oibung-review-photo-reset', () => {
+    revokeUrls();
+    previews.replaceChildren();
+  });
+  form.addEventListener('oibung-review-loaded', updateCounter);
   photos.addEventListener('change', () => {
     const selection = [...photos.files];
     if (selection.length > 3) {
