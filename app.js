@@ -184,6 +184,10 @@
     document.querySelector('#detail-title').textContent = game.title;
     document.querySelector('#detail-meta').innerHTML = metadata(game);
     document.querySelector('#detail-rating').innerHTML = reviewBadge(game.id);
+    const platforms = { web: '웹', pc: 'PC', android: 'Android', mod: '게임 모드', other: '기타' };
+    const playModes = { single: '싱글 플레이', multi: '멀티 플레이', both: '싱글·멀티' };
+    const extra = [platforms[game.platform], playModes[game.playMode]].filter(Boolean);
+    document.querySelector('#detail-specs').innerHTML = extra.map(text => '<span>' + escapeHTML(text) + '</span>').join('');
     document.querySelector('#detail-summary').textContent = game.description;
     document.querySelector('#detail-tags').innerHTML = (game.tags || []).map(tag => `<span>${escapeHTML(tag)}</span>`).join('');
     const play = document.querySelector('#detail-play');
