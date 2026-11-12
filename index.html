@@ -13,10 +13,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=public-edit-1">
+  <link rel="stylesheet" href="styles.css?v=live-status-1">
   <script src="games.js" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=public-edit-1" defer></script>
+  <script src="app.js?v=live-status-1" defer></script>
   <script type="module" src="community.js?v=public-edit-1"></script>
 </head>
 <body>
@@ -64,8 +64,10 @@
         <div class="library-toolbar">
           <div class="filter-tabs" id="filter-tabs" role="group" aria-label="게임 상태 필터">
             <button class="filter-chip is-active" type="button" data-filter="all" aria-pressed="true">전체 <span id="filter-all-count">04</span></button>
+            <button class="filter-chip" type="button" data-filter="live_service" aria-pressed="false">라이브 서비스</button>
             <button class="filter-chip" type="button" data-filter="in_development" aria-pressed="false">개발 중</button>
             <button class="filter-chip" type="button" data-filter="released" aria-pressed="false">개발 완료</button>
+            <button class="filter-chip" type="button" data-filter="unknown" aria-pressed="false">미정</button>
             <button class="filter-chip" type="button" data-filter="favorite" aria-pressed="false">♥ 찜한 게임</button>
           </div>
           <label class="search-field"><svg aria-hidden="true"><use href="#i-search"/></svg><span class="sr-only">게임 이름 검색</span><input id="game-search" type="search" placeholder="게임 검색..." autocomplete="off"><kbd>/</kbd></label>
@@ -148,7 +150,7 @@
         <label>게임 소개 <textarea name="description" required maxlength="1000" rows="6"></textarea></label>
         <div class="editor-classification">
           <label>개발자 이름 <input name="developer" maxlength="80" placeholder="닉네임 또는 팀 이름"></label>
-          <label>개발 상태 <select name="developmentStatus"><option value="unknown">미정</option><option value="in_development">개발 중</option><option value="released">개발 완료</option></select></label>
+          <label>개발 상태 <select name="developmentStatus"><option value="unknown">미정</option><option value="in_development">개발 중</option><option value="released">개발 완료</option><option value="live_service">라이브 서비스</option></select></label>
         </div>
         <label>장르 <input name="genre" required maxlength="60"></label>
         <label>썸네일 <input name="thumbnail" type="file" accept="image/jpeg,image/png,image/webp"></label>
