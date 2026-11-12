@@ -31,6 +31,7 @@ let imageLimit = pageSize;
 let reviewLimit = pageSize;
 let reviewsRevision = 0;
 let reviewViewerFailed = false;
+let reviewViewerLoading = false;
 
 function unwrap(result) {
   if (result.error) throw result.error;
@@ -301,6 +302,7 @@ function displayExistingPhotos(paths) {
 
 async function loadViewer() {
   reviewViewerFailed = false;
+  reviewViewerLoading = false;
   const gameId = textField(reviewForm, 'gameId');
   const revision = ++viewerRevision;
   displayExistingPhotos([]);
@@ -309,6 +311,7 @@ async function loadViewer() {
   $('#review-dialog-title').textContent = '게임 후기 남기기';
   reviewStatus.textContent = '';
   if (!gameId || !client || !getStoredGuest()) return;
+  reviewViewerLoading = true;
   try {
     const viewer = await guestWrite({ action: 'viewer' }, gameId);
     if (revision !== viewerRevision || !reviewDialog.open || textField(reviewForm, 'gameId') !== gameId) return;
@@ -326,6 +329,8 @@ async function loadViewer() {
       reviewViewerFailed = true;
       reviewStatus.textContent = '기존 후기를 불러오지 못했어. 다시 열어 줘.';
     }
+  } finally {
+    if (revision === viewerRevision) reviewViewerLoading = false;
   }
 }
 
@@ -337,6 +342,7 @@ function openReviewEditor(gameId = '') {
   syncReviewGames();
   reviewForm.reset();
   reviewViewerFailed = false;
+  reviewViewerLoading = false;
   reviewStatus.textContent = '';
   displayExistingPhotos([]);
   const gameSelect = reviewForm.elements.namedItem('gameId');
@@ -507,6 +513,7 @@ submit(imageForm, imageStatus, async () => {
 });
 
 submit(reviewForm, reviewStatus, async () => {
+  if (reviewViewerLoading) throw new Error('기존 후기를 확인하는 중이야. 확인 후 저장해 줘.');
   if (reviewViewerFailed) throw new Error('기존 후기를 불러오지 못했어. 후기를 다시 열어 줘.');
   const gameId = textField(reviewForm, 'gameId');
   const nickname = textField(reviewForm, 'nickname');
