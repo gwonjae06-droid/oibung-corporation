@@ -13,12 +13,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=featured-rotation-1">
+  <link rel="stylesheet" href="styles.css?v=gallery-polish-1">
   <script src="games.js" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=featured-rotation-1" defer></script>
-  <script type="module" src="community.js?v=exhibition-20261112"></script>
-  <script src="exhibition.js?v=exhibition-20261112" defer></script>
+  <script src="app.js?v=gallery-polish-1" defer></script>
+  <script type="module" src="community.js?v=gallery-polish-1"></script>
+  <script src="exhibition.js?v=gallery-polish-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -73,14 +73,19 @@
               <button id="featured-detail" class="button-primary" type="button">작품 감상하기 <svg aria-hidden="true"><use href="#i-right"/></svg></button>
               <div class="featured-navigation" aria-label="대표 전시 작품 넘기기">
                 <span id="featured-position" class="featured-position" aria-live="off"></span>
+                <button id="featured-toggle" class="featured-play-toggle" type="button" aria-label="자동 전환 일시정지" aria-pressed="false" title="자동 전환 일시정지"><span aria-hidden="true">Ⅱ</span></button>
                 <button id="featured-prev" class="featured-nav-button" type="button" aria-label="이전 작품">‹</button>
                 <button id="featured-next" class="featured-nav-button" type="button" aria-label="다음 작품">›</button>
               </div>
             </div>
           </div>
+          <div id="featured-progress" class="featured-progress" role="progressbar" aria-label="다음 작품까지 남은 시간" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-hidden="true">
+            <span id="featured-progress-bar"></span>
+          </div>
         </section>
         <div class="library-toolbar">
-          <div class="filter-tabs" id="filter-tabs" role="group" aria-label="게임 상태 필터">
+          <div class="filter-viewport" id="filter-viewport">
+            <div class="filter-tabs" id="filter-tabs" role="group" aria-label="게임 상태 필터">
             <button class="filter-chip is-active" type="button" data-filter="all" aria-pressed="true">전체 <span id="filter-all-count">04</span></button>
             <button class="filter-chip" type="button" data-filter="live_service" aria-pressed="false">라이브 서비스</button>
             <button class="filter-chip" type="button" data-filter="in_development" aria-pressed="false">개발 중</button>
@@ -89,6 +94,7 @@
             <button class="filter-chip" type="button" data-filter="unknown" aria-pressed="false">미정</button>
             <button class="filter-chip" type="button" data-filter="favorite" aria-pressed="false">찜한 작품</button>
             <button class="filter-chip" type="button" data-filter="recent" aria-pressed="false">최근 감상</button>
+            </div>
           </div>
           <div class="library-controls">
             <label class="library-sort">정렬 <select id="game-sort" aria-label="작품 정렬">
@@ -155,7 +161,6 @@
             <span class="dialog-kicker" id="detail-genre"></span>
             <div class="detail-title-row">
               <h2 id="detail-title"></h2>
-              <button id="edit-game" class="icon-button edit-button" type="button" aria-label="게임 정보 수정" title="게임 정보 수정"><svg aria-hidden="true"><use href="#i-pencil"/></svg></button>
             </div>
             <div id="detail-meta" class="game-meta"></div>
             <div id="detail-rating" class="detail-rating" aria-live="polite"></div>
@@ -191,11 +196,17 @@
     <section class="community-section exhibition-history" aria-labelledby="exhibition-history-title">
       <div class="exhibition-section-header"><h3 id="exhibition-history-title">작품 소식</h3><button id="open-update-editor" class="text-action" type="button">소식 남기기</button></div>
       <div id="game-updates" class="exhibition-updates"></div>
-      <details id="game-revisions" class="exhibition-revisions">
-        <summary>수정 기록 보기</summary>
-        <div id="game-revision-list"></div>
+      <details class="detail-management" id="detail-management">
+        <summary>작품 정보 관리</summary>
+        <div class="detail-management-inner">
+          <button id="edit-game" class="text-action" type="button"><svg aria-hidden="true"><use href="#i-pencil"/></svg> 작품 정보 수정</button>
+          <details id="game-revisions" class="exhibition-revisions">
+            <summary>이전 수정 기록</summary>
+            <div id="game-revision-list"></div>
+          </details>
+          <button id="report-game" type="button" class="report-link">잘못된 정보 신고</button>
+        </div>
       </details>
-      <button id="report-game" type="button" class="report-link">작품 정보 신고</button>
     </section>
     <p id="detail-status" role="status"></p>
   </div></div></dialog>
