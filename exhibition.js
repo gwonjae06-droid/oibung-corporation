@@ -31,6 +31,27 @@
     if (!viewer.open) viewer.showModal();
     document.body.classList.add('no-scroll');
   });
+  // On phones, swipe horizontally across the photo to move between exhibits.
+  // Let vertical movements pass through so zooming/scrolling does not feel trapped.
+  const mediaFrame = viewer.querySelector('.media-lightbox-frame');
+  let touchStart = null;
+  mediaFrame.addEventListener('touchstart', event => {
+    if (event.touches.length !== 1) { touchStart = null; return; }
+    touchStart = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+  }, { passive: true });
+  mediaFrame.addEventListener('touchend', event => {
+    if (!touchStart || images.length < 2 || event.changedTouches.length !== 1) {
+      touchStart = null; return;
+    }
+    const dx = event.changedTouches[0].clientX - touchStart.x;
+    const dy = event.changedTouches[0].clientY - touchStart.y;
+    touchStart = null;
+    if (Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy) * 1.35) {
+      displayMedia(dx < 0 ? activeIndex + 1 : activeIndex - 1);
+    }
+  }, { passive: true });
+  mediaFrame.addEventListener('touchcancel', () => { touchStart = null; }, { passive: true });
+
   prev.addEventListener('click', () => displayMedia(activeIndex - 1));
   next.addEventListener('click', () => displayMedia(activeIndex + 1));
   $('media-close').addEventListener('click', closeViewer);
@@ -45,6 +66,21 @@
     const openDialogs = [...document.querySelectorAll('dialog')].some(dialog => dialog.open);
     document.body.classList.toggle('no-scroll', openDialogs);
   });
+
+  // A subtle edge fade communicates that the narrow-screen filters scroll sideways.
+  const filterTabs = $('filter-tabs');
+  const filterViewport = $('filter-viewport');
+  if (filterTabs && filterViewport) {
+    const updateEdge = () => {
+      const hasOverflow = filterTabs.scrollWidth > filterTabs.clientWidth + 2;
+      filterViewport.classList.toggle('has-overflow', hasOverflow);
+      filterViewport.classList.toggle('is-end', !hasOverflow ||
+        filterTabs.scrollLeft + filterTabs.clientWidth >= filterTabs.scrollWidth - 3);
+    };
+    filterTabs.addEventListener('scroll', updateEdge, { passive: true });
+    window.addEventListener('resize', updateEdge, { passive: true });
+    updateEdge();
+  }
 
   const form = $('review-form');
   const photos = form.elements.namedItem('photos');
