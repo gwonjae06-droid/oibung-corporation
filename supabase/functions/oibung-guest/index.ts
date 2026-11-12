@@ -79,7 +79,7 @@ Deno.serve(async req => {
       const { title, description, genre, play_url, developer, development_status, remove_thumbnail } = content;
       if (!required(title, 80) || !required(description, 1000) || !required(genre, 60)
           || (developer != null && developer !== '' && !required(developer, 80))
-          || (development_status !== undefined && !['unknown', 'in_development', 'released', 'live_service'].includes(development_status))) {
+          || (development_status !== undefined && !['unknown', 'in_development', 'released', 'live_service', 'finished'].includes(development_status))) {
         return reply(400, { error: '게임 이름, 장르, 소개를 확인해 줘.' });
       }
       let link: URL | null = null;
