@@ -17,10 +17,12 @@
   const icon = id => `<svg aria-hidden="true"><use href="#i-${id}"></use></svg>`;
   const formatCount = value => String(value).padStart(2, '0');
   const visualOptions = new Set(['eclipse','arena','duel','tactics','custom']);
-  const statusLabels = { in_development: '개발 중', released: '개발 완료' };
+  const statusLabels = { unknown: '미정', in_development: '개발 중', released: '개발 완료', live_service: '라이브 서비스' };
+  const normalizedStatus = game => Object.prototype.hasOwnProperty.call(statusLabels, game.developmentStatus)
+    ? game.developmentStatus : 'unknown';
   const metadata = game => [
     game.developer && `<span>개발자 · ${escapeHTML(game.developer)}</span>`,
-    statusLabels[game.developmentStatus] && `<span class="game-status">${statusLabels[game.developmentStatus]}</span>`
+    `<span class="game-status${normalizedStatus(game) === 'live_service' ? ' game-status--live' : ''}">${statusLabels[normalizedStatus(game)]}</span>`
   ].filter(Boolean).join('');
   const visualClass = game => visualOptions.has(game.visual) ? game.visual : 'custom';
   const coverArt = game => safeSourceUrl(game.thumbnailUrl)
@@ -73,7 +75,7 @@
   function render() {
     const query = searchInput.value.trim().toLocaleLowerCase('ko-KR');
     const filtered = games.filter(game => {
-      const categoryMatch = activeFilter === 'all' || (activeFilter === 'favorite' ? favorites.has(game.id) : game.developmentStatus === activeFilter);
+      const categoryMatch = activeFilter === 'all' || (activeFilter === 'favorite' ? favorites.has(game.id) : normalizedStatus(game) === activeFilter);
       const searchMatch = [game.title, game.english, game.genre, game.developer, game.description, game.tagline, ...(game.tags || [])].join(' ').toLocaleLowerCase('ko-KR').includes(query);
       return categoryMatch && searchMatch;
     });
