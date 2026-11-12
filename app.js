@@ -17,12 +17,12 @@
   const icon = id => `<svg aria-hidden="true"><use href="#i-${id}"></use></svg>`;
   const formatCount = value => String(value).padStart(2, '0');
   const visualOptions = new Set(['eclipse','arena','duel','tactics','custom']);
-  const statusLabels = { unknown: '미정', in_development: '개발 중', released: '개발 완료', live_service: '라이브 서비스' };
+  const statusLabels = { unknown: '미정', in_development: '개발 중', released: '정식 출시', live_service: '라이브 서비스', finished: '완결' };
   const normalizedStatus = game => Object.prototype.hasOwnProperty.call(statusLabels, game.developmentStatus)
     ? game.developmentStatus : 'unknown';
   const metadata = game => [
     game.developer && `<span>개발자 · ${escapeHTML(game.developer)}</span>`,
-    `<span class="game-status${normalizedStatus(game) === 'live_service' ? ' game-status--live' : ''}">${statusLabels[normalizedStatus(game)]}</span>`
+    `<span class="game-status${normalizedStatus(game) === 'live_service' ? ' game-status--live' : normalizedStatus(game) === 'finished' ? ' game-status--finished' : ''}">${statusLabels[normalizedStatus(game)]}</span>`
   ].filter(Boolean).join('');
   const visualClass = game => visualOptions.has(game.visual) ? game.visual : 'custom';
   const coverArt = game => safeSourceUrl(game.thumbnailUrl)
