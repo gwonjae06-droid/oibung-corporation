@@ -43,6 +43,7 @@
   function visibilityChange() {
     root.classList.toggle('motion-suspended', document.hidden);
     if (document.hidden) clearPointer();
+    else scheduleScan();
   }
   document.addEventListener('visibilitychange', visibilityChange, { passive: true });
   lowMotion.addEventListener('change', () => { setPreferenceUI(); scheduleScan(); });
@@ -81,7 +82,7 @@
           if (el.matches('.game-card') && el.dataset.gameId) revealedGameIds.add(el.dataset.gameId);
         }
       }
-    }, { threshold: 0.07, rootMargin: '24px 0px 28px 0px' });
+    }, { threshold: 0, rootMargin: '24px 0px 28px 0px' });
   }
 
   function register(el, index) {
@@ -102,6 +103,7 @@
   }
   function scan() {
     if (document.hidden) return;
+    if (currentCard && !currentCard.isConnected) clearPointer();
     const elements = document.querySelectorAll(
       '.game-card,.review-post,.review-sidebar,.gallery-screenshot,.activity-item,.section-heading-row,' +
       '.featured-exhibit,.library,.review-board'
