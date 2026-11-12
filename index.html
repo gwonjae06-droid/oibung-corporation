@@ -13,10 +13,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=exhibition-20261112">
+  <link rel="stylesheet" href="styles.css?v=featured-rotation-1">
   <script src="games.js" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=exhibition-20261112" defer></script>
+  <script src="app.js?v=featured-rotation-1" defer></script>
   <script type="module" src="community.js?v=exhibition-20261112"></script>
   <script src="exhibition.js?v=exhibition-20261112" defer></script>
 </head>
@@ -69,7 +69,14 @@
             <h2 id="featured-title"></h2>
             <p id="featured-description"></p>
             <div id="featured-meta" class="featured-meta"></div>
-            <button id="featured-detail" class="button-primary" type="button">작품 감상하기 <svg aria-hidden="true"><use href="#i-right"/></svg></button>
+            <div class="featured-actions">
+              <button id="featured-detail" class="button-primary" type="button">작품 감상하기 <svg aria-hidden="true"><use href="#i-right"/></svg></button>
+              <div class="featured-navigation" aria-label="대표 전시 작품 넘기기">
+                <span id="featured-position" class="featured-position" aria-live="off"></span>
+                <button id="featured-prev" class="featured-nav-button" type="button" aria-label="이전 작품">‹</button>
+                <button id="featured-next" class="featured-nav-button" type="button" aria-label="다음 작품">›</button>
+              </div>
+            </div>
           </div>
         </section>
         <div class="library-toolbar">
