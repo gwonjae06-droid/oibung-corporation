@@ -64,13 +64,14 @@ function activeGame() {
   return detail.open ? detail.dataset.gameId : '';
 }
 
-function asCatalogGame({ play_url, development_status, thumbnail_path, intro_tone, created_at, ...game }) {
+function asCatalogGame({ play_url, development_status, thumbnail_path, intro_tone, created_at, play_mode, ...game }) {
   return {
     ...game,
     playUrl: play_url,
     developmentStatus: development_status,
     introTone: intro_tone,
     createdAt: created_at,
+    playMode: play_mode,
     thumbnailUrl: thumbnail_path ? client.storage.from(bucket).getPublicUrl(thumbnail_path).data.publicUrl : null
   };
 }
@@ -79,7 +80,7 @@ async function loadGames() {
   const revision = ++catalogRevision;
   const games = [];
   for (let offset = 0; ; offset += 100) {
-    const page = unwrap(await client.from('oc_games').select('id,title,description,genre,play_url,developer,development_status,thumbnail_path,intro_tone,created_at')
+    const page = unwrap(await client.from('oc_games').select('id,title,description,genre,play_url,developer,development_status,thumbnail_path,intro_tone,created_at,platform,play_mode')
       .order('created_at').order('id').range(offset, offset + 99));
     games.push(...page);
     if (page.length < 100) break;
@@ -472,6 +473,8 @@ function openEditor(game) {
     }
     gameForm.elements.namedItem('developmentStatus').value = game.developmentStatus || 'unknown';
     gameForm.elements.namedItem('introTone').value = game.introTone ?? 'gallery';
+    gameForm.elements.namedItem('platform').value = game.platform ?? 'unknown';
+    gameForm.elements.namedItem('playMode').value = game.playMode ?? 'unknown';
   }
   account.showModal();
   document.body.classList.add('no-scroll');
@@ -525,6 +528,8 @@ submit(gameForm, accountStatus, async () => {
     developer: textField(gameForm, 'developer'),
     development_status: textField(gameForm, 'developmentStatus'),
     intro_tone: textField(gameForm, 'introTone'),
+    platform: textField(gameForm, 'platform'),
+    play_mode: textField(gameForm, 'playMode'),
     remove_thumbnail: removeThumbnail.checked,
     genre: textField(gameForm, 'genre'),
     description: textField(gameForm, 'description'),
