@@ -70,3 +70,6 @@
 /* Live-service games: distinguish actively operated titles from completed projects. */
 .game-meta .game-status--live{color:#a7ffc4;border-color:#4f9f69;background:#1a2b22;font-weight:800}
 .game-meta .game-status--live::before{content:"";display:inline-block;width:6px;height:6px;margin-right:.4rem;border-radius:50%;background:#7cf4a5;box-shadow:0 0 8px #7cf4a590;vertical-align:middle}
+
+/* Finished projects: visibly distinct from actively operated games. */
+.game-meta .game-status--finished{color:#ced0dc;border-color:#565966;background:#252630}
