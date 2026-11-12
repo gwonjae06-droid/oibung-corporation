@@ -69,20 +69,20 @@ Deno.serve(async req => {
       const review = await db.from('oc_reviews').select('nickname,stars,body,image_paths').eq('game_id', gameId)
         .eq('author_id', author).maybeSingle();
       if (review.error) throw review.error;
-      return reply(200, { review: review.data, imageOwner: author });
+      return reply(200, { review: review.data });
     }
     if (action === 'delete_image') {
       const path = content?.path;
-      if (typeof path !== 'string' || !path.startsWith(author + '/' + gameId + '/') || path.length > 180) {
-        return reply(403, { error: '이 브라우저에서 올린 스크린샷만 삭제할 수 있습니다.' });
+      if (typeof path !== 'string' || !path || path.length > 180) {
+        return reply(400, { error: '스크린샷 정보가 올바르지 않습니다.' });
       }
-      const image = await db.from('oc_images').select('path').eq('game_id', gameId).eq('author_id', author)
+      const image = await db.from('oc_images').select('path').eq('game_id', gameId)
         .eq('path', path).maybeSingle();
       if (image.error) throw image.error;
       if (!image.data) return reply(200, { deleted: true });
       const removed = await db.storage.from(bucket).remove([image.data.path]);
       if (removed.error) throw removed.error;
-      const deleted = await db.from('oc_images').delete().eq('game_id', gameId).eq('author_id', author).eq('path', path);
+      const deleted = await db.from('oc_images').delete().eq('game_id', gameId).eq('path', path);
       if (deleted.error) throw deleted.error;
       return reply(200, { deleted: true });
     }

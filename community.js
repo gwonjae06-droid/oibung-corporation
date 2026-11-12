@@ -91,7 +91,7 @@ function showParticipation() {
   imagePanel.hidden = !client;
 }
 
-function drawImages(rows, gameId, imageOwner) {
+function drawImages(rows, gameId) {
   const gallery = $('#community-gallery');
   const entries = rows.slice(0, imageLimit).map((row, index) => {
     const link = document.createElement('a');
@@ -106,17 +106,15 @@ function drawImages(rows, gameId, imageOwner) {
     const entry = document.createElement('figure');
     entry.className = 'gallery-screenshot';
     entry.append(link);
-    if (imageOwner && row.path.startsWith(imageOwner + '/')) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'screenshot-delete';
-      button.textContent = '삭제';
-      button.dataset.screenshotPath = row.path;
-      button.setAttribute('aria-label', image.alt + ' 삭제');
-      button.disabled = pendingImageDeletes.has(row.path);
-      button.addEventListener('click', () => void deleteScreenshot(gameId, row.path, button));
-      entry.append(button);
-    }
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'screenshot-delete';
+    button.textContent = '삭제';
+    button.dataset.screenshotPath = row.path;
+    button.setAttribute('aria-label', image.alt + ' 삭제');
+    button.disabled = pendingImageDeletes.has(row.path);
+    button.addEventListener('click', () => void deleteScreenshot(gameId, row.path, button));
+    entry.append(button);
     return entry;
   });
   gallery.replaceChildren(...entries);
@@ -264,14 +262,10 @@ async function loadDetails() {
   if (!gameId || !client) return;
   const revision = ++detailRevision;
   try {
-    const imagesQuery = client.from('oc_images').select('path').eq('game_id', gameId)
+    const images = await client.from('oc_images').select('path').eq('game_id', gameId)
       .order('created_at', { ascending: false }).order('path').range(0, imageLimit);
-    const ownerQuery = getStoredGuest()
-      ? guestWrite({ action: 'viewer' }, gameId).catch(() => null)
-      : null;
-    const [images, viewer] = await Promise.all([imagesQuery, ownerQuery]);
     if (gameId !== activeGame() || revision !== detailRevision) return;
-    drawImages(unwrap(images), gameId, viewer?.imageOwner);
+    drawImages(unwrap(images), gameId);
   } catch {
     if (gameId === activeGame() && revision === detailRevision) {
       detailStatus.textContent = '스크린샷을 불러오지 못했어.';
