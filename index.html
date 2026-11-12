@@ -14,11 +14,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css?v=gallery-polish-1">
+  <link rel="stylesheet" href="motion.css?v=gallery-motion-1">
   <script src="games.js" defer></script>
   <script src="community-config.js" defer></script>
   <script src="app.js?v=gallery-polish-1" defer></script>
   <script type="module" src="community.js?v=gallery-polish-1"></script>
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
+  <script src="motion.js?v=gallery-motion-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -150,7 +152,9 @@
 
   </main>
 
-  <footer class="site-footer"><div class="container"><div class="footer-top"><a class="brand brand-footer" href="#top"><span class="brand-mark" aria-hidden="true"><span class="brand-core"></span></span><span class="brand-copy">오이붕 갤러리<span lang="en">OIBUNG GALLERY</span></span></a></div><div class="footer-bottom"><span>© <span id="year">2026</span> 오이붕 갤러리</span><a href="#top">맨 위로 ↑</a></div></div></footer>
+  <footer class="site-footer"><div class="container"><div class="footer-top"><a class="brand brand-footer" href="#top"><span class="brand-mark" aria-hidden="true"><span class="brand-core"></span></span><span class="brand-copy">오이붕 갤러리<span lang="en">OIBUNG GALLERY</span></span></a></div><div class="footer-bottom"><span>© <span id="year">2026</span> 오이붕 갤러리</span>
+    <button id="motion-toggle" class="motion-control" type="button" aria-label="애니메이션 줄이기" aria-pressed="false"><svg aria-hidden="true"><use href="#i-check"/></svg><span class="motion-control-label">움직임 줄이기</span></button>
+    <a href="#top">맨 위로 ↑</a></div></div></footer>
 
   <dialog class="detail-dialog" id="game-dialog" aria-labelledby="detail-title">
     <div class="dialog-inner">
