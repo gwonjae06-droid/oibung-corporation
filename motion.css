@@ -271,3 +271,20 @@ html.motion-off *,html.motion-off *::before,html.motion-off *::after{
 }
 html.motion-off .motion-reveal{opacity:1!important;--reveal-y:0px!important}
 html.motion-off .motion-orb{display:none}
+
+
+/* The exhibit truly rests when its slideshow is paused for interaction. */
+.motion-active .featured-exhibit.motion-onstage:hover .featured-cover .game-thumbnail,
+.motion-active .featured-exhibit.motion-onstage:hover .featured-cover .cover-art,
+.motion-active .featured-exhibit.motion-onstage:focus-within .featured-cover .game-thumbnail,
+.motion-active .featured-exhibit.motion-onstage:focus-within .featured-cover .cover-art{
+  animation-play-state:paused;
+}
+/* Resource-aware quality tier: retain ambiance without costly continuous layers. */
+.motion-lite .motion-orb{display:none!important}
+.motion-lite .game-card{--card-tilt-x:0deg!important;--card-tilt-y:0deg!important}
+.motion-lite .game-card::after{animation:none!important;opacity:.4}
+.motion-lite .featured-exhibit::before{animation:none!important}
+.motion-lite .featured-cover .game-thumbnail,
+.motion-lite .featured-cover .cover-art{animation:none!important}
+.motion-lite .motion-card-spotlight{display:none!important}
