@@ -11,6 +11,12 @@
   const emptyState = document.querySelector('#empty-state');
   const detailDialog = document.querySelector('#game-dialog');
   const guideDialog = document.querySelector('#guide-dialog');
+  const sortSelect = document.querySelector('#game-sort');
+  const stats = new Map();
+  const recentKey = 'oibung-gallery:recent-v1';
+  const readRecent = () => { try { const a = JSON.parse(localStorage.getItem(recentKey) || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
+  let recent = readRecent();
+  let pendingLinkedGame = new URLSearchParams(location.search).get('game');
   let activeFilter = 'all';
   let toastTimer;
 
@@ -94,6 +100,16 @@
   });
   showPage(location.hash === '#reviews' ? 'reviews' : 'games');
 
+  function reviewStat(id) { return stats.get(id) || { count: 0, average: 0 }; }
+  function reviewBadge(id) {
+    const data = reviewStat(id);
+    return data.count ? `<span class="review-mini" aria-label="평점 ${data.average.toFixed(1)}점, 후기 ${data.count}개">★ ${data.average.toFixed(1)} <small>· 후기 ${data.count}</small></span>`
+      : '<span class="review-mini review-mini--empty">첫 후기를 기다립니다</span>';
+  }
+  function markRecent(id) {
+    recent = [id, ...recent.filter(x => x !== id)].slice(0, 16);
+    try { localStorage.setItem(recentKey, JSON.stringify(recent)); } catch { /* private mode */ }
+  }
   function setFilter(next) {
     activeFilter = next;
     tabs.forEach(tab => {
@@ -108,29 +124,58 @@
     const playUrl = safeSourceUrl(game.playUrl);
     const cover = coverArt(game);
     return `<article class="game-card" data-game-id="${escapeHTML(game.id)}">
-      ${playUrl
-        ? `<a class="game-cover" href="${escapeHTML(playUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHTML(game.title)} 플레이하기">${cover}</a>`
-        : `<div class="game-cover">${cover}</div>`}
+      <button type="button" class="game-cover" data-details="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} 상세 보기">${cover}</button>
       <div class="game-card-body" data-intro-tone="${escapeHTML(game.introTone ?? 'gallery')}"><div class="game-card-title-row"><div><div class="game-genre">${escapeHTML(game.genre)}</div><h3>${escapeHTML(game.title)}</h3></div>
       <div class="game-card-actions">
       <button class="icon-button edit-button" type="button" data-edit-game="${escapeHTML(game.id)}" title="게임 정보 수정" aria-label="${escapeHTML(game.title)} 정보 수정">${icon('pencil')}</button>
       <button class="favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} ${favorite ? '찜 해제' : '찜하기'}" aria-pressed="${favorite}">${icon('heart')}</button></div></div>
       <div class="game-meta">${metadata(game)}</div>
       <p class="game-card-desc">${escapeHTML(game.description)}</p>
+      <div class="game-card-score">${reviewBadge(game.id)}</div>
       <div class="game-card-footer"><button class="details-link" type="button" data-details="${escapeHTML(game.id)}">게임 자세히 보기 ↗</button>
       ${playUrl ? `<a class="play-link" href="${escapeHTML(playUrl)}" target="_blank" rel="noopener noreferrer">플레이하기 ${icon('arrow')}</a>` : ''}</div></div></article>`;
   }
   function render() {
     const query = searchInput.value.trim().toLocaleLowerCase('ko-KR');
     const filtered = games.filter(game => {
-      const categoryMatch = activeFilter === 'all' || (activeFilter === 'favorite' ? favorites.has(game.id) : normalizedStatus(game) === activeFilter);
+      const categoryMatch = activeFilter === 'all' || (activeFilter === 'favorite' ? favorites.has(game.id) : activeFilter === 'recent' ? recent.includes(game.id) : normalizedStatus(game) === activeFilter);
       const searchMatch = [game.title, game.english, game.genre, game.developer, game.description, game.tagline, ...(game.tags || [])].join(' ').toLocaleLowerCase('ko-KR').includes(query);
       return categoryMatch && searchMatch;
     });
+    const mode = sortSelect.value;
+    const defaultOrder = new Map(games.map((game, index) => [game.id, index]));
+    filtered.sort((a, b) => {
+      const metricA = reviewStat(a.id), metricB = reviewStat(b.id);
+      if (mode === 'rating') return ((metricB.count ? metricB.average : -1) - (metricA.count ? metricA.average : -1)) || (metricB.count - metricA.count);
+      if (mode === 'reviews') return metricB.count - metricA.count || metricB.average - metricA.average;
+      if (mode === 'name') return a.title.localeCompare(b.title, 'ko');
+      if (mode === 'newest') return (Date.parse(b.createdAt || '') || 0) - (Date.parse(a.createdAt || '') || 0);
+      if (activeFilter === 'recent') return recent.indexOf(a.id) - recent.indexOf(b.id);
+      return defaultOrder.get(a.id) - defaultOrder.get(b.id);
+    });
     grid.innerHTML = filtered.map(cardTemplate).join('');
+    document.querySelector('#catalog-count').textContent = `전시 작품 ${filtered.length}점 · 전체 ${games.length}점`;
+    renderFeatured();
     emptyState.hidden = filtered.length > 0;
     allCount.textContent = formatCount(games.length);
   }
+  function renderFeatured() {
+    const section = document.querySelector('#featured-exhibit');
+    if (!games.length) { section.hidden = true; return; }
+    const choice = [...games].sort((a,b) => {
+      const ar = reviewStat(a.id), br = reviewStat(b.id);
+      const av = ar.count >= 2 ? ar.average * 2 + Math.log2(ar.count + 1) : 0;
+      const bv = br.count >= 2 ? br.average * 2 + Math.log2(br.count + 1) : 0;
+      return bv - av || Number(Boolean(b.badge)) - Number(Boolean(a.badge));
+    })[0];
+    section.hidden = false;
+    document.querySelector('#featured-cover').innerHTML = coverArt(choice);
+    document.querySelector('#featured-title').textContent = choice.title;
+    document.querySelector('#featured-description').textContent = (choice.description || '').slice(0, 170);
+    document.querySelector('#featured-meta').innerHTML = metadata(choice) + reviewBadge(choice.id);
+    document.querySelector('#featured-detail').dataset.details = choice.id;
+  }
+  document.querySelector('#featured-detail').addEventListener('click', event => openDetail(event.currentTarget.dataset.details));
   function renderDetail(game) {
     detailDialog.querySelector('.detail-introduction').dataset.introTone = game.introTone ?? 'gallery';
     const detailCover = document.querySelector('#dialog-cover');
@@ -138,6 +183,7 @@
     document.querySelector('#detail-genre').textContent = game.genre || 'GAME';
     document.querySelector('#detail-title').textContent = game.title;
     document.querySelector('#detail-meta').innerHTML = metadata(game);
+    document.querySelector('#detail-rating').innerHTML = reviewBadge(game.id);
     document.querySelector('#detail-summary').textContent = game.description;
     document.querySelector('#detail-tags').innerHTML = (game.tags || []).map(tag => `<span>${escapeHTML(tag)}</span>`).join('');
     const play = document.querySelector('#detail-play');
@@ -155,7 +201,9 @@
     if (!game) return;
     renderDetail(game);
     detailDialog.dataset.gameId = id;
-    detailDialog.showModal();
+    if (!detailDialog.open) detailDialog.showModal();
+    markRecent(id);
+    if (pendingLinkedGame === id) pendingLinkedGame = null;
     detailDialog.scrollTop = 0;
     detailDialog.dispatchEvent(new Event('game-opened'));
     document.body.classList.add('no-scroll');
@@ -175,6 +223,14 @@
     if (detailButton) openDetail(detailButton.dataset.details);
   });
   tabs.forEach(tab => tab.addEventListener('click', () => setFilter(tab.dataset.filter)));
+  sortSelect.addEventListener('change', render);
+  document.querySelector('#detail-share').addEventListener('click', async () => {
+    const url = new URL(location.pathname, location.origin);
+    url.searchParams.set('game', detailDialog.dataset.gameId);
+    const link = url.href;
+    try { await navigator.clipboard.writeText(link); showToast('작품 링크를 복사했어요.'); }
+    catch { window.prompt('공유할 작품 링크', link); }
+  });
   searchInput.addEventListener('input', render);
   document.querySelector('#reset-filters').addEventListener('click', () => {searchInput.value = '';setFilter('all');});
   document.querySelector('#close-detail').addEventListener('click', () => closeDialog(detailDialog));
@@ -193,6 +249,12 @@
   window.OIBUNG_CATALOG = {
     openDetail,
     getGame: id => byId.get(id),
+    setReviewStats(rows) {
+      stats.clear();
+      (rows || []).forEach(row => { if (row.id && Number.isFinite(Number(row.average))) stats.set(row.id, {count: Number(row.count)||0, average: Number(row.average)||0}); });
+      render();
+      syncOpenDetail();
+    },
     listGames: () => [...games],
     saveSharedGame(game) {
       const index = games.findIndex(current => current.id === game.id);
@@ -211,6 +273,7 @@
       next.forEach((game, id) => byId.set(id, game));
       render();
       syncOpenDetail();
+      if (pendingLinkedGame && byId.has(pendingLinkedGame) && !detailDialog.open) openDetail(pendingLinkedGame);
     }
   };
   document.addEventListener('keydown', event => {
@@ -227,4 +290,5 @@
   mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {mobileNav.hidden = true;menuToggle.setAttribute('aria-expanded', 'false');}));
   document.querySelector('#year').textContent = String(new Date().getFullYear());
   render();
+  if (pendingLinkedGame && byId.has(pendingLinkedGame)) openDetail(pendingLinkedGame);
 })();
