@@ -93,11 +93,14 @@ Deno.serve(async req => {
     if (!quota.data) return reply(429, { error: '오늘 등록 한도에 도달했어. 내일 다시 시도해 줘.' });
 
     if (action === 'game' || action === 'edit_game') {
-      const { title, description, genre, play_url, developer, development_status, remove_thumbnail } = content;
+      const { title, description, genre, play_url, developer, development_status, remove_thumbnail, intro_tone } = content;
       if (!required(title, 80) || !required(description, 1000) || !required(genre, 60)
           || (developer != null && developer !== '' && !required(developer, 80))
           || (development_status !== undefined && !['unknown', 'in_development', 'released', 'live_service', 'finished'].includes(development_status))) {
         return reply(400, { error: '게임 이름, 장르, 소개를 확인해 줘.' });
+      }
+      if (intro_tone !== undefined && !["gallery","burgundy","navy","forest","plum","umber","slate"].includes(intro_tone)) {
+        return reply(400, { error: '소개 배경색을 다시 선택해 주세요.' });
       }
       let link: URL | null = null;
       if (play_url != null && play_url !== '') {
@@ -111,6 +114,7 @@ Deno.serve(async req => {
         genre: genre.trim(), play_url: link?.href ?? null };
       if (developer !== undefined) fields.developer = developer?.trim() || null;
       if (development_status !== undefined) fields.development_status = development_status;
+      if (intro_tone !== undefined) fields.intro_tone = intro_tone;
       const editing = action === 'edit_game';
       const id = editing ? gameId : crypto.randomUUID();
       let previousThumbnail: string | null = null;
@@ -144,7 +148,7 @@ Deno.serve(async req => {
         update = previousThumbnail === null
           ? update.is('thumbnail_path', null) : update.eq('thumbnail_path', previousThumbnail);
       }
-      const result = await update.select('id,title,description,genre,play_url,developer,development_status,thumbnail_path').maybeSingle();
+      const result = await update.select('id,title,description,genre,play_url,developer,development_status,thumbnail_path,intro_tone').maybeSingle();
       if (result.error || !result.data) {
         if (uploadedPath) await storage.remove([uploadedPath]);
         if (result.error) throw result.error;

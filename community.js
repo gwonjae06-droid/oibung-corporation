@@ -63,11 +63,12 @@ function activeGame() {
   return detail.open ? detail.dataset.gameId : '';
 }
 
-function asCatalogGame({ play_url, development_status, thumbnail_path, ...game }) {
+function asCatalogGame({ play_url, development_status, thumbnail_path, intro_tone, ...game }) {
   return {
     ...game,
     playUrl: play_url,
     developmentStatus: development_status,
+    introTone: intro_tone,
     thumbnailUrl: thumbnail_path ? client.storage.from(bucket).getPublicUrl(thumbnail_path).data.publicUrl : null
   };
 }
@@ -76,7 +77,7 @@ async function loadGames() {
   const revision = ++catalogRevision;
   const games = [];
   for (let offset = 0; ; offset += 100) {
-    const page = unwrap(await client.from('oc_games').select('id,title,description,genre,play_url,developer,development_status,thumbnail_path')
+    const page = unwrap(await client.from('oc_games').select('id,title,description,genre,play_url,developer,development_status,thumbnail_path,intro_tone')
       .order('created_at').order('id').range(offset, offset + 99));
     games.push(...page);
     if (page.length < 100) break;
@@ -453,6 +454,7 @@ function openEditor(game) {
       gameForm.elements.namedItem(name).value = game[name] ?? '';
     }
     gameForm.elements.namedItem('developmentStatus').value = game.developmentStatus || 'unknown';
+    gameForm.elements.namedItem('introTone').value = game.introTone ?? 'gallery';
   }
   account.showModal();
   document.body.classList.add('no-scroll');
@@ -505,6 +507,7 @@ submit(gameForm, accountStatus, async () => {
     title: textField(gameForm, 'title'),
     developer: textField(gameForm, 'developer'),
     development_status: textField(gameForm, 'developmentStatus'),
+    intro_tone: textField(gameForm, 'introTone'),
     remove_thumbnail: removeThumbnail.checked,
     genre: textField(gameForm, 'genre'),
     description: textField(gameForm, 'description'),

@@ -251,3 +251,16 @@ body { background: radial-gradient(ellipse at 50% 8%, #2b392d 0, transparent 45r
   html { scroll-behavior: auto; }
   .game-card, .button-primary, .play-link { transition: none; }
 }
+
+[data-intro-tone="burgundy"] { --intro-background: #39232a; }
+[data-intro-tone="navy"] { --intro-background: #202d43; }
+[data-intro-tone="forest"] { --intro-background: #1c382c; }
+[data-intro-tone="plum"] { --intro-background: #352842; }
+[data-intro-tone="umber"] { --intro-background: #3b3024; }
+[data-intro-tone="slate"] { --intro-background: #30373e; }
+.game-card-body { background-color: var(--intro-background, transparent); }
+.detail-introduction:not([data-intro-tone="gallery"]) {
+  background-color: var(--intro-background, transparent);
+  padding: 16px;
+  border: 1px solid #ddc28c38;
+}

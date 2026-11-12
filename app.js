@@ -111,7 +111,7 @@
       ${playUrl
         ? `<a class="game-cover" href="${escapeHTML(playUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHTML(game.title)} 플레이하기">${cover}</a>`
         : `<div class="game-cover">${cover}</div>`}
-      <div class="game-card-body"><div class="game-card-title-row"><div><div class="game-genre">${escapeHTML(game.genre)}</div><h3>${escapeHTML(game.title)}</h3></div>
+      <div class="game-card-body" data-intro-tone="${escapeHTML(game.introTone ?? 'gallery')}"><div class="game-card-title-row"><div><div class="game-genre">${escapeHTML(game.genre)}</div><h3>${escapeHTML(game.title)}</h3></div>
       <div class="game-card-actions">
       <button class="icon-button edit-button" type="button" data-edit-game="${escapeHTML(game.id)}" title="게임 정보 수정" aria-label="${escapeHTML(game.title)} 정보 수정">${icon('pencil')}</button>
       <button class="favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} ${favorite ? '찜 해제' : '찜하기'}" aria-pressed="${favorite}">${icon('heart')}</button></div></div>
@@ -132,6 +132,7 @@
     allCount.textContent = formatCount(games.length);
   }
   function renderDetail(game) {
+    detailDialog.querySelector('.detail-introduction').dataset.introTone = game.introTone ?? 'gallery';
     const detailCover = document.querySelector('#dialog-cover');
     detailCover.innerHTML = coverArt(game);
     document.querySelector('#detail-genre').textContent = game.genre || 'GAME';
