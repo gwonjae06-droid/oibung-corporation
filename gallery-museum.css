@@ -158,18 +158,45 @@ body{
   border-color:#a89c88;
   box-shadow:0 19px 35px #48443b25,0 2px 6px #48443b12;
 }
+/* A pale museum mat separates near-black artworks from the plaster wall.
+   The inner window clips zoom animations without letting them cover the mat. */
 .game-card .game-cover{
-  height:auto;
-  aspect-ratio:16/11;
-  border:4px solid #a69b8c;
-  outline:1px solid #dad3c7;
-  margin:14px 14px 0;
-  width:calc(100% - 28px);
-  background:#dad6ce;
-  box-shadow:0 6px 15px #36312824;
+  display:block;position:relative;
+  height:auto;aspect-ratio:16/11;
+  width:calc(100% - 32px);
+  margin:16px 16px 0;
+  padding:0;
+  border:1px solid #b8ad9d;
+  outline:0;
+  background:linear-gradient(145deg,#fffdfa 0%,#f6f3ed 55%,#eeebe4 100%);
+  box-shadow:inset 0 0 0 1px #fffcf5,0 8px 18px #34302821;
+  transition:border-color .3s ease,box-shadow .3s ease;
 }
+.game-card .game-cover .artwork-image-window{
+  position:absolute;inset:12px;display:block;
+  overflow:hidden;isolation:isolate;
+  background:#171817;
+  box-shadow:0 0 0 1px #a89b87,0 2px 7px #3831262b;
+  transition:box-shadow .3s ease;
+}
+.game-card .artwork-image-window .game-thumbnail,
+.game-card .artwork-image-window .cover-art{
+  display:block;width:100%;height:100%;object-fit:cover;
+}
+.game-card .artwork-image-window .cover-art{inset:0}
+.game-card .game-cover::after{
+  inset:12px;
+  background:linear-gradient(180deg,transparent 63%,#11120d26 100%);
+}
+.motion-active .game-card .game-cover::before{display:none}
+.game-card .game-cover:focus-visible{outline:2px solid #877455;outline-offset:3px}
 .game-card:hover .game-cover,.game-card:focus-within .game-cover{
-  box-shadow:0 9px 19px #34302836;
+  border-color:#9e8f79;
+  box-shadow:inset 0 0 0 1px #fffdf8,0 12px 23px #3430282e;
+}
+.game-card:hover .artwork-image-window,
+.game-card:focus-within .artwork-image-window{
+  box-shadow:0 0 0 1px #8c7a60,0 4px 12px #38312640;
 }
 .game-card-body{
   position:relative;
@@ -344,8 +371,9 @@ dialog:not(.media-lightbox)::backdrop{background:#262824a4;backdrop-filter:blur(
     width:calc(100% - 20px);
     margin:10px 10px 0;
     aspect-ratio:16/11;
-    border-width:3px;
   }
+  .game-card .game-cover .artwork-image-window{inset:9px}
+  .game-card .game-cover::after{inset:9px}
   .game-card-body{padding:18px 19px 20px}
   .featured-exhibit{background:#f5f3ee}
   .featured-cover{border-width:4px}
