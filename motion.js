@@ -8,6 +8,11 @@
   const root = document.documentElement;
   const lowMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+  // Conserve GPU layers on devices with very little memory or explicitly enabled data saving.
+  const lightweight = Boolean(navigator.connection?.saveData) ||
+    (Number(navigator.deviceMemory) > 0 && navigator.deviceMemory <= 2) ||
+    (Number(navigator.hardwareConcurrency) > 0 && navigator.hardwareConcurrency <= 2);
+  root.classList.toggle('motion-lite', lightweight);
   const toggle = document.querySelector('#motion-toggle');
   const savedKey = 'oibung-gallery:motion';
   const revealedGameIds = new Set();
@@ -139,7 +144,7 @@
   }
   function movePointer() {
     pointerFrame = 0;
-    if (!pointerPosition || !currentCard || !enabled() || document.hidden) return;
+    if (!pointerPosition || !currentCard || !enabled() || lightweight || document.hidden) return;
     const rect = currentCard.getBoundingClientRect();
     const x = Math.max(0, Math.min(rect.width, pointerPosition.x - rect.left));
     const y = Math.max(0, Math.min(rect.height, pointerPosition.y - rect.top));
@@ -156,7 +161,7 @@
   }
   const grid = document.getElementById('game-grid');
   grid?.addEventListener('pointermove', event => {
-    if (!enabled() || !finePointer.matches || document.hidden) return;
+    if (!enabled() || lightweight || !finePointer.matches || document.hidden) return;
     const card = event.target.closest('.game-card');
     if (!card) return;
     if (currentCard !== card) {
