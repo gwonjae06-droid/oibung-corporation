@@ -16,6 +16,8 @@
   <link rel="stylesheet" href="styles.css?v=gallery-polish-1">
   <link rel="stylesheet" href="motion.css?v=gallery-motion-1">
   <link rel="stylesheet" href="gallery-museum.css?v=museum-room-1">
+  <link rel="stylesheet" href="gallery-wood.css?v=wood-gallery-1">
+  <script src="gallery-theme.js?v=wood-gallery-1"></script>
   <script src="games.js" defer></script>
   <script src="community-config.js" defer></script>
   <script src="app.js?v=museum-frame-1" defer></script>
@@ -46,6 +48,9 @@
       </a>
       <div class="header-actions">
         <a class="gallery-about-link" href="#about">갤러리 소개</a>
+        <button type="button" class="theme-toggle" id="gallery-theme-toggle" aria-pressed="false" title="누르면 나무 전시관으로 변경">
+          <span class="theme-toggle-swatch" aria-hidden="true"></span><span class="theme-toggle-label">나무 테마</span>
+        </button>
         <button type="button" class="menu-toggle icon-button" id="menu-toggle" aria-expanded="false" aria-label="메뉴 열기"><svg><use href="#i-menu"/></svg></button>
       </div>
     </div>
