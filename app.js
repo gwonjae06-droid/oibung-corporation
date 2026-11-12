@@ -6,6 +6,7 @@
   const grid = document.querySelector('#game-grid');
   const searchInput = document.querySelector('#game-search');
   const tabs = [...document.querySelectorAll('[data-filter]')];
+  const pageTabs = [...document.querySelectorAll('[data-page-tab]')];
   const allCount = document.querySelector('#filter-all-count');
   const emptyState = document.querySelector('#empty-state');
   const detailDialog = document.querySelector('#game-dialog');
@@ -46,6 +47,53 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => toast.classList.remove('is-visible'), 2500);
   }
+  function showPage(page, navigate = false) {
+    const current = page === 'reviews' ? 'reviews' : 'games';
+    pageTabs.forEach(tab => {
+      const selected = tab.dataset.pageTab === current;
+      tab.classList.toggle('is-active', selected);
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+    });
+    document.querySelector('#games').hidden = current !== 'games';
+    document.querySelector('#reviews').hidden = current !== 'reviews';
+    window.OIBUNG_CURRENT_VIEW = current;
+    if (navigate) {
+      history.replaceState(null, '', '#' + current);
+      document.querySelector('.page-switcher').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    document.dispatchEvent(new CustomEvent('oibung-page-changed', { detail: { page: current } }));
+  }
+  pageTabs.forEach(tab => {
+    tab.addEventListener('click', () => showPage(tab.dataset.pageTab, true));
+    tab.addEventListener('keydown', event => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      const index = pageTabs.indexOf(tab);
+      const next = pageTabs[(index + (event.key === 'ArrowRight' ? 1 : -1) + pageTabs.length) % pageTabs.length];
+      next.focus();
+      showPage(next.dataset.pageTab, true);
+    });
+  });
+  document.querySelectorAll('a[href="#games"], a[href="#reviews"]').forEach(link => {
+    link.addEventListener('click', event => {
+      event.preventDefault();
+      showPage(link.getAttribute('href').slice(1), true);
+      document.querySelector('#mobile-nav').hidden = true;
+      document.querySelector('#menu-toggle').setAttribute('aria-expanded', 'false');
+    });
+  });
+  window.addEventListener('hashchange', () => {
+    if (location.hash === '#games' || location.hash === '#reviews') showPage(location.hash.slice(1));
+  });
+  document.querySelector('#detail-open-reviews').addEventListener('click', () => {
+    const id = detailDialog.dataset.gameId;
+    detailDialog.close();
+    showPage('reviews', true);
+    document.dispatchEvent(new CustomEvent('oibung-review-game', { detail: { gameId: id } }));
+  });
+  showPage(location.hash === '#reviews' ? 'reviews' : 'games');
+
   function setFilter(next) {
     activeFilter = next;
     tabs.forEach(tab => {
@@ -144,6 +192,7 @@
   window.OIBUNG_CATALOG = {
     openDetail,
     getGame: id => byId.get(id),
+    listGames: () => [...games],
     saveSharedGame(game) {
       const index = games.findIndex(current => current.id === game.id);
       const merged = { ...byId.get(game.id), ...game };
@@ -164,7 +213,7 @@
     }
   };
   document.addEventListener('keydown', event => {
-    if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName) && !detailDialog.open && !guideDialog.open) {
+    if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName) && !detailDialog.open && !guideDialog.open && window.OIBUNG_CURRENT_VIEW === 'games') {
       event.preventDefault();searchInput.focus();document.querySelector('#games').scrollIntoView({behavior:'smooth'});
     }
   });
