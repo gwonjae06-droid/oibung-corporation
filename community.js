@@ -10,6 +10,13 @@ const editButton = $('#edit-game');
 const imagePanel = $('#image-panel');
 const reviewPanel = $('#review-panel');
 const gameForm = $('#add-game-form');
+const claimPanel = $('#claim-panel');
+const claimForm = $('#claim-form');
+const claimStatus = $('#claim-status');
+const thumbnailInput = gameForm.elements.namedItem('thumbnail');
+const removeThumbnail = gameForm.elements.namedItem('removeThumbnail');
+const thumbnailPreview = $('#thumbnail-preview');
+let thumbnailObjectUrl;
 const imageForm = $('#image-form');
 const reviewForm = $('#review-form');
 const bucket = 'oc-screenshots';
@@ -52,20 +59,26 @@ function activeGame() {
   return detail.open ? detail.dataset.gameId : '';
 }
 
+function asCatalogGame({ play_url, development_status, thumbnail_path, ...game }) {
+  return {
+    ...game,
+    playUrl: play_url,
+    developmentStatus: development_status,
+    thumbnailUrl: thumbnail_path ? client.storage.from(bucket).getPublicUrl(thumbnail_path).data.publicUrl : null
+  };
+}
+
 async function loadGames() {
   const revision = ++catalogRevision;
   const games = [];
   for (let offset = 0; ; offset += 100) {
-    const page = unwrap(await client.from('oc_games').select('id,title,description,genre,category,play_url')
+    const page = unwrap(await client.from('oc_games').select('id,title,description,genre,play_url,developer,development_status,thumbnail_path')
       .order('created_at').order('id').range(offset, offset + 99));
     games.push(...page);
     if (page.length < 100) break;
   }
   if (revision !== catalogRevision) return;
-  window.OIBUNG_CATALOG.setSharedGames(games.map(({play_url, ...game}) => ({
-    ...game,
-    playUrl: play_url
-  })));
+  window.OIBUNG_CATALOG.setSharedGames(games.map(asCatalogGame));
 }
 
 function showParticipation() {
@@ -201,17 +214,56 @@ async function loadViewer() {
   }
 }
 
+function showThumbnailPreview(url) {
+  thumbnailPreview.hidden = !url;
+  if (url) thumbnailPreview.src = url;
+  else thumbnailPreview.removeAttribute('src');
+}
+
+function releaseThumbnailPreview() {
+  if (thumbnailObjectUrl) URL.revokeObjectURL(thumbnailObjectUrl);
+  thumbnailObjectUrl = undefined;
+}
+
+thumbnailInput.addEventListener('change', () => {
+  releaseThumbnailPreview();
+  const file = thumbnailInput.files[0];
+  if (file) {
+    removeThumbnail.checked = false;
+    thumbnailObjectUrl = URL.createObjectURL(file);
+  }
+  const game = window.OIBUNG_CATALOG.getGame(gameForm.dataset.gameId);
+  showThumbnailPreview(thumbnailObjectUrl || (removeThumbnail.checked ? null : game?.thumbnailUrl));
+});
+removeThumbnail.addEventListener('change', () => {
+  const game = window.OIBUNG_CATALOG.getGame(gameForm.dataset.gameId);
+  if (removeThumbnail.checked) {
+    thumbnailInput.value = '';
+    releaseThumbnailPreview();
+  }
+  showThumbnailPreview(removeThumbnail.checked ? null : game?.thumbnailUrl);
+});
+account.addEventListener('close', releaseThumbnailPreview);
+
 function openEditor(game) {
   if (gameForm.querySelector('[type="submit"]').disabled) return;
   gameForm.reset();
+  claimPanel.hidden = Boolean(game) || !client;
+  claimPanel.open = false;
+  claimForm.reset();
+  claimStatus.textContent = '';
+  releaseThumbnailPreview();
+  showThumbnailPreview(game?.thumbnailUrl);
+  $('#thumbnail-remove').hidden = !game?.thumbnailUrl;
   gameForm.dataset.gameId = game?.id ?? '';
   $('#guide-title').textContent = game ? '게임 정보 수정' : '새 게임 등록하기';
   gameForm.querySelector('[type="submit"]').textContent = game ? '수정 저장' : '게임 등록하고 상세 열기';
   accountStatus.textContent = client ? '' : '공유 서버를 연결하는 중이야.';
   if (game) {
-    for (const name of ['title', 'description', 'category', 'genre', 'playUrl']) {
+    for (const name of ['title', 'description', 'developer', 'genre', 'playUrl']) {
       gameForm.elements.namedItem(name).value = game[name] ?? '';
     }
+    gameForm.elements.namedItem('developmentStatus').value = game.developmentStatus || 'unknown';
   }
   account.showModal();
   document.body.classList.add('no-scroll');
@@ -257,22 +309,40 @@ submit(gameForm, accountStatus, async () => {
   const fieldsToSave = {
     action: gameId ? 'edit_game' : 'game',
     title: textField(gameForm, 'title'),
-    category: textField(gameForm, 'category'),
+    developer: textField(gameForm, 'developer'),
+    development_status: textField(gameForm, 'developmentStatus'),
+    remove_thumbnail: removeThumbnail.checked,
     genre: textField(gameForm, 'genre'),
     description: textField(gameForm, 'description'),
     play_url: link?.href ?? null
   };
-  const { game } = await guestWrite(fieldsToSave, gameId);
+  const thumbnail = thumbnailInput.files[0];
+  let data = fieldsToSave;
+  if (thumbnail) {
+    if (!fileTypes.has(thumbnail.type) || thumbnail.size === 0 || thumbnail.size > 5242880) {
+      throw new Error('썸네일은 5MB 이하 JPG, PNG, WebP를 선택해 줘.');
+    }
+    data = new FormData();
+    data.set('metadata', JSON.stringify(fieldsToSave));
+    data.set('thumbnail', thumbnail);
+  }
+  const { game } = await guestWrite(data, gameId);
   gameForm.reset();
   ++catalogRevision;
-  const { play_url, ...fields } = game;
-  window.OIBUNG_CATALOG.saveSharedGame({ ...fields, playUrl: play_url });
+  window.OIBUNG_CATALOG.saveSharedGame(asCatalogGame(game));
   refreshCatalog();
   if (account.open) {
     account.close();
     if (gameId) editStatus.textContent = '게임 정보를 수정했어.';
     else window.OIBUNG_CATALOG.openDetail(game.id);
   }
+});
+
+submit(claimForm, claimStatus, async () => {
+  const { count } = await guestWrite({ action: 'claim_games', code: textField(claimForm, 'code').toLowerCase() });
+  claimForm.reset();
+  claimStatus.textContent = count + '개 게임을 연결했어. 각 게임의 상세 화면에서 수정할 수 있어.';
+  refreshCatalog();
 });
 
 submit(imageForm, imageStatus, async () => {
@@ -346,6 +416,7 @@ async function connect() {
       }
     });
   gameForm.hidden = false;
+  claimPanel.hidden = Boolean(gameForm.dataset.gameId);
   accountStatus.textContent = '';
   showParticipation();
   void loadDetails();

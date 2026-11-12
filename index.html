@@ -13,11 +13,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=intro-1">
+  <link rel="stylesheet" href="styles.css?v=game-meta-1">
   <script src="games.js" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=intro-1" defer></script>
-  <script type="module" src="community.js?v=intro-1"></script>
+  <script src="app.js?v=game-meta-1" defer></script>
+  <script type="module" src="community.js?v=game-meta-1"></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -61,11 +61,10 @@
           <button class="button-primary" type="button" data-open-editor>게임 등록하기 <svg aria-hidden="true"><use href="#i-arrow"/></svg></button>
         </div>
         <div class="library-toolbar">
-          <div class="filter-tabs" id="filter-tabs" role="group" aria-label="게임 장르 필터">
+          <div class="filter-tabs" id="filter-tabs" role="group" aria-label="게임 상태 필터">
             <button class="filter-chip is-active" type="button" data-filter="all" aria-pressed="true">전체 <span id="filter-all-count">04</span></button>
-            <button class="filter-chip" type="button" data-filter="action" aria-pressed="false">액션</button>
-            <button class="filter-chip" type="button" data-filter="strategy" aria-pressed="false">전략</button>
-            <button class="filter-chip" type="button" data-filter="other" aria-pressed="false">기타</button>
+            <button class="filter-chip" type="button" data-filter="in_development" aria-pressed="false">개발 중</button>
+            <button class="filter-chip" type="button" data-filter="released" aria-pressed="false">개발 완료</button>
             <button class="filter-chip" type="button" data-filter="favorite" aria-pressed="false">♥ 찜한 게임</button>
           </div>
           <label class="search-field"><svg aria-hidden="true"><use href="#i-search"/></svg><span class="sr-only">게임 이름 검색</span><input id="game-search" type="search" placeholder="게임 검색..." autocomplete="off"><kbd>/</kbd></label>
@@ -93,6 +92,7 @@
           <div class="detail-introduction">
             <span class="dialog-kicker" id="detail-genre"></span>
             <h2 id="detail-title"></h2>
+            <div id="detail-meta" class="game-meta"></div>
             <div class="dialog-tags" id="detail-tags"></div>
             <p id="detail-summary"></p>
             <div class="dialog-actions" id="detail-links">
@@ -144,13 +144,26 @@
         <label>게임 이름 <input name="title" required maxlength="80"></label>
         <label>게임 소개 <textarea name="description" required maxlength="1000" rows="6"></textarea></label>
         <div class="editor-classification">
-          <label>분류 <select name="category"><option value="action">액션</option><option value="strategy">전략</option><option value="other">기타</option></select></label>
-          <label>장르 <input name="genre" required maxlength="60"></label>
+          <label>개발자 이름 <input name="developer" maxlength="80" placeholder="닉네임 또는 팀 이름"></label>
+          <label>개발 상태 <select name="developmentStatus"><option value="unknown">미정</option><option value="in_development">개발 중</option><option value="released">개발 완료</option></select></label>
         </div>
+        <label>장르 <input name="genre" required maxlength="60"></label>
+        <label>썸네일 <input name="thumbnail" type="file" accept="image/jpeg,image/png,image/webp"></label>
+        <small>JPG · PNG · WebP, 최대 5MB</small>
+        <img id="thumbnail-preview" alt="썸네일 미리보기" hidden>
+        <label class="thumbnail-remove" id="thumbnail-remove" hidden><input name="removeThumbnail" type="checkbox"> 기본 이미지로 변경</label>
         <label>플레이 링크 (선택) <input name="playUrl" type="url" maxlength="2048" placeholder="https://"></label>
         <small>APK나 마인크래프트 모드처럼 링크가 없으면 비워 둬도 돼.</small>
         <button class="button-primary" type="submit">게임 등록하고 상세 열기</button>
       </form>
+      <details id="claim-panel" class="contribution-panel" hidden>
+        <summary>기존 게시물 관리 연결</summary>
+        <form id="claim-form" class="community-form">
+          <label>일회용 관리 코드 <input name="code" type="password" autocomplete="off" required minlength="48" maxlength="48"></label>
+          <button class="button-outline" type="submit">이 브라우저에 연결</button>
+        </form>
+        <p id="claim-status" role="status"></p>
+      </details>
     </div>
   </dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

@@ -52,13 +52,27 @@ Deno.serve(async req => {
   try {
     const imageRequest = req.headers.get('content-type')?.startsWith('multipart/form-data');
     const length = Number(req.headers.get('content-length'));
-    if (length > (imageRequest ? maxImage + 4096 : 12000)) return reply(413, { error: '파일이나 글이 너무 커.' });
+    if (length > (imageRequest ? maxImage + 16384 : 12000)) return reply(413, { error: '파일이나 글이 너무 커.' });
     const identity = await hash('guest:' + token);
     const author = [identity.slice(0, 8), identity.slice(8, 12), identity.slice(12, 16),
       identity.slice(16, 20), identity.slice(20, 32)].join('-');
     const gameId = new URL(req.url).searchParams.get('game') ?? '';
-    const content = imageRequest ? null : await req.json();
-    const action = imageRequest ? 'image' : content?.action;
+    const form = imageRequest ? await req.formData() : null;
+    const metadata = form?.get('metadata');
+    const content = typeof metadata === 'string' ? JSON.parse(metadata) : form ? null : await req.json();
+    const action = form && metadata == null ? 'image' : content?.action;
+    if (action === 'claim_games') {
+      const code = content.code;
+      if (typeof code !== 'string' || !/^[a-f0-9]{48}$/.test(code)) {
+        return reply(400, { error: '관리 코드를 확인해 줘.' });
+      }
+      const bytes = await crypto.subtle.digest('SHA-256', encoder.encode(code));
+      const digest = Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, '0')).join('');
+      const claim = await db.rpc('oc_claim_games', { claim_digest: digest, guest_author: author });
+      if (claim.error) throw claim.error;
+      if (!claim.data) return reply(403, { error: '이미 사용했거나 유효하지 않은 관리 코드야.' });
+      return reply(200, { count: claim.data });
+    }
     if (!['game', 'edit_game', 'viewer', 'review', 'image'].includes(action) || (action !== 'game' && !gamePattern.test(gameId))) {
       return reply(400, { error: '게임 정보가 올바르지 않아.' });
     }
@@ -77,9 +91,10 @@ Deno.serve(async req => {
     if (!quota.data) return reply(429, { error: '오늘 등록 한도에 도달했어. 내일 다시 시도해 줘.' });
 
     if (action === 'game' || action === 'edit_game') {
-      const { title, description, genre, category, play_url } = content;
+      const { title, description, genre, play_url, developer, development_status, remove_thumbnail } = content;
       if (!required(title, 80) || !required(description, 1000) || !required(genre, 60)
-          || !['action', 'strategy', 'other'].includes(category)) {
+          || (developer != null && developer !== '' && !required(developer, 80))
+          || (development_status !== undefined && !['unknown', 'in_development', 'released'].includes(development_status))) {
         return reply(400, { error: '게임 이름, 장르, 소개를 확인해 줘.' });
       }
       let link: URL | null = null;
@@ -90,19 +105,51 @@ Deno.serve(async req => {
           return reply(400, { error: 'HTTPS 게임 링크를 확인해 줘.' });
         }
       }
-      const fields = { title: title.trim(), description: description.trim(),
-        genre: genre.trim(), category, play_url: link?.href ?? null };
-      if (action === 'edit_game') {
-        const result = await db.from('oc_games').update(fields)
-          .eq('id', gameId).eq('author_id', author).select('id').maybeSingle();
-        if (result.error) throw result.error;
-        if (!result.data) return reply(403, { error: '게임을 등록한 브라우저에서 수정할 수 있어.' });
-        return reply(200, { game: { id: gameId, ...fields } });
+      const fields: Record<string, unknown> = { title: title.trim(), description: description.trim(),
+        genre: genre.trim(), play_url: link?.href ?? null };
+      if (developer !== undefined) fields.developer = developer?.trim() || null;
+      if (development_status !== undefined) fields.development_status = development_status;
+      const editing = action === 'edit_game';
+      const id = editing ? gameId : crypto.randomUUID();
+      let previousThumbnail: string | null = null;
+      if (editing) {
+        const existing = await db.from('oc_games').select('thumbnail_path')
+          .eq('id', id).eq('author_id', author).maybeSingle();
+        if (existing.error) throw existing.error;
+        if (!existing.data) return reply(403, { error: '게임을 등록한 브라우저에서 수정할 수 있어.' });
+        previousThumbnail = existing.data.thumbnail_path;
       }
-      const game = { id: crypto.randomUUID(), ...fields };
-      const result = await db.from('oc_games').insert({ ...game, author_id: author });
-      if (result.error) throw result.error;
-      return reply(201, { game });
+      const thumbnail = form?.get('thumbnail');
+      const storage = db.storage.from(bucket);
+      let uploadedPath: string | null = null;
+      if (thumbnail != null) {
+        if (!(thumbnail instanceof File) || thumbnail.size === 0 || thumbnail.size > maxImage
+            || !mimeExtensions.has(thumbnail.type) || await detectImage(thumbnail) !== thumbnail.type) {
+          return reply(400, { error: '썸네일은 5MB 이하 JPG, PNG, WebP를 선택해 줘.' });
+        }
+        uploadedPath = 'thumbnails/' + id + '/' + crypto.randomUUID() + '.' + mimeExtensions.get(thumbnail.type);
+        const upload = await storage.upload(uploadedPath, thumbnail, { contentType: thumbnail.type });
+        if (upload.error) throw upload.error;
+        fields.thumbnail_path = uploadedPath;
+      } else if (editing && remove_thumbnail === true) {
+        fields.thumbnail_path = null;
+      }
+      const games = db.from('oc_games');
+      let update = editing
+        ? games.update(fields).eq('id', id).eq('author_id', author)
+        : games.insert({ id, ...fields, category: 'other', author_id: author });
+      if (editing && 'thumbnail_path' in fields) {
+        update = previousThumbnail === null
+          ? update.is('thumbnail_path', null) : update.eq('thumbnail_path', previousThumbnail);
+      }
+      const result = await update.select('id,title,description,genre,play_url,developer,development_status,thumbnail_path').maybeSingle();
+      if (result.error || !result.data) {
+        if (uploadedPath) await storage.remove([uploadedPath]);
+        if (result.error) throw result.error;
+        return reply(409, { error: '게시물이 변경됐어. 다시 열고 저장해 줘.' });
+      }
+      if (previousThumbnail && 'thumbnail_path' in fields) await storage.remove([previousThumbnail]);
+      return reply(editing ? 200 : 201, { game: result.data });
     }
 
     if (action === 'review') {
@@ -118,7 +165,7 @@ Deno.serve(async req => {
       return reply(200, { saved: true });
     }
 
-    const file = (await req.formData()).get('image');
+    const file = form?.get('image');
     if (!(file instanceof File) || file.size > maxImage || file.size === 0
         || !mimeExtensions.has(file.type) || await detectImage(file) !== file.type) {
       return reply(400, { error: '5MB 이하 JPG, PNG, WebP 이미지를 골라 줘.' });

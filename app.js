@@ -17,8 +17,15 @@
   const icon = id => `<svg aria-hidden="true"><use href="#i-${id}"></use></svg>`;
   const formatCount = value => String(value).padStart(2, '0');
   const visualOptions = new Set(['eclipse','arena','duel','tactics','custom']);
+  const statusLabels = { in_development: '개발 중', released: '개발 완료' };
+  const metadata = game => [
+    game.developer && `<span>개발자 · ${escapeHTML(game.developer)}</span>`,
+    statusLabels[game.developmentStatus] && `<span class="game-status">${statusLabels[game.developmentStatus]}</span>`
+  ].filter(Boolean).join('');
   const visualClass = game => visualOptions.has(game.visual) ? game.visual : 'custom';
-  const coverArt = game => `<div class="cover-art cover-${visualClass(game)}" aria-hidden="true"><span class="decor decor-a"></span><span class="decor decor-b"></span><span class="decor decor-c"></span></div>`;
+  const coverArt = game => safeSourceUrl(game.thumbnailUrl)
+    ? `<img class="game-thumbnail" src="${escapeHTML(game.thumbnailUrl)}" alt="" loading="lazy">`
+    : `<div class="cover-art cover-${visualClass(game)}" aria-hidden="true"><span class="decor decor-a"></span><span class="decor decor-b"></span><span class="decor decor-c"></span></div>`;
   const safeSourceUrl = url => /^https:\/\//.test(url || '') ? url : '';
   const favoriteKey = 'oibung-corporation:favorites';
   const getFavorites = () => {
@@ -56,6 +63,7 @@
         : `<div class="game-cover">${cover}</div>`}
       <div class="game-card-body"><div class="game-card-title-row"><div><div class="game-genre">${escapeHTML(game.genre)}</div><h3>${escapeHTML(game.title)}</h3></div>
       <button class="favorite-button ${favorite ? 'is-favorite' : ''}" type="button" data-favorite="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} ${favorite ? '찜 해제' : '찜하기'}" aria-pressed="${favorite}">${icon('heart')}</button></div>
+      <div class="game-meta">${metadata(game)}</div>
       <p class="game-card-desc">${escapeHTML(game.description)}</p>
       <div class="game-card-footer"><button class="details-link" type="button" data-details="${escapeHTML(game.id)}">게임 자세히 보기 ↗</button>
       ${playUrl ? `<a class="play-link" href="${escapeHTML(playUrl)}" target="_blank" rel="noopener noreferrer">플레이하기 ${icon('arrow')}</a>` : ''}</div></div></article>`;
@@ -63,8 +71,8 @@
   function render() {
     const query = searchInput.value.trim().toLocaleLowerCase('ko-KR');
     const filtered = games.filter(game => {
-      const categoryMatch = activeFilter === 'all' || (activeFilter === 'favorite' ? favorites.has(game.id) : game.category === activeFilter);
-      const searchMatch = [game.title, game.english, game.genre, game.description, game.tagline, ...(game.tags || [])].join(' ').toLocaleLowerCase('ko-KR').includes(query);
+      const categoryMatch = activeFilter === 'all' || (activeFilter === 'favorite' ? favorites.has(game.id) : game.developmentStatus === activeFilter);
+      const searchMatch = [game.title, game.english, game.genre, game.developer, game.description, game.tagline, ...(game.tags || [])].join(' ').toLocaleLowerCase('ko-KR').includes(query);
       return categoryMatch && searchMatch;
     });
     grid.innerHTML = filtered.map(cardTemplate).join('');
@@ -76,6 +84,7 @@
     detailCover.innerHTML = coverArt(game);
     document.querySelector('#detail-genre').textContent = game.genre || 'GAME';
     document.querySelector('#detail-title').textContent = game.title;
+    document.querySelector('#detail-meta').innerHTML = metadata(game);
     document.querySelector('#detail-summary').textContent = game.description;
     document.querySelector('#detail-tags').innerHTML = (game.tags || []).map(tag => `<span>${escapeHTML(tag)}</span>`).join('');
     const play = document.querySelector('#detail-play');
