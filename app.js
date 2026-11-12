@@ -194,7 +194,8 @@
     const source = document.querySelector('#detail-source');
     source.hidden = !safeSourceUrl(game.sourceUrl);
     if (!source.hidden) source.href = game.sourceUrl;
-    play.parentElement.hidden = play.hidden && source.hidden;
+    // The share button remains useful even for APK/mod entries with no web play link.
+    play.parentElement.hidden = false;
   }
   function openDetail(id) {
     const game = byId.get(id);
