@@ -30,6 +30,7 @@ let catalogRevision = 0;
 let imageLimit = pageSize;
 let reviewLimit = pageSize;
 let reviewsRevision = 0;
+let reviewViewerFailed = false;
 
 function unwrap(result) {
   if (result.error) throw result.error;
@@ -299,6 +300,7 @@ function displayExistingPhotos(paths) {
 }
 
 async function loadViewer() {
+  reviewViewerFailed = false;
   const gameId = textField(reviewForm, 'gameId');
   const revision = ++viewerRevision;
   displayExistingPhotos([]);
@@ -312,13 +314,16 @@ async function loadViewer() {
     if (revision !== viewerRevision || !reviewDialog.open || textField(reviewForm, 'gameId') !== gameId) return;
     if (viewer.review) {
       $('#review-dialog-title').textContent = '내 게임 후기 수정';
-      for (const name of ['nickname', 'stars', 'body']) {
-        reviewForm.elements.namedItem(name).value = viewer.review[name] ?? '';
+      if (!['nickname', 'stars', 'body'].some(name => textField(reviewForm, name))) {
+        for (const name of ['nickname', 'stars', 'body']) {
+          reviewForm.elements.namedItem(name).value = viewer.review[name] ?? '';
+        }
       }
       displayExistingPhotos(viewer.review.image_paths || []);
     }
   } catch {
     if (revision === viewerRevision && reviewDialog.open) {
+      reviewViewerFailed = true;
       reviewStatus.textContent = '기존 후기를 불러오지 못했어. 다시 열어 줘.';
     }
   }
@@ -331,6 +336,7 @@ function openReviewEditor(gameId = '') {
   }
   syncReviewGames();
   reviewForm.reset();
+  reviewViewerFailed = false;
   reviewStatus.textContent = '';
   displayExistingPhotos([]);
   const gameSelect = reviewForm.elements.namedItem('gameId');
@@ -501,6 +507,7 @@ submit(imageForm, imageStatus, async () => {
 });
 
 submit(reviewForm, reviewStatus, async () => {
+  if (reviewViewerFailed) throw new Error('기존 후기를 불러오지 못했어. 후기를 다시 열어 줘.');
   const gameId = textField(reviewForm, 'gameId');
   const nickname = textField(reviewForm, 'nickname');
   const photos = [...reviewForm.elements.namedItem('photos').files];
