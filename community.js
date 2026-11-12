@@ -28,6 +28,7 @@ let detailRevision = 0;
 let viewerRevision = 0;
 let catalogRevision = 0;
 let imageLimit = pageSize;
+const pendingImageDeletes = new Set();
 let reviewLimit = pageSize;
 let reviewsRevision = 0;
 let reviewViewerFailed = false;
@@ -89,9 +90,9 @@ function showParticipation() {
   imagePanel.hidden = !client;
 }
 
-function drawImages(rows) {
+function drawImages(rows, gameId, imageOwner) {
   const gallery = $('#community-gallery');
-  const links = rows.slice(0, imageLimit).map((row, index) => {
+  const entries = rows.slice(0, imageLimit).map((row, index) => {
     const link = document.createElement('a');
     link.href = client.storage.from(bucket).getPublicUrl(row.path).data.publicUrl;
     link.target = '_blank';
@@ -101,11 +102,51 @@ function drawImages(rows) {
     image.loading = 'lazy';
     image.alt = '게임 스크린샷 ' + (index + 1);
     link.append(image);
-    return link;
+    const entry = document.createElement('figure');
+    entry.className = 'gallery-screenshot';
+    entry.append(link);
+    if (imageOwner && row.path.startsWith(imageOwner + '/')) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'screenshot-delete';
+      button.textContent = '삭제';
+      button.dataset.screenshotPath = row.path;
+      button.setAttribute('aria-label', image.alt + ' 삭제');
+      button.disabled = pendingImageDeletes.has(row.path);
+      button.addEventListener('click', () => void deleteScreenshot(gameId, row.path, button));
+      entry.append(button);
+    }
+    return entry;
   });
-  gallery.replaceChildren(...links);
-  if (!rows.length) gallery.textContent = '아직 등록된 스크린샷이 없어.';
+  gallery.replaceChildren(...entries);
+  if (!rows.length) gallery.textContent = '등록된 스크린샷이 없습니다.';
   $('#more-images').hidden = rows.length <= imageLimit;
+}
+
+async function deleteScreenshot(gameId, path, button) {
+  if (pendingImageDeletes.has(path) || !window.confirm('이 스크린샷을 삭제할까요?')) return;
+  pendingImageDeletes.add(path);
+  button.disabled = true;
+  detailStatus.textContent = '스크린샷을 삭제하는 중…';
+  try {
+    await guestWrite({ action: 'delete_image', path }, gameId);
+    if (activeGame() === gameId) {
+      detailStatus.textContent = '스크린샷을 삭제했습니다.';
+      await loadDetails();
+    }
+  } catch (error) {
+    if (activeGame() === gameId) {
+      detailStatus.textContent = error instanceof Error ? error.message : '스크린샷을 삭제하지 못했습니다.';
+    }
+  } finally {
+    pendingImageDeletes.delete(path);
+    button.disabled = false;
+    if (activeGame() === gameId) {
+      for (const item of $('#community-gallery').querySelectorAll('button[data-screenshot-path]')) {
+        if (item.dataset.screenshotPath === path) item.disabled = false;
+      }
+    }
+  }
 }
 
 function syncReviewGames() {
@@ -222,10 +263,14 @@ async function loadDetails() {
   if (!gameId || !client) return;
   const revision = ++detailRevision;
   try {
-    const images = await client.from('oc_images').select('path').eq('game_id', gameId)
+    const imagesQuery = client.from('oc_images').select('path').eq('game_id', gameId)
       .order('created_at', { ascending: false }).order('path').range(0, imageLimit);
+    const ownerQuery = getStoredGuest()
+      ? guestWrite({ action: 'viewer' }, gameId).catch(() => null)
+      : null;
+    const [images, viewer] = await Promise.all([imagesQuery, ownerQuery]);
     if (gameId !== activeGame() || revision !== detailRevision) return;
-    drawImages(unwrap(images));
+    drawImages(unwrap(images), gameId, viewer?.imageOwner);
   } catch {
     if (gameId === activeGame() && revision === detailRevision) {
       detailStatus.textContent = '스크린샷을 불러오지 못했어.';

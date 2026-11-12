@@ -62,15 +62,31 @@ Deno.serve(async req => {
     const metadata = form?.get('metadata');
     const content = typeof metadata === 'string' ? JSON.parse(metadata) : form ? null : await req.json();
     const action = form && metadata == null ? 'image' : content?.action;
-    if (!['game', 'edit_game', 'viewer', 'review', 'image'].includes(action) || (action !== 'game' && !gamePattern.test(gameId))) {
+    if (!['game', 'edit_game', 'viewer', 'review', 'image', 'delete_image'].includes(action) || (action !== 'game' && !gamePattern.test(gameId))) {
       return reply(400, { error: '게임 정보가 올바르지 않아.' });
     }
     if (action === 'viewer') {
       const review = await db.from('oc_reviews').select('nickname,stars,body,image_paths').eq('game_id', gameId)
         .eq('author_id', author).maybeSingle();
       if (review.error) throw review.error;
-      return reply(200, { review: review.data });
+      return reply(200, { review: review.data, imageOwner: author });
     }
+    if (action === 'delete_image') {
+      const path = content?.path;
+      if (typeof path !== 'string' || !path.startsWith(author + '/' + gameId + '/') || path.length > 180) {
+        return reply(403, { error: '이 브라우저에서 올린 스크린샷만 삭제할 수 있습니다.' });
+      }
+      const image = await db.from('oc_images').select('path').eq('game_id', gameId).eq('author_id', author)
+        .eq('path', path).maybeSingle();
+      if (image.error) throw image.error;
+      if (!image.data) return reply(200, { deleted: true });
+      const removed = await db.storage.from(bucket).remove([image.data.path]);
+      if (removed.error) throw removed.error;
+      const deleted = await db.from('oc_images').delete().eq('game_id', gameId).eq('author_id', author).eq('path', path);
+      if (deleted.error) throw deleted.error;
+      return reply(200, { deleted: true });
+    }
+
     const address = req.headers.get('cf-connecting-ip') ?? req.headers.get('x-real-ip') ?? 'unknown';
     const quota = await db.rpc('oc_guest_quota', { address_hash: await hash('ip:' + address), operation: action === 'edit_game' ? 'game' : action });
     if (quota.error) throw quota.error;

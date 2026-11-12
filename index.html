@@ -3,21 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b0b0e">
-  <meta name="description" content="오이붕 코퍼레이션 — 우리가 만든 게임들이 모이는 곳. 친구들의 독창적인 웹게임을 한곳에서 만나보세요.">
-  <meta property="og:title" content="OIBUNG CORPORATION — 우리가 만든 세계">
-  <meta property="og:description" content="친구들이 만든 게임, 하나의 세계에 모이다.">
+  <meta name="theme-color" content="#111914">
+  <meta name="description" content="친구들이 만든 게임을 전시하는 오이붕 갤러리입니다. 게임 소개와 스크린샷, 플레이어 후기를 둘러보세요.">
+  <meta property="og:title" content="오이붕 갤러리">
+  <meta property="og:description" content="친구들이 만든 게임을 한자리에 모은 작품관입니다.">
   <meta property="og:type" content="website">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <title>OIBUNG CORPORATION — 우리가 만든 세계</title>
+  <title>오이붕 갤러리</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=review-board-1">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Noto+Sans+KR:wght@400;500;600;700&family=Noto+Serif+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=gallery-1">
   <script src="games.js" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=review-board-1" defer></script>
-  <script type="module" src="community.js?v=review-board-1"></script>
+  <script src="app.js?v=gallery-1" defer></script>
+  <script type="module" src="community.js?v=gallery-1"></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -34,23 +34,19 @@
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></symbol>
     <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.6.5l2.3-2.3a5 5 0 0 0-7.1-7.1l-1.3 1.3M14 11a5 5 0 0 0-7.6-.5l-2.3 2.3a5 5 0 0 0 7.1 7.1l1.3-1.3"/></symbol>
   </svg>
-  <div class="noise" aria-hidden="true"></div>
   <header class="site-header" id="top">
     <div class="header-inner container">
-      <a class="brand" href="#top" aria-label="오이붕 코퍼레이션 처음으로">
+      <a class="brand" href="#top" aria-label="오이붕 갤러리 처음으로">
         <span class="brand-mark" aria-hidden="true"><span class="brand-core"></span></span>
-        <span class="brand-copy">OIBUNG<span>CORPORATION</span></span>
+        <span class="brand-copy">오이붕 갤러리<span lang="en">OIBUNG GALLERY</span></span>
       </a>
-      <nav class="desktop-nav" aria-label="주요 메뉴">
-        <a href="#games">게임 컬렉션</a><a href="#reviews">평가·후기</a><a href="#about">우리는 누구?</a>
-      </nav>
       <div class="header-actions">
-        <span class="live-pill"><span class="live-dot"></span> INDIE GAME HUB</span>
+        <a class="gallery-about-link" href="#about">갤러리 소개</a>
         <button type="button" class="menu-toggle icon-button" id="menu-toggle" aria-expanded="false" aria-label="메뉴 열기"><svg><use href="#i-menu"/></svg></button>
       </div>
     </div>
     <nav class="mobile-nav container" id="mobile-nav" aria-label="모바일 메뉴" hidden>
-      <a href="#games">게임 컬렉션</a><a href="#reviews">평가·후기</a><a href="#about">우리는 누구?</a>
+      <a href="#games">작품 전시</a><a href="#reviews">평가·후기</a><a href="#about">갤러리 소개</a>
     </nav>
   </header>
 
@@ -62,7 +58,7 @@
     <section class="library section-pad" id="games" role="tabpanel" aria-labelledby="tab-games">
       <div class="container">
         <div class="section-heading-row">
-          <div><h1 id="games-title">게임 <span>컬렉션</span></h1><p>친구들이 만든 게임을 둘러보고 소개와 스크린샷을 확인해 봐.</p></div>
+          <div><h1 id="games-title">작품 전시</h1><p>친구들이 만든 게임을 둘러보고, 작품 속 세계를 만나보세요.</p></div>
           <button class="button-primary" type="button" data-open-editor>게임 등록하기 <svg aria-hidden="true"><use href="#i-arrow"/></svg></button>
         </div>
         <div class="library-toolbar">
@@ -78,8 +74,7 @@
           <label class="search-field"><svg aria-hidden="true"><use href="#i-search"/></svg><span class="sr-only">게임 이름 검색</span><input id="game-search" type="search" placeholder="게임 검색..." autocomplete="off"><kbd>/</kbd></label>
         </div>
         <div id="game-grid" class="game-grid" aria-live="polite"></div>
-        <div id="empty-state" class="empty-state" hidden><span class="empty-glyph">✳</span><h3>아직 게임이 없네!</h3><p>검색어나 필터를 바꿔서 다시 찾아봐.</p><button type="button" id="reset-filters" class="button-outline">전체 게임 보기 <svg><use href="#i-right"/></svg></button></div>
-        <div class="library-footnote"><span>✳</span> 플레이 링크는 새 탭에서 열려요. 각 게임의 저장 데이터는 해당 게임 사이트에서 관리합니다.</div>
+        <div id="empty-state" class="empty-state" hidden><h3>조건에 맞는 작품이 없습니다.</h3><p>검색어나 필터를 바꿔 보세요.</p><button type="button" id="reset-filters" class="button-outline">전체 게임 보기 <svg><use href="#i-right"/></svg></button></div>
       </div>
     </section>
 
@@ -88,9 +83,8 @@
       <div class="container">
         <div class="section-heading-row">
           <div>
-            <span class="board-eyebrow">PLAYER VOICES / REVIEWS</span>
-            <h1>평가 <span>&amp; 후기</span></h1>
-            <p>게임을 직접 해 본 이야기들을 모았어. 별점부터 사진, 긴 후기까지 자유롭게 남겨 봐.</p>
+            <h1>평가와 후기</h1>
+            <p>작품을 플레이한 뒤 별점, 글, 사진으로 감상을 남겨 보세요.</p>
           </div>
           <button id="write-review" class="button-primary" type="button">후기 작성하기 <svg aria-hidden="true"><use href="#i-pencil"/></svg></button>
         </div>
@@ -115,14 +109,16 @@
       </div>
     </section>
 
-    <section class="manifesto" id="about" aria-labelledby="about-title"><div class="container manifesto-grid">
-      <div class="manifesto-aside"><span>02 / WHAT WE BELIEVE</span><div class="manifesto-stamp" aria-hidden="true"><span>MADE<br>WITH<br>CHAOS</span><b>↗</b></div></div>
-      <div class="manifesto-copy"><p class="small-orange">NO BIG STUDIO. NO BIG RULES.</p><h2 id="about-title">작은 장난이<br><em>큰 세계가 되는 곳.</em></h2><p>오이붕 코퍼레이션은 친구들이 직접 만든 게임과 실험적인 프로젝트를 한자리에 모은 비공식 게임 아카이브야. 거창한 회사가 아니라, 우리가 즐겁게 만든 것들을 같이 즐기는 공간.</p><div class="manifesto-traits"><span>01 <strong>만들고</strong></span><span>02 <strong>공유하고</strong></span><span>03 <strong>함께 즐기자</strong></span></div></div>
-    </div></section>
+    <section class="manifesto" id="about" aria-labelledby="about-title">
+      <div class="container gallery-about">
+        <h2 id="about-title">갤러리 소개</h2>
+        <p>오이붕 갤러리는 친구들이 직접 만든 게임을 전시하는 온라인 작품관입니다. 작품마다 다른 세계와 플레이어들의 감상을 함께 만나보세요.</p>
+      </div>
+    </section>
 
   </main>
 
-  <footer class="site-footer"><div class="container"><div class="footer-top"><a class="brand brand-footer" href="#top"><span class="brand-mark" aria-hidden="true"><span class="brand-core"></span></span><span class="brand-copy">OIBUNG<span>CORPORATION</span></span></a><span>MADE BY FRIENDS. PLAYED BY EVERYONE.</span></div><div class="footer-bottom"><span>© <span id="year">2026</span> OIBUNG CORPORATION. UNOFFICIAL INDIE COLLECTIVE.</span><a href="#top">BACK TO TOP ↑</a></div></div></footer>
+  <footer class="site-footer"><div class="container"><div class="footer-top"><a class="brand brand-footer" href="#top"><span class="brand-mark" aria-hidden="true"><span class="brand-core"></span></span><span class="brand-copy">오이붕 갤러리<span lang="en">OIBUNG GALLERY</span></span></a></div><div class="footer-bottom"><span>© <span id="year">2026</span> 오이붕 갤러리</span><a href="#top">맨 위로 ↑</a></div></div></footer>
 
   <dialog class="detail-dialog" id="game-dialog" aria-labelledby="detail-title">
     <div class="dialog-inner">
