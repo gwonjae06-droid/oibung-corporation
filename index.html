@@ -152,6 +152,7 @@
             </div>
             <div id="detail-meta" class="game-meta"></div>
             <div id="detail-rating" class="detail-rating" aria-live="polite"></div>
+            <div id="detail-specs" class="detail-specs" aria-label="추가 작품 정보"></div>
             <div class="dialog-tags" id="detail-tags"></div>
             <p id="detail-summary"></p>
             <div class="dialog-actions" id="detail-links">
@@ -205,6 +206,12 @@
           <label>개발 상태 <select name="developmentStatus"><option value="unknown">미정</option><option value="in_development">개발 중</option><option value="released">정식 출시</option><option value="live_service">라이브 서비스</option><option value="finished">완결</option></select></label>
         </div>
         <label>장르 <input name="genre" required maxlength="60"></label>
+        <details class="editor-optional"><summary>추가 정보 (선택)</summary>
+          <div class="editor-optional-fields">
+            <label>플랫폼 <select name="platform"><option value="unknown">미정</option><option value="web">웹</option><option value="pc">PC</option><option value="android">Android</option><option value="mod">게임 모드</option><option value="other">기타</option></select></label>
+            <label>플레이 방식 <select name="playMode"><option value="unknown">미정</option><option value="single">싱글 플레이</option><option value="multi">멀티 플레이</option><option value="both">싱글·멀티</option></select></label>
+          </div>
+        </details>
         <label>소개 배경색 <select name="introTone"><option value="gallery">갤러리 기본</option><option value="burgundy">버건디</option><option value="navy">네이비</option><option value="forest">숲 녹색</option><option value="plum">자두색</option><option value="umber">월넛 갈색</option><option value="slate">슬레이트</option></select></label>
         <label>썸네일 <input name="thumbnail" type="file" accept="image/jpeg,image/png,image/webp"></label>
         <small>JPG · PNG · WebP, 최대 5MB</small>
