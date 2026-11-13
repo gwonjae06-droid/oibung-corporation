@@ -15,32 +15,7 @@
   if (!root || !avatar || !panel || !closeButton || !message || !hideButton || !menuToggle) return;
 
   const preferenceKey = 'oibung-gallery:guide-visible';
-  const poses = ['calm', 'present', 'welcome'];
-  let currentPose = 'calm';
-  let poseTimer = 0;
-  function showPose(index, animate = true) {
-    const pose = poses[Math.abs(index || 0) % poses.length];
-    if (pose === currentPose) return;
-    clearTimeout(poseTimer);
-    const install = () => {
-      currentPose = pose;
-      root.dataset.guidePose = pose;
-      requestAnimationFrame(() => root.classList.remove('is-scene-changing'));
-    };
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
-      document.documentElement.classList.contains('motion-off');
-    if (!animate || reduced || root.hidden) {
-      root.classList.remove('is-scene-changing');
-      install();
-      return;
-    }
-    setPanelOpen(false);
-    root.classList.add('is-scene-changing');
-    poseTimer = window.setTimeout(install, 400);
-  }
-  document.addEventListener('oibung-exhibit-change', event => {
-    showPose(event.detail?.index ?? 0, true);
-  });
+  // gallery-curator.js owns the illustration poses and fade transitions.
   const fallback = '전시관에 오신 것을 환영해요. 작품을 누르면 상세 전시가 열리고, 화면을 좌우로 움직이면 다른 작품을 볼 수 있어요.';
 
   function currentGame() {
@@ -79,10 +54,6 @@
   try { shown = localStorage.getItem(preferenceKey) !== 'off'; }
   catch { /* Default visible. */ }
   setVisible(shown);
-  // The camera may have initialized before the deferred guide script ran.
-  const first = document.querySelector('#game-grid .game-card.walk-room-current');
-  const orderedCards = [...document.querySelectorAll('#game-grid .game-card')];
-  if (first) showPose(orderedCards.indexOf(first), false);
 
   avatar.addEventListener('click', () => setPanelOpen(panel.hidden));
   closeButton.addEventListener('click', () => setPanelOpen(false, true));
