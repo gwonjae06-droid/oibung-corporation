@@ -135,78 +135,6 @@
 #game-dialog .detail-introduction[data-intro-tone]:not([data-intro-tone="gallery"]) :is(h2,.dialog-kicker,.game-meta,#detail-summary,.dialog-tags span,.detail-specs span){
   color:#f7f3e9;
 }
-/* Individual scene palettes; gradients are static and GPU-light. */
-#game-dialog[data-exhibition-theme="stone"]{
-  --page-wall:#c9c4bc;--page-paper:#fbfaf7;--page-ink:#282e29;
-  --page-muted:#626861;--page-accent:#917b5d;--page-border:#c6bfb4;
-  --page-field:#f5f2ed;--page-button:#474f47;
-  background:
-    radial-gradient(ellipse at 34% 9%,#fff8e6b3,transparent 53%),
-    repeating-linear-gradient(90deg,#514c4111 0 1px,transparent 1px 210px),
-    linear-gradient(180deg,#d5d0c7,#b8b2a8);
-}
-#game-dialog[data-exhibition-theme="wood"]{
-  --page-wall:#3c2a1e;--page-paper:#efdfc4;--page-ink:#37271b;
-  --page-muted:#69503b;--page-accent:#9a6d40;--page-border:#b89568;
-  --page-field:#f9efdc;--page-button:#5f412d;--page-button-ink:#fff1d7;
-  background:
-    radial-gradient(ellipse at 53% 10%,#ffc47f28,transparent 50%),
-    repeating-linear-gradient(90deg,transparent 0 194px,#120c073f 195px,#dfaf6942 197px,transparent 199px),
-    repeating-linear-gradient(92deg,#e4b66e06 0 3px,transparent 4px 22px,#1f100912 24px,transparent 27px),
-    linear-gradient(100deg,#302015,#6e4d32 52%,#37271c);
-}
-#game-dialog[data-exhibition-theme="space"]{
-  color-scheme:dark;
-  --page-wall:#060d1b;--page-paper:#101d31;--page-ink:#eef5ff;
-  --page-muted:#b2c6dd;--page-accent:#8bbfea;--page-border:#46617e;
-  --page-field:#1b2d46;--page-button:#b4ddf5;--page-button-ink:#10243b;
-  background:
-    radial-gradient(circle,#ecf7ffa8 0 1px,transparent 1.5px) 0 0/117px 99px,
-    radial-gradient(circle,#cbdbff9b 0 1.3px,transparent 1.8px) 44px 15px/193px 174px,
-    radial-gradient(ellipse 48% 42% at 21% 15%,#5a548b6e,transparent 94%),
-    radial-gradient(ellipse 40% 35% at 83% 48%,#22638873,transparent 94%),
-    linear-gradient(140deg,#070b1d,#111d36 58%,#06111d);
-}
-#game-dialog[data-exhibition-theme="space"] .dialog-body{
-  box-shadow:0 25px 65px #000b,0 0 35px #78b9fb13;
-}
-#game-dialog[data-exhibition-theme="temple"]{
-  --page-wall:#b6a383;--page-paper:#f9f0dd;--page-ink:#34291b;
-  --page-muted:#68553c;--page-accent:#a47b42;--page-border:#bda177;
-  --page-field:#f1e4c9;--page-button:#614a2d;--page-button-ink:#fff2da;
-  background:
-    radial-gradient(ellipse 55% 65% at 49% 5%,#fff6daa3,transparent 81%),
-    repeating-linear-gradient(90deg,transparent 0 185px,#3b2b1933 188px,#f9e0b080 192px,transparent 197px),
-    linear-gradient(115deg,#8e7b60,#dbc9aa 43%,#897558);
-}
-#game-dialog[data-exhibition-theme="temple"] .dialog-cover{
-  border-style:ridge;
-}
-#game-dialog[data-exhibition-theme="deepsea"]{
-  color-scheme:dark;
-  --page-wall:#041e2b;--page-paper:#103642;--page-ink:#e4f7f4;
-  --page-muted:#b3d8d7;--page-accent:#82d9ca;--page-border:#438d92;
-  --page-field:#15434c;--page-button:#8ae3d1;--page-button-ink:#07313a;
-  background:
-    radial-gradient(circle,#c5f8e654 0 1px,transparent 1.5px) 14px 26px/179px 151px,
-    linear-gradient(108deg,transparent 20%,#8ffff01c 26%,transparent 36%,#8ce9ee16 47%,transparent 62%),
-    radial-gradient(ellipse 60% 38% at 48% 0%,#448d9e97,transparent 92%),
-    linear-gradient(180deg,#135767,#073541 50%,#021721);
-}
-#game-dialog[data-exhibition-theme="deepsea"] .dialog-body{
-  box-shadow:0 25px 65px #0008,0 0 43px #62e9d51b;
-}
-/* Odenring is a shadowed sanctuary, not a sunlit marble hall. */
-#game-dialog[data-exhibition-theme="temple"][data-game-id="odenring"]{
-  --page-paper:#eae0d3;--page-border:#997d5e;--page-accent:#9b624b;
-  background:
-    radial-gradient(ellipse at 52% 5%,#9f554733,transparent 53%),
-    repeating-linear-gradient(90deg,transparent 0 210px,#100d0b8a 214px,#92745e53 216px,transparent 223px),
-    linear-gradient(125deg,#191719,#43302d 50%,#171719);
-}
-#game-dialog[data-exhibition-theme="temple"][data-game-id="odenring"] .dialog-body{
-  box-shadow:0 27px 74px #040204ad;
-}
 @media(max-width:760px){
   #game-dialog .dialog-inner{width:calc(100% - 24px);padding:72px 0 50px}
   #game-dialog .exhibit-back{top:16px;min-height:38px;padding:8px 11px}
@@ -238,25 +166,4 @@
 }
 @media(prefers-reduced-motion:reduce){
   #game-dialog[open] .dialog-inner{animation:none}
-}
-
-/* A quiet hint of the destination world without changing the museum catalog. */
-.game-card[data-exhibit-theme="stone"]{--artwork-accent:#938573}
-.game-card[data-exhibit-theme="wood"]{--artwork-accent:#ad8155}
-.game-card[data-exhibit-theme="space"]{--artwork-accent:#6f9cc9}
-.game-card[data-exhibit-theme="temple"]{--artwork-accent:#b79b65}
-.game-card[data-exhibit-theme="deepsea"]{--artwork-accent:#5eada8}
-.game-card[data-exhibit-theme] .game-cover{border-bottom:2px solid var(--artwork-accent)}
-.game-card .artwork-caption{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.game-card .artwork-room-chip{
-  display:inline-flex;gap:5px;align-items:center;
-  font:600 10px/1.3 var(--body);
-  color:inherit;opacity:.76;white-space:nowrap;
-}
-.game-card .artwork-room-chip::before{
-  content:"";display:block;width:6px;height:6px;flex:none;
-  border-radius:50%;background:var(--artwork-accent);
-}
-@media(max-width:760px){
-  .game-card .artwork-room-chip{font-size:9px}
 }
