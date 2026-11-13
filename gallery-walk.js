@@ -92,6 +92,7 @@
     const count = cards.length;
     const visibleNumber = count ? index + 1 : 0;
     indexLabel.textContent = formatIndex(visibleNumber) + ' / ' + formatIndex(count);
+    room.dataset.activeScene = count ? (cards[index]?.dataset.referenceScene || '0') : '0';
     previous.disabled = index <= 0 || count === 0;
     next.disabled = index >= count - 1 || count === 0;
     progress.style.transform = 'scaleX(' + (count ? (index + 1) / count : 0) + ')';
