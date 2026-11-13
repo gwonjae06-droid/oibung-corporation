@@ -400,6 +400,9 @@ html.motion-suspended .game-card-body::after{animation-play-state:paused!importa
    =================================================================== */
 :root{--museum-wall:#c6c0b8}
 html{background:#b9b2a9}
+/* Perspective flooring extends beyond the viewport for its vanishing point.
+   Clip the horizontal overspill so no blank right-side scroll gutter appears. */
+html,body{overflow-x:clip}
 body{
   position:relative;
   isolation:isolate;
