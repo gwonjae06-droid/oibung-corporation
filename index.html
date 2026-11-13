@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="gallery-cinematic.css?v=cinematic-museum-1">
   <link rel="stylesheet" href="gallery-atelier.css?v=gallery-atelier-2">
   <link rel="stylesheet" href="gallery-guide.css?v=gallery-guide-1">
+  <link rel="stylesheet" href="gallery-premiere.css?v=gallery-premiere-1">
   <script src="gallery-display-mode.js?v=two-modes-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
   <script src="community-config.js" defer></script>
@@ -30,8 +31,8 @@
   <script type="module" src="community.js?v=gallery-polish-1"></script>
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
-  <script src="gallery-walk.js?v=gallery-atelier-2" defer></script>
-  <script src="gallery-guide.js?v=gallery-guide-1" defer></script>
+  <script src="gallery-walk.js?v=gallery-premiere-1" defer></script>
+  <script src="gallery-guide.js?v=gallery-premiere-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -145,6 +146,7 @@
             <button type="button" id="walk-next" aria-label="다음 작품" title="다음 작품"><span aria-hidden="true">›</span></button>
           </div>
           <div class="walk-progress-track" aria-hidden="true"><span id="walk-progress-fill"></span></div>
+          <div class="walk-dots" id="walk-dots" role="group" aria-label="작품 선택"></div>
         </section>
         <div id="empty-state" class="empty-state" hidden><h3>조건에 맞는 작품이 없습니다.</h3><p>검색어나 필터를 바꿔 보세요.</p><button type="button" id="reset-filters" class="button-outline">전체 게임 보기 <svg><use href="#i-right"/></svg></button></div>
       </div>
@@ -344,11 +346,11 @@
       </form>
     </div>
   </dialog>
-  <aside id="gallery-guide" class="gallery-guide" aria-label="오이붕 갤러리 안내 비서">
+  <aside id="gallery-guide" class="gallery-guide" data-guide-pose="calm" aria-label="오이붕 갤러리 안내 비서">
     <button type="button" id="gallery-guide-avatar" class="gallery-guide-avatar"
       aria-expanded="false" aria-controls="gallery-guide-panel" aria-label="가이드 비서에게 말 걸기"
       title="전시관 가이드">
-      <img src="assets/gallery-guide.svg?v=1" width="400" height="640" alt="" decoding="async">
+      <img src="assets/guide-egypt-calm.svg?v=1" width="400" height="640" alt="" decoding="async">
       <span class="gallery-guide-mark" aria-hidden="true">?</span>
     </button>
     <section id="gallery-guide-panel" class="gallery-guide-panel" role="dialog"
