@@ -9,7 +9,6 @@
 window.OIBUNG_GAMES = [
   {
     id: 'odenring',
-    exhibitTheme: 'temple',
     title: '오든링',
     english: 'ODEN RING',
     tagline: '끝까지 살아남을 수 있겠어?',
@@ -24,7 +23,6 @@ window.OIBUNG_GAMES = [
   },
   {
     id: 'oibung-arena',
-    exhibitTheme: 'space',
     title: '오이붕 아레나',
     english: 'OIBUNG ARENA',
     tagline: '공 하나로 시작되는 난장판.',
@@ -39,7 +37,6 @@ window.OIBUNG_GAMES = [
   },
   {
     id: 'ochams',
-    exhibitTheme: 'space',
     title: '오이챔스 3D 배틀',
     english: 'OCHAMS 3D',
     tagline: '한 턴에 승부가 갈린다.',
@@ -54,7 +51,6 @@ window.OIBUNG_GAMES = [
   },
   {
     id: 'campus-frontier',
-    exhibitTheme: 'wood',
     title: '대학전선',
     english: 'CAMPUS FRONTIER',
     tagline: '캠퍼스를 지배할 시간.',
