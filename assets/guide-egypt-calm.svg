@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 640" role="img" aria-labelledby="guideTitle">
+<title id="guideTitle">검은 단발 고양이눈과 황금 장식의 이집트풍 오이붕 갤러리 안내 비서</title>
+<defs>
+ <linearGradient id="hair" x1="0" x2=".85" y1="0" y2="1"><stop stop-color="#4d4a50"/><stop offset=".43" stop-color="#25252b"/><stop offset="1" stop-color="#0d1016"/></linearGradient>
+ <linearGradient id="sideHair" x1="0" x2="1" y1="0" y2=".8"><stop stop-color="#3e3941"/><stop offset=".5" stop-color="#181c23"/><stop offset="1" stop-color="#0a0e14"/></linearGradient>
+ <linearGradient id="coat" x1="0" x2="1" y1="0" y2=".4"><stop stop-color="#ffffff"/><stop offset=".53" stop-color="#f2f2f1"/><stop offset="1" stop-color="#c8cdd0"/></linearGradient>
+ <linearGradient id="suit" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#252526"/><stop offset=".5" stop-color="#45403c"/><stop offset="1" stop-color="#1e1d1d"/></linearGradient>
+ <linearGradient id="skin" x1=".2" x2=".9" y1="0" y2="1"><stop stop-color="#fffdfb"/><stop offset="1" stop-color="#e3e8e9"/></linearGradient>
+ <linearGradient id="tie" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#cc6158"/><stop offset="1" stop-color="#772b2e"/></linearGradient>
+ <filter id="shadow" x="-35%" y="-30%" width="170%" height="170%"><feGaussianBlur stdDeviation="11"/></filter>
+</defs>
+<!-- A soft grounded gallery silhouette, intentionally no opaque background -->
+<ellipse cx="204" cy="620" rx="110" ry="12" fill="#101414" opacity=".24" filter="url(#shadow)"/>
+<!-- short bob underneath coat collar -->
+<path d="M90 158 Q66 207 75 276 Q94 317 132 321 L154 285 L253 291 Q299 327 323 288 Q328 240 299 153 Z" fill="url(#sideHair)" stroke="#344348" stroke-width="5" stroke-linejoin="round"/>
+<!-- black and gold ceremonial skirt -->
+<path d="M144 448 L122 603 Q173 618 197 605 Q221 617 282 608 L251 448Z" fill="#1b1b21" stroke="#c49a60" stroke-width="4"/>
+<path d="M177 480 L176 611 M221 481 L220 611" stroke="#b89657" stroke-width="5" opacity=".68"/>
+<path d="M198 486 L200 596" stroke="#26455b" stroke-width="13" opacity=".8"/>
+<path d="M147 585 Q196 600 276 586" fill="none" stroke="#cda369" stroke-width="5"/>
+<!-- lower legs, dark fitted trousers -->
+<path d="M139 426 L152 574 Q143 609 159 623 L185 623 Q197 590 197 550 L204 462 L217 554 L227 624 L257 624 Q269 601 258 571 L265 425 Z" fill="#292323" stroke="#2c3032" stroke-width="5"/>
+<path d="M160 446 L174 601 M228 448 L244 603" stroke="#594e4b" stroke-width="5" fill="none" opacity=".42"/>
+<!-- long white gallery coat -->
+<path d="M135 304 Q105 301 83 334 Q55 396 42 609 Q49 623 85 616 L138 522 L181 468 L200 350 L222 472 L277 526 L319 615 Q347 632 361 614 Q355 392 310 332 Q289 301 259 303 Z" fill="url(#coat)" stroke="#354449" stroke-width="5" stroke-linejoin="round"/>
+<path d="M120 325 Q92 407 79 586 L110 530 Q122 465 160 432 M276 324 Q299 396 328 597 L285 532 Q272 464 244 438" fill="none" stroke="#a4a9aa" stroke-width="5" opacity=".55"/>
+<!-- dark tailored waistcoat -->
+<path d="M155 304 L238 305 Q261 314 275 357 L258 475 Q230 500 185 490 L131 461 L121 359 Q133 322 155 304 Z" fill="url(#suit)" stroke="#343537" stroke-width="4"/>
+<!-- crisp inner shirt and collar -->
+<path d="M166 304 L194 329 L223 304 L224 368 L196 382 L166 361 Z" fill="#fafafa" stroke="#727875" stroke-width="3"/>
+<path d="M163 301 L193 329 L177 347 L146 317 M227 301 L195 329 L212 349 L245 316" fill="#ffffff" stroke="#919596" stroke-width="3"/>
+<!-- red tie -->
+<path d="M192 334 L202 335 L208 345 L199 358 L187 348 Z" fill="#ad4841" stroke="#642c2a" stroke-width="2"/>
+<path d="M199 357 L210 435 L194 453 L183 434 Z" fill="url(#tie)" stroke="#692f32" stroke-width="2"/>
+<!-- coat lapels -->
+<path d="M150 310 L177 353 L137 445 L102 536 L121 365 L127 321 Z" fill="#fbfbfa" stroke="#8b9294" stroke-width="4"/>
+<path d="M244 306 L212 354 L250 448 L299 539 L283 365 L268 316 Z" fill="#fdfdfc" stroke="#8b9294" stroke-width="4"/>
+<path d="M163 370 L179 428 L140 512 M225 371 L211 426 L251 513" stroke="#dce0e0" stroke-width="3" fill="none"/>
+<!-- gold and lapis broad collar and Egyptian goldwork -->
+<path d="M144 315 Q195 362 246 312 L263 350 Q233 381 195 384 Q156 380 126 350Z" fill="#171d26" stroke="#b99454" stroke-width="5"/>
+<path d="M130 340 Q194 397 260 340" fill="none" stroke="#d9b373" stroke-width="11"/>
+<path d="M139 335 Q195 379 252 335" fill="none" stroke="#23425f" stroke-width="10"/>
+<path d="M151 331 Q195 360 239 332" fill="none" stroke="#d4ae69" stroke-width="7"/>
+<path d="M133 347 Q196 396 256 348" stroke="#7d5f32" stroke-width="2" stroke-dasharray="6 6" fill="none"/>
+<path d="M187 372 L200 390 L211 371 L205 366 L194 366 Z" fill="#c9a96a" stroke="#694f2d" stroke-width="2"/>
+<circle cx="197" cy="377" r="3.5" fill="#1d5976"/>
+<!-- decorative vertical gold strip and waist gem -->
+<path d="M187 388 L187 490 M209 388 L210 490" stroke="#b8955a" stroke-width="3.5" opacity=".66"/>
+<path d="M142 460 Q195 481 258 461" fill="none" stroke="#cfaa6b" stroke-width="8"/>
+<ellipse cx="200" cy="472" rx="17" ry="14" fill="#d5b06a" stroke="#66502c" stroke-width="3"/>
+<ellipse cx="200" cy="472" rx="8" ry="9" fill="#1f4560"/>
+<!-- soft white cuffs and clasped hands -->
+<path d="M121 399 L137 476 L159 519 L184 496 L166 436 L163 406 Z" fill="#eff1f0" stroke="#8d795e" stroke-width="4"/>
+<path d="M254 401 L224 475 L198 505 L214 523 L247 498 L274 434 Z" fill="#f3f3f1" stroke="#8d795e" stroke-width="4"/>
+<path d="M142 459 L159 470 M235 461 L220 471" stroke="#c5a56a" stroke-width="7"/>
+<path d="M165 493 Q173 478 183 492 L192 508 Q202 495 210 492 Q219 491 218 510 L211 531 Q196 543 178 532 Q160 519 165 493 Z" fill="url(#skin)" stroke="#667077" stroke-width="4"/>
+<path d="M182 508 L185 526 M194 510 L197 531 M206 508 L205 527" stroke="#8b9c9f" stroke-width="2" fill="none" stroke-linecap="round"/>
+<!-- head, neck -->
+<path d="M176 273 L175 309 Q195 332 218 309 L218 275 Z" fill="url(#skin)" stroke="#5e676c" stroke-width="4"/>
+<path d="M112 125 Q112 66 195 61 Q291 68 292 150 L284 228 Q266 284 222 302 Q170 310 124 274 Q110 244 112 125 Z" fill="url(#skin)" stroke="#313b40" stroke-width="5"/>
+<path d="M119 229 Q113 271 138 280 M271 227 Q282 270 257 282" stroke="#e5c9c7" stroke-width="8" opacity=".46"/>
+<!-- bob hair body, ends just below the chin -->
+<path d="M91 151 Q76 74 134 37 Q192 -3 259 32 Q310 58 315 142 Q315 178 303 236 Q295 288 261 292 L251 265 Q270 222 258 186 L134 189 Q140 249 135 288 Q104 285 90 254 Q74 210 91 151 Z" fill="url(#hair)" stroke="#344046" stroke-width="5" stroke-linejoin="round"/>
+<!-- Pharaonic brow band and golden cobra uraeus -->
+<path d="M100 115 Q196 59 288 116" stroke="#aa793d" stroke-width="14" fill="none" stroke-linecap="round"/>
+<path d="M104 115 Q197 68 283 116" stroke="#eacb83" stroke-width="5.5" fill="none" stroke-dasharray="13 5"/>
+<path d="M184 72 Q179 55 190 43 Q204 38 212 53 Q218 62 208 70 L206 97 Q200 110 194 97 L195 71Z" fill="#cba65c" stroke="#6e502b" stroke-width="3"/>
+<path d="M194 56 Q205 49 210 58 L203 65" fill="none" stroke="#784826" stroke-width="2"/>
+<!-- segmented bangs and signature center pointed fringe -->
+<path d="M97 140 Q121 86 150 107 Q162 125 177 155 Q183 104 211 107 Q230 120 240 155 Q241 115 266 105 L280 173 Q267 157 255 161 Q233 170 218 181 Q209 156 191 147 Q171 165 157 184 Q141 144 127 167 Q109 183 99 210 Z" fill="url(#hair)" stroke="#3b474b" stroke-width="4" stroke-linejoin="round"/>
+<path d="M145 100 Q165 71 191 82 M213 74 Q253 85 274 126 M117 189 Q111 242 125 274 M285 171 Q293 235 274 276" fill="none" stroke="#adaba9" stroke-width="5" opacity=".53" stroke-linecap="round"/>
+<!-- Egyptian tassel earrings -->
+<path d="M120 241 L110 265 L114 287 M277 240 L288 270 L285 290" fill="none" stroke="#d7b36d" stroke-width="4"/>
+<path d="M108 273 L119 273 L114 294Z M280 274 L291 274 L286 295Z" fill="#e3bd77" stroke="#7b5e2c" stroke-width="2"/>
+<!-- golden feline eyes with long outer eyeliner -->
+<path d="M131 222 Q153 203 182 222 Q158 237 131 222Z M215 222 Q238 203 265 216 Q241 237 215 222Z" fill="#fff9ed" stroke="#181a1c" stroke-width="4"/>
+<ellipse cx="159" cy="219" rx="11" ry="11" fill="#bb8635" stroke="#41311c" stroke-width="2"/>
+<ellipse cx="240" cy="219" rx="11" ry="11" fill="#bb8635" stroke="#41311c" stroke-width="2"/>
+<ellipse cx="160" cy="220" rx="3.8" ry="9.5" fill="#101218"/>
+<ellipse cx="240" cy="220" rx="3.8" ry="9.5" fill="#101218"/>
+<circle cx="163" cy="215" r="2.3" fill="#fff5cb"/>
+<circle cx="243" cy="215" r="2.3" fill="#fff5cb"/>
+<path d="M131 220 L119 212 M216 219 L204 213 M265 215 L279 209" fill="none" stroke="#18191c" stroke-width="4.5" stroke-linecap="round"/>
+<path d="M142 204 Q160 195 178 204 M223 203 Q242 195 257 202" fill="none" stroke="#4b4541" stroke-width="3" stroke-linecap="round"/>
+<path d="M176 273 Q197 280 215 272" fill="none" stroke="#7f7471" stroke-width="2.7" stroke-linecap="round"/>
+<path d="M150 247 L170 249 M230 250 L249 247" fill="none" stroke="#e8b5b2" stroke-width="7" stroke-linecap="round" opacity=".25"/>
+<!-- small stray hair ends and coat buttons -->
+<path d="M128 289 Q136 273 140 247 M265 283 Q254 256 259 239" fill="none" stroke="#b38a57" stroke-width="4" opacity=".5"/>
+<circle cx="200" cy="398" r="2.7" fill="#c4bbb0"/>
+<circle cx="207" cy="438" r="2.5" fill="#c4bbb0"/>
+</svg>
