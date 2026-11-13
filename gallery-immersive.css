@@ -1,0 +1,421 @@
+/*
+ * OIBUNG GALLERY — full-viewport exhibition hall
+ * The site ENTRY is now the gallery, not a page containing a gallery widget.
+ * Museum UI floats over an edge-to-edge room; the work is the composition.
+ * Overrides original section layout without changing registration or reviews.
+ */
+html{scroll-padding-top:0}
+body{min-width:0}
+body>.site-header,
+body .site-header{
+  position:absolute;top:0;left:0;right:0;z-index:55;
+  width:100%;border:0;background:transparent!important;box-shadow:none!important;
+  backdrop-filter:none!important;
+  pointer-events:none;
+}
+body .site-header .header-inner{
+  width:calc(100% - clamp(28px,5vw,94px));
+  max-width:none;
+  margin:auto;
+  height:clamp(64px,8.5vh,82px);
+  border-bottom:1px solid #f7eee45e;
+  justify-content:space-between;
+}
+body .site-header .brand,
+body .site-header .header-actions,
+body .site-header .mobile-nav{pointer-events:auto}
+body .site-header .brand{
+  color:#f9f2e5!important;
+  filter:drop-shadow(0 2px 10px #141616b7);
+}
+body .site-header .brand-copy{font-size:clamp(16px,1.7vw,22px)}
+body .site-header .brand-copy span{color:#e9ddd0!important}
+body .site-header .brand-mark,body .site-header .brand-core{border-color:#e9d2a0!important}
+body .site-header .brand-core{background:#e9d2a0!important}
+body .site-header .gallery-about-link{
+  color:#f9f1e6!important;
+  text-shadow:0 1px 9px #161719cc;
+}
+body .site-header .gallery-about-link:hover{color:#f9dba8!important}
+body .site-header .gallery-mode-switch{
+  border:1px solid #f3e5ce59!important;
+  background:#1b2025a9!important;
+  box-shadow:0 8px 20px #0000001e;
+  backdrop-filter:blur(10px);
+}
+body .site-header .gallery-mode-switch button{color:#e6ded5}
+body .site-header .gallery-mode-switch button[aria-pressed="true"]{
+  color:#222720;background:#f5eddf;box-shadow:0 2px 8px #0003;
+}
+body .site-header .gallery-mode-switch button:not([aria-pressed="true"]):hover{
+  background:#f6eddf23;color:#fff8ea;
+}
+body .site-header .mobile-nav{
+  position:absolute;right:clamp(14px,3vw,44px);top:62px;z-index:60;
+  width:min(280px,calc(100vw - 28px));padding:14px;
+  background:#22282be8!important;color:#fff8e9;
+  border:1px solid #dbcbb08c;
+  box-shadow:0 18px 35px #0007;
+  backdrop-filter:blur(15px);
+}
+body .site-header .mobile-nav a{display:block;padding:10px;color:#f6ecdc!important}
+
+main{position:relative;min-height:100svh}
+main>.page-switcher.container{
+  position:absolute!important;
+  z-index:37;
+  top:clamp(72px,9.4vh,92px);
+  left:clamp(16px,3.4vw,56px);
+  width:max-content;max-width:calc(100vw - 32px);
+  margin:0;padding:0;
+  display:inline-flex;gap:5px;
+  border:0!important;
+  background:#1c2024a3;
+  border-radius:3px;
+  backdrop-filter:blur(10px);
+  box-shadow:0 6px 23px #0607083d;
+}
+main>.page-switcher .page-tab{
+  padding:10px 14px;border-bottom:0!important;border-radius:2px;
+  color:#e4ded6;font-size:12px;
+  letter-spacing:.02em;min-height:40px;
+}
+main>.page-switcher .page-tab.is-active{
+  background:#ede2cf!important;color:#2a2f30!important;
+}
+main>.page-switcher .page-tab:hover:not(.is-active){
+  color:#fff8ea!important;background:#ffffff20;
+}
+
+/* Remove all outer webpage framing from the exhibition screen. */
+#games.library.section-pad{
+  position:relative;isolation:isolate;
+  display:block;
+  width:100%;height:100svh;height:100dvh;
+  min-height:420px;max-height:none;
+  padding:0!important;margin:0;
+  overflow:hidden;
+  background:#2a2a2e;
+}
+#games>.container{
+  width:100%!important;height:100%;min-height:0;
+  margin:0!important;padding:0!important;
+  max-width:none!important;
+  position:static!important;
+}
+#games .section-heading-row{
+  position:absolute;z-index:38;
+  top:clamp(74px,9.5vh,94px);
+  right:clamp(16px,3.4vw,56px);
+  left:auto;
+  display:block;
+  margin:0!important;padding:0;
+}
+#games .section-heading-row>div{
+  position:absolute!important;width:1px;height:1px;
+  padding:0;margin:-1px;border:0;
+  overflow:hidden;clip:rect(0,0,0,0);
+  white-space:nowrap;clip-path:inset(50%);
+}
+#games .section-heading-row [data-open-editor]{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:11px 16px;
+  min-height:40px;
+  border:1px solid #dfd0b59e;
+  border-radius:2px;
+  background:#202629c4;
+  color:#fff5e5;
+  box-shadow:0 7px 18px #0004;
+  backdrop-filter:blur(10px);
+  font:600 12px/1.3 var(--body);
+}
+#games .section-heading-row [data-open-editor]:hover{
+  background:#394345;color:#fff6e7;border-color:#edd8b3;
+}
+#games .section-heading-row [data-open-editor] svg{width:15px;height:15px}
+#games .featured-exhibit{display:none!important}
+#games .walk-filter-drawer{
+  position:absolute;z-index:39;
+  top:clamp(124px,15.3vh,151px);
+  right:clamp(16px,3.4vw,56px);
+  width:min(790px,calc(100% - 32px));
+  margin:0!important;padding:0;
+  pointer-events:none;
+  text-align:right;
+}
+#games .walk-filter-drawer>summary{
+  pointer-events:auto;
+  display:inline-flex;align-items:center;justify-content:flex-end;gap:8px;
+  margin:0;
+  padding:9px 12px;
+  min-height:34px;
+  color:#f2eadc!important;
+  background:#16191bb0;
+  border:1px solid #e0d3ba60;
+  border-radius:2px;
+  box-shadow:0 5px 16px #0005;
+  text-shadow:0 1px 6px #0007;
+  font-size:10px;
+  backdrop-filter:blur(9px);
+}
+#games .walk-filter-drawer>summary::before{border-color:#f3e8d8}
+#games .walk-filter-drawer>summary:hover{background:#33383ad9}
+#games .walk-filter-drawer .library-toolbar{
+  pointer-events:auto;
+  display:flex;gap:12px;flex-wrap:wrap;
+  align-items:center;justify-content:space-between;
+  max-height:min(56dvh,440px);overflow-y:auto;overscroll-behavior:contain;
+  text-align:left;
+  margin:6px 0 0!important;
+  padding:17px!important;
+  border:1px solid #d3c6ab87!important;
+  border-radius:2px;
+  background:#f3f0e7f5;
+  color:#3c403a;
+  box-shadow:0 15px 39px #05080888;
+  backdrop-filter:blur(16px);
+}
+#games .walk-filter-drawer:not([open]) .library-toolbar{display:none}
+#games .walk-filter-drawer .filter-tabs{max-width:100%}
+#games .walk-filter-drawer .filter-chip{color:#50564d}
+#games .walk-filter-drawer .filter-chip:hover{color:#252b26;background:#ded9cd}
+#games .walk-filter-drawer .filter-chip.is-active{
+  background:#4a514b;color:#fff8eb;border-color:#4a514b;
+}
+#games .walk-filter-drawer :is(.search-field,.library-sort select){
+  background:#fffefa;border-color:#b8b3a9;color:#333c36;
+}
+#games .walk-filter-drawer .search-field input{color:#303832}
+#games .walk-filter-drawer .search-field input::placeholder{color:#777a71}
+#games .catalog-count{
+  position:absolute!important;width:1px;height:1px;
+  padding:0;margin:-1px;border:0;
+  overflow:hidden;clip:rect(0,0,0,0);
+  white-space:nowrap;clip-path:inset(50%);
+}
+
+/* The physical room is literally the whole browser viewport. */
+#games .walk-gallery{
+  position:absolute!important;inset:0!important;
+  width:100vw!important;height:100%!important;
+  margin:0!important;padding:0!important;
+  max-height:none;max-width:none;
+  border:0!important;border-radius:0!important;
+  box-shadow:none!important;
+  background:#303034;
+}
+#games .walk-gallery-viewport{
+  display:block;
+  width:100%;height:100%!important;
+  min-height:0;max-height:none!important;
+  position:relative;
+}
+#games .walk-gallery .game-grid{height:100%!important}
+#games .walk-gallery .game-card{height:100%!important}
+#games .walk-gallery .walk-back-wall{
+  inset:0 12% 19.8%;
+  background:
+    linear-gradient(90deg,#00000059,transparent 6%,transparent 94%,#00000055),
+    radial-gradient(ellipse 44% 57% at 50% 32%,#fff4d83e,transparent 91%),
+    linear-gradient(180deg,#1d1e20,#353538 54%,#242527);
+}
+#games .walk-gallery .walk-side-left,#games .walk-gallery .walk-side-right{width:12.3%}
+#games .walk-gallery .walk-side-left{
+  background:
+    repeating-linear-gradient(0deg,transparent 0 190px,#796f6020 191px,transparent 192px),
+    linear-gradient(99deg,#bbb9b0,#e6e2d9 87%,#918d87);
+}
+#games .walk-gallery .walk-side-right{
+  background:
+    repeating-linear-gradient(0deg,transparent 0 190px,#796f6020 191px,transparent 192px),
+    linear-gradient(261deg,#a8a69e,#dedbd4 82%,#aba9a0);
+}
+#games .walk-gallery .walk-floor{
+  height:24%;
+  clip-path:polygon(0 19%,12% 0,88% 0,100% 19%,100% 100%,0 100%);
+  background:
+    linear-gradient(180deg,#1f1c1938,transparent 14%,#332f2b0c),
+    repeating-linear-gradient(90deg,transparent 0 235px,#605c5034 237px,#f1e9dc1d 239px,transparent 241px),
+    repeating-linear-gradient(0deg,transparent 0 76px,#554e4525 78px,transparent 80px),
+    linear-gradient(180deg,#b9b3a8,#9a9389);
+}
+#games .walk-gallery .walk-ceiling{height:2.5%;background:linear-gradient(180deg,#e8e6dc,#c2bfb6 48%,#645f5a25)}
+#games .walk-gallery .walk-spotlight{
+  left:47%;top:0;height:78%;
+  background:radial-gradient(ellipse 42% 58% at 50% 28%,#fff2d53a,transparent 100%);
+}
+#games .walk-gallery .game-cover{
+  left:45%;top:43%;
+  width:min(46%,720px)!important;
+  max-height:60%;
+  border-width:clamp(10px,1.2vw,19px)!important;
+}
+#games .walk-gallery .game-card-body,
+#games .walk-gallery .game-card-body[data-intro-tone],
+html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
+  left:79.5%;top:49%;
+  width:min(19%,265px);max-height:68%;
+  padding:clamp(13px,1.5vw,24px)!important;
+}
+#games .walk-rail-hud{
+  top:clamp(177px,21vh,220px);
+  left:clamp(16px,3.4vw,56px);
+  right:clamp(16px,3.4vw,56px);
+  z-index:15;
+  font-size:10px;letter-spacing:.13em;
+}
+#games .walk-rail-hud>span:first-child{opacity:.9}
+#games .walk-rail-controls{
+  left:clamp(14px,3vw,45px);right:clamp(14px,3vw,45px);
+  bottom:clamp(15px,3.7vh,30px);
+}
+#games .walk-rail-controls button{
+  width:49px;height:47px;border-radius:2px;
+  background:#222729c7;color:#fff5e4;
+}
+#games .walk-rail-controls .walk-instructions{
+  font-size:11px;
+  background:#1f25276b;
+  padding:7px 14px;
+  border-radius:2px;
+  backdrop-filter:blur(5px);
+}
+#games .walk-progress-track{height:3px;z-index:30}
+
+/* Reviews are still reachable from the floating tab, not a second gallery. */
+#reviews.review-board.section-pad{
+  min-height:100svh;padding-top:clamp(165px,18vh,205px);
+}
+#about.manifesto{scroll-margin-top:30px}
+#reviews[hidden],#games[hidden]{display:none!important}
+#games .empty-state:not([hidden]){
+  position:absolute;z-index:33;
+  left:50%;top:50%;transform:translate(-50%,-50%);
+  background:#f7f3e9f2;
+  padding:24px;box-shadow:0 20px 60px #0007;
+}
+
+/* The full viewport stays monochromatic regardless of chosen light/dark UI. */
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-back-wall{
+  background:
+    linear-gradient(90deg,#0000008a,transparent 7%,transparent 93%,#0000008a),
+    radial-gradient(ellipse 44% 54% at 50% 31%,#c0cee11e,transparent 90%),
+    linear-gradient(180deg,#0c0f12,#25272d 53%,#0d1115);
+}
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-side-left{
+  background:linear-gradient(99deg,#2d343a,#545b61 87%,#1d242a);
+}
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-side-right{
+  background:linear-gradient(261deg,#262c31,#565e62 82%,#222a30);
+}
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-floor{
+  background:
+    linear-gradient(180deg,#00000070,transparent 22%,#090b0c33),
+    repeating-linear-gradient(90deg,transparent 0 235px,#05060777 237px,#94857120 239px,transparent 241px),
+    repeating-linear-gradient(0deg,transparent 0 76px,#00000033 78px,transparent 80px),
+    linear-gradient(180deg,#4b4949,#292a2d);
+}
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-ceiling{
+  background:linear-gradient(180deg,#41474b,#292d31 48%,#0c10144d);
+}
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-spotlight{
+  opacity:.66;background:radial-gradient(ellipse 44% 56% at 50% 29%,#c1d3de24,transparent 100%);
+}
+html[data-gallery-mode="dark"] #games .walk-filter-drawer .library-toolbar{
+  color:#f0f0e9;background:#29333aeF;border-color:#8c938f!important;
+}
+html[data-gallery-mode="dark"] #games .walk-filter-drawer .filter-chip{color:#e2e4dc}
+html[data-gallery-mode="dark"] #games .walk-filter-drawer .filter-chip:hover{color:#f8f4e9;background:#3c4b52}
+html[data-gallery-mode="dark"] #games .walk-filter-drawer .filter-chip.is-active{
+  background:#ddc5a0;color:#1b252a;border-color:#ddc5a0;
+}
+html[data-gallery-mode="dark"] #games .walk-filter-drawer :is(.search-field,.library-sort select){
+  color:#f6f2e9;background:#18232b;border-color:#78848b;
+}
+html[data-gallery-mode="dark"] #games .walk-filter-drawer .search-field input{color:#f5f3ed}
+html[data-gallery-mode="dark"] #games .walk-filter-drawer .search-field input::placeholder{color:#bac5c8}
+
+/* Mobile: cinema-style full-height painting room, compact controls. */
+@media(max-width:830px){
+  body .site-header .header-inner{width:calc(100% - 26px);height:64px}
+  body .site-header .brand-copy{font-size:15px}
+  body .site-header .gallery-about-link{display:none}
+  main>.page-switcher.container{top:70px;left:13px}
+  main>.page-switcher .page-tab{padding:8px 11px;font-size:11px;min-height:36px}
+  #games .section-heading-row{top:70px;right:13px}
+  #games .section-heading-row [data-open-editor]{padding:9px 10px;min-height:36px;font-size:10px}
+  #games .section-heading-row [data-open-editor] svg{width:12px;height:12px}
+  #games .walk-filter-drawer{top:115px;right:13px;width:min(610px,calc(100% - 26px))}
+  #games .walk-filter-drawer>summary{font-size:10px;padding:8px 10px;min-height:32px}
+  #games .walk-filter-drawer .library-toolbar{max-height:54dvh;padding:12px!important}
+  #games .walk-gallery .walk-back-wall{inset:0 7% 18%}
+  #games .walk-gallery .walk-side-left,#games .walk-gallery .walk-side-right{width:7.5%}
+  #games .walk-gallery .walk-floor{
+    clip-path:polygon(0 10%,7% 0,93% 0,100% 10%,100% 100%,0 100%);
+  }
+  #games .walk-gallery .game-cover{
+    left:50%;top:33%;width:min(76%,520px)!important;max-height:38%;
+  }
+  #games .walk-gallery .game-card-body,
+  #games .walk-gallery .game-card-body[data-intro-tone],
+  html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
+    top:69%;left:50%;width:min(80%,490px);max-height:34%;
+    padding:12px 15px!important;
+  }
+  #games .walk-rail-hud{top:160px;left:16px;right:16px}
+  #games .walk-rail-hud>span:first-child{display:none}
+  #games .walk-rail-hud .walk-index{margin-left:auto}
+  #games .walk-rail-controls{left:13px;right:13px;bottom:15px}
+  #games .walk-rail-controls button{width:42px;height:42px}
+  #games .walk-rail-controls .walk-instructions{font-size:9px;padding:6px}
+  #reviews.review-board.section-pad{padding-top:145px}
+}
+@media(max-width:530px){
+  body .site-header .brand-copy{font-size:14px}
+  body .site-header .brand-copy span{font-size:7px}
+  body .site-header .header-inner{height:58px}
+  main>.page-switcher.container{top:67px}
+  #games .section-heading-row{top:67px}
+  #games .walk-filter-drawer{top:110px}
+  #games .walk-filter-drawer>summary{
+    font-size:0;letter-spacing:0;min-width:42px;min-height:32px;
+  }
+  #games .walk-filter-drawer>summary::after{
+    content:"검색 · 필터";font:600 10px/1.3 var(--body);letter-spacing:0;
+  }
+  #games .walk-gallery .game-cover{
+    top:32%;width:min(79%,440px)!important;max-height:37%;
+  }
+  #games .walk-gallery .game-card-body,
+  #games .walk-gallery .game-card-body[data-intro-tone],
+  html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
+    top:68%;max-height:34%;width:82%;
+  }
+  #games .walk-rail-hud{top:157px}
+  #games .walk-rail-controls .walk-instructions{max-width:62%}
+}
+@media(max-height:560px) and (min-width:600px){
+  body .site-header .header-inner{height:53px}
+  body .site-header .brand-copy{font-size:14px}
+  main>.page-switcher.container{top:56px}
+  main>.page-switcher .page-tab{min-height:32px;padding:6px 11px;font-size:10px}
+  #games.library.section-pad{min-height:320px}
+  #games .section-heading-row{top:56px}
+  #games .section-heading-row [data-open-editor]{min-height:32px;padding:7px 10px}
+  #games .walk-filter-drawer{top:98px}
+  #games .walk-gallery .game-cover{
+    left:42%;top:51%;width:min(40%,470px)!important;max-height:56%;
+  }
+  #games .walk-gallery .game-card-body,
+  #games .walk-gallery .game-card-body[data-intro-tone],
+  html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
+    top:49%;left:78.5%;width:min(27%,275px);max-height:60%;
+  }
+  #games .walk-rail-hud{top:100px}
+  #games .walk-rail-controls{bottom:10px}
+  #games .walk-rail-controls .walk-instructions{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+  #games .walk-rail-controls button,
+  body .site-header .gallery-mode-switch button{transition:none}
+}
