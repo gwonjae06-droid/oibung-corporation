@@ -311,6 +311,10 @@
   }, true);
   previous.addEventListener('click', () => goTo(index - 1));
   next.addEventListener('click', () => goTo(index + 1));
+  document.addEventListener('oibung-gallery-jump', event => {
+    const destination = Number(event.detail?.index);
+    if (Number.isInteger(destination)) goTo(destination);
+  });
   document.addEventListener('keydown', keyMove);
   window.addEventListener('resize', measure, { passive: true });
   if ('ResizeObserver' in window) new ResizeObserver(measure).observe(viewport);
