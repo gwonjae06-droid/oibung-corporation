@@ -191,5 +191,28 @@
   });
   visibilityObserver.observe(root, { attributes: true, attributeFilter: ['hidden'] });
 
+  // Small pointer-driven head parallax: a lightweight Live2D-like gesture,
+  // not a full Cubism rig. Do not run when motion is reduced or a dialog opens.
+  let gazeFrame = 0;
+  let pointerX = 0;
+  let pointerY = 0;
+  document.addEventListener('pointermove', event => {
+    if (!head || reducedMotion() || root.hidden || document.querySelector('dialog[open]')) return;
+    pointerX = event.clientX;
+    pointerY = event.clientY;
+    if (gazeFrame) return;
+    gazeFrame = requestAnimationFrame(() => {
+      gazeFrame = 0;
+      const rect = root.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const x = Math.max(-1, Math.min(1,
+        (pointerX - rect.left - rect.width / 2) / Math.max(window.innerWidth * .54, 1)));
+      const y = Math.max(-1, Math.min(1,
+        (pointerY - rect.top - rect.height * .3) / Math.max(window.innerHeight * .6, 1)));
+      root.style.setProperty('--guide-look-x', (3.5 * x).toFixed(2) + 'px');
+      root.style.setProperty('--guide-look-y', (2.2 * y).toFixed(2) + 'px');
+    });
+  }, { passive: true });
+
   showExhibit(currentIndex(), false);
 })();
