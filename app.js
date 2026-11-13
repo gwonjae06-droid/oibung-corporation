@@ -461,7 +461,11 @@
   };
   document.addEventListener('keydown', event => {
     if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !['INPUT','TEXTAREA'].includes(document.activeElement?.tagName) && !detailDialog.open && !guideDialog.open && window.OIBUNG_CURRENT_VIEW === 'games') {
-      event.preventDefault();searchInput.focus();document.querySelector('#games').scrollIntoView({behavior:'smooth'});
+      event.preventDefault();
+      const filters = document.getElementById('walk-filter-drawer');
+      if (filters) filters.open = true;
+      searchInput.focus();
+      document.querySelector('#games').scrollIntoView({behavior:'smooth'});
     }
   });
   const menuToggle = document.querySelector('#menu-toggle');
