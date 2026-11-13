@@ -152,7 +152,9 @@
       <div class="walk-room" aria-hidden="true">
         <span class="walk-back-wall"></span><span class="walk-side-left"></span><span class="walk-side-right"></span>
         <span class="walk-ceiling"></span><span class="walk-floor"></span><span class="walk-spotlight"></span>
+        <span class="walk-light-beam"></span><span class="walk-light-fixture"></span>
       </div>
+      <span class="walk-art-glow" aria-hidden="true"></span>
       <button type="button" class="game-cover" data-details="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} 상세 보기"><span class="artwork-image-window">${cover}</span></button>
       <div class="game-card-body" data-intro-tone="${escapeHTML(game.introTone ?? 'gallery')}"><div class="game-card-title-row"><div class="artwork-identity">
         <div class="artwork-caption"><span class="artwork-sequence">전시 ${String(displayIndex).padStart(2,'0')}</span><span class="game-genre">${escapeHTML(game.genre)}</span></div>
