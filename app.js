@@ -52,22 +52,6 @@
     `<span class="game-status${normalizedStatus(game) === 'live_service' ? ' game-status--live' : normalizedStatus(game) === 'finished' ? ' game-status--finished' : ''}">${statusLabels[normalizedStatus(game)]}</span>`
   ].filter(Boolean).join('');
   const visualClass = game => visualOptions.has(game.visual) ? game.visual : 'custom';
-  const exhibitThemes = new Set(['stone', 'wood', 'space', 'temple', 'deepsea']);
-  const exhibitLabels = {
-    stone: '미술관', wood: '원목 전시관', space: '우주 전시관',
-    temple: '고대 신전', deepsea: '심해 전시관'
-  };
-  function themeForGame(game) {
-    const explicit = game.exhibitTheme || game.exhibitionTheme;
-    if (exhibitThemes.has(explicit)) return explicit;
-    // For community-submitted games without a theme column, classify by subject.
-    const subject = [game.title, game.genre, game.description, ...(game.tags || [])].join(' ').toLowerCase();
-    if (/심해|해저|해양|바다|잠수|수중|ocean|underwater|submarine/.test(subject)) return 'deepsea';
-    if (/보스|소울|던전|신화|판타지|기사|신전|고대|사원|신성|temple|fantasy|dungeon/.test(subject)) return 'temple';
-    if (/우주|은하|미래|로봇|행성|별|핀볼|자동.?전투|space|sci-fi|galaxy|arena/.test(subject)) return 'space';
-    if (/자연|숲|나무|캠퍼스|대학|농장|생존|전략|경영|전선|forest|farm|strategy/.test(subject)) return 'wood';
-    return 'stone';
-  }
   const coverArt = game => safeSourceUrl(game.thumbnailUrl)
     ? `<img class="game-thumbnail" src="${escapeHTML(game.thumbnailUrl)}" alt="" loading="lazy">`
     : `<div class="cover-art cover-${visualClass(game)}" aria-hidden="true"><span class="decor decor-a"></span><span class="decor decor-b"></span><span class="decor decor-c"></span></div>`;
@@ -164,11 +148,10 @@
     const favorite = favorites.has(game.id);
     const playUrl = safeSourceUrl(game.playUrl);
     const cover = coverArt(game);
-    const room = themeForGame(game);
-    return `<article class="game-card" data-game-id="${escapeHTML(game.id)}" data-exhibit-theme="${room}" tabindex="0" aria-label="${escapeHTML(game.title)} 작품 상세 페이지 열기">
+    return `<article class="game-card" data-game-id="${escapeHTML(game.id)}" tabindex="0" aria-label="${escapeHTML(game.title)} 작품 상세 페이지 열기">
       <button type="button" class="game-cover" data-details="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} 상세 보기"><span class="artwork-image-window">${cover}</span></button>
       <div class="game-card-body" data-intro-tone="${escapeHTML(game.introTone ?? 'gallery')}"><div class="game-card-title-row"><div class="artwork-identity">
-        <div class="artwork-caption"><span class="artwork-sequence">전시 ${String(displayIndex).padStart(2,'0')}</span><span class="game-genre">${escapeHTML(game.genre)}</span><span class="artwork-room-chip">${exhibitLabels[room]}</span></div>
+        <div class="artwork-caption"><span class="artwork-sequence">전시 ${String(displayIndex).padStart(2,'0')}</span><span class="game-genre">${escapeHTML(game.genre)}</span></div>
         <h3>${escapeHTML(game.title)}</h3></div>
       <div class="game-card-actions">
       <button class="icon-button edit-button" type="button" data-edit-game="${escapeHTML(game.id)}" title="게임 정보 수정" aria-label="${escapeHTML(game.title)} 정보 수정">${icon('pencil')}</button>
@@ -315,9 +298,7 @@
 
   function renderDetail(game) {
     detailDialog.querySelector('.detail-introduction').dataset.introTone = game.introTone ?? 'gallery';
-    const room = themeForGame(game);
-    detailDialog.dataset.exhibitionTheme = room;
-    document.querySelector('#detail-room-label').textContent = exhibitLabels[room];
+    document.querySelector('#detail-room-label').textContent = '작품 전시';
     document.title = game.title + ' | ' + galleryTitle;
     const detailCover = document.querySelector('#dialog-cover');
     detailCover.innerHTML = coverArt(game);
@@ -441,7 +422,6 @@
   }
   window.OIBUNG_CATALOG = {
     openDetail,
-    getTheme: id => byId.has(id) ? themeForGame(byId.get(id)) : 'stone',
     getGame: id => byId.get(id),
     setReviewStats(rows) {
       stats.clear();
