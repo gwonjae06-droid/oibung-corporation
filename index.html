@@ -26,15 +26,16 @@
   <link rel="stylesheet" href="gallery-guide.css?v=gallery-guide-1">
   <link rel="stylesheet" href="gallery-premiere.css?v=gallery-premiere-2">
   <link rel="stylesheet" href="gallery-live-scene.css?v=gallery-live-scene-1">
+  <link rel="stylesheet" href="gallery-reference.css?v=reference-scenes-1">
   <script src="gallery-display-mode.js?v=two-modes-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=gallery-live-scene-1" defer></script>
+  <script src="app.js?v=reference-scenes-1" defer></script>
   <script type="module" src="community.js?v=gallery-polish-1"></script>
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
-  <script src="gallery-walk.js?v=gallery-live-scene-1" defer></script>
-  <script src="gallery-guide.js?v=gallery-live-scene-1" defer></script>
+  <script src="gallery-walk.js?v=reference-scenes-1" defer></script>
+  <script src="gallery-guide.js?v=reference-scenes-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -352,8 +353,7 @@
     <button type="button" id="gallery-guide-avatar" class="gallery-guide-avatar"
       aria-expanded="false" aria-controls="gallery-guide-panel" aria-label="가이드 비서에게 말 걸기"
       title="전시관 가이드">
-      <img src="assets/guide-egypt-calm.svg?v=1" width="400" height="640" alt="" decoding="async">
-      <span class="gallery-guide-mark" aria-hidden="true">?</span>
+      <span class="sr-only">전시관 가이드 안내 열기</span>
     </button>
     <section id="gallery-guide-panel" class="gallery-guide-panel" role="dialog"
       aria-modal="false" aria-labelledby="gallery-guide-title" hidden>
