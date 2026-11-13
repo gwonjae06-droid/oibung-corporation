@@ -16,10 +16,12 @@
   <link rel="stylesheet" href="styles.css?v=gallery-polish-1">
   <link rel="stylesheet" href="motion.css?v=gallery-motion-1">
   <link rel="stylesheet" href="gallery-museum.css?v=museum-room-3">
-  <link rel="stylesheet" href="gallery-game-page.css?v=exhibition-page-2">
-  <script src="games.js?v=exhibition-page-2" defer></script>
+  <link rel="stylesheet" href="gallery-game-page.css?v=two-modes-1">
+  <link rel="stylesheet" href="gallery-display-modes.css?v=two-modes-1">
+  <script src="gallery-display-mode.js?v=two-modes-1"></script>
+  <script src="games.js?v=two-modes-1" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=exhibition-page-2" defer></script>
+  <script src="app.js?v=two-modes-1" defer></script>
   <script type="module" src="community.js?v=gallery-polish-1"></script>
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
@@ -47,6 +49,14 @@
       </a>
       <div class="header-actions">
         <a class="gallery-about-link" href="#about">갤러리 소개</a>
+        <div class="gallery-mode-switch" role="group" aria-label="화면 테마">
+          <button type="button" data-gallery-mode-choice="light" aria-pressed="true" aria-label="라이트 테마" title="라이트 테마">
+            <span class="gallery-mode-icon" aria-hidden="true">☀</span><span class="gallery-mode-text">라이트</span>
+          </button>
+          <button type="button" data-gallery-mode-choice="dark" aria-pressed="false" aria-label="다크 테마" title="다크 테마">
+            <span class="gallery-mode-icon" aria-hidden="true">☾</span><span class="gallery-mode-text">다크</span>
+          </button>
+        </div>
         <button type="button" class="menu-toggle icon-button" id="menu-toggle" aria-expanded="false" aria-label="메뉴 열기"><svg><use href="#i-menu"/></svg></button>
       </div>
     </div>
