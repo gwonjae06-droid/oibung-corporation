@@ -1,0 +1,229 @@
+/*
+ * OIBUNG GALLERY — individual exhibition pages.
+ * The catalog remains a single neutral museum. Each artwork opens an
+ * addressable full-viewport exhibit with its own atmosphere.
+ * Existing screenshot, review, update and edit hooks remain in the dialog.
+ */
+#game-dialog.detail-dialog{
+  --page-wall:#d7d2c8;--page-paper:#f9f6ef;--page-ink:#2e332d;
+  --page-muted:#5b615a;--page-accent:#8b7655;--page-border:#c8bbaa;
+  --page-field:#fdfbf7;--page-button:#454b44;--page-button-ink:#fffaf2;
+  position:fixed;inset:0;
+  box-sizing:border-box;
+  margin:0;width:100%;height:100%;height:100dvh;
+  max-width:none;max-height:none;padding:0;
+  border:0;border-radius:0;
+  overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;
+  color:var(--page-ink);
+  background:var(--page-wall);
+  box-shadow:none;
+}
+#game-dialog.detail-dialog::backdrop{background:#101211dc;backdrop-filter:none}
+#game-dialog .dialog-inner{
+  display:block;min-height:100%;
+  position:relative;isolation:isolate;z-index:1;
+  width:min(100% - 68px,1180px);
+  margin:0 auto;padding:84px 0 100px;
+}
+#game-dialog .dialog-body{
+  display:block;position:relative;
+  width:100%;min-height:0;
+  padding:clamp(22px,4vw,52px);
+  color:var(--page-ink);
+  background:var(--page-paper);
+  border:1px solid var(--page-border);
+  box-shadow:0 22px 60px #090b0e42;
+}
+#game-dialog .exhibit-back{
+  position:absolute;top:25px;left:0;right:auto;z-index:15;
+  display:inline-flex;align-items:center;gap:10px;
+  width:auto;height:auto;min-height:42px;padding:9px 15px;
+  border:1px solid var(--page-border);border-radius:3px;
+  background:var(--page-paper);color:var(--page-ink);
+  font:650 12px/1.4 var(--body);
+}
+#game-dialog .exhibit-back svg{width:16px;height:16px;transform:rotate(180deg)}
+#game-dialog .exhibit-back:hover{border-color:var(--page-accent);filter:brightness(.96)}
+#game-dialog .exhibition-page-heading{
+  display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px 17px;
+  min-height:30px;align-items:center;
+  margin-bottom:14px;
+  color:var(--page-muted);font:700 10px/1.5 var(--body);
+  letter-spacing:.15em;
+}
+#game-dialog #detail-room-label{
+  color:var(--page-accent);
+  text-transform:uppercase;
+}
+#game-dialog .detail-overview{
+  display:grid;grid-template-columns:minmax(0,1.03fr) minmax(0,1fr);
+  align-items:center;gap:clamp(26px,4vw,66px);
+  padding:0 0 clamp(24px,4vw,44px);
+  border-bottom:1px solid var(--page-border);
+}
+#game-dialog .detail-introduction{min-width:0;width:100%;padding:clamp(16px,2vw,26px)}
+#game-dialog .detail-overview .dialog-cover{
+  position:relative;display:block;
+  order:initial;width:100%;margin:0;
+  min-height:0;max-height:none;aspect-ratio:4/3;
+  border:7px solid var(--page-accent);
+  border-radius:1px;overflow:hidden;
+  background:#0b1216;
+  box-shadow:0 13px 38px #05080c5a,inset 0 0 0 2px #ffffff38;
+}
+#game-dialog .dialog-cover .game-thumbnail{display:block;width:100%;height:100%;object-fit:cover}
+#game-dialog .detail-introduction h2,
+#game-dialog .dialog-body h2{
+  color:var(--page-ink);font-size:clamp(34px,4.7vw,63px);
+  line-height:1.12;letter-spacing:-.047em;
+}
+#game-dialog .dialog-kicker{color:var(--page-accent)}
+#game-dialog #detail-summary,
+#game-dialog .dialog-body p{
+  color:var(--page-muted);font-size:clamp(13px,1.1vw,15px);
+}
+#game-dialog .game-meta, #game-dialog .detail-rating{color:var(--page-muted)}
+#game-dialog .dialog-tags span,#game-dialog .detail-specs span{
+  color:var(--page-muted);border-color:var(--page-border);
+}
+#game-dialog .dialog-actions{
+  display:flex;flex-wrap:wrap;gap:10px;margin-top:24px;
+}
+#game-dialog .button-primary{
+  color:var(--page-button-ink);background:var(--page-button);
+  border-color:var(--page-button);
+}
+#game-dialog .button-primary:hover{filter:brightness(1.15)}
+#game-dialog .button-outline{
+  color:var(--page-ink);
+  background:transparent;border-color:var(--page-border);
+}
+#game-dialog .button-outline:hover{
+  color:var(--page-ink);background:var(--page-field);
+  border-color:var(--page-accent);
+}
+#game-dialog .community-section{
+  border-color:var(--page-border);
+  margin-top:30px;padding-top:24px;
+}
+#game-dialog .community-section h3{color:var(--page-ink)}
+#game-dialog .community-section h3::before{background:var(--page-accent)}
+#game-dialog .detail-review-teaser p,
+#game-dialog .review-editor-intro{color:var(--page-muted)}
+#game-dialog .gallery-screenshot{
+  background:var(--page-field);border-color:var(--page-border);
+}
+#game-dialog .detail-management,
+#game-dialog .contribution-panel[open]{
+  background:var(--page-field);border-color:var(--page-border);
+}
+#game-dialog .detail-management>summary,
+#game-dialog .exhibition-revisions summary,
+#game-dialog .text-action,
+#game-dialog .contribution-panel>summary{color:var(--page-ink)}
+#game-dialog .activity-item,#game-dialog .revision-entry{border-color:var(--page-border)}
+#game-dialog .activity-item p,#game-dialog .activity-item time{color:var(--page-muted)}
+#game-dialog .community-form :is(input,select,textarea){
+  background:var(--page-field);border-color:var(--page-border);
+  color:var(--page-ink);
+}
+/* Keep custom game description tones as an optional per-artwork accent. */
+#game-dialog .detail-introduction[data-intro-tone]:not([data-intro-tone="gallery"]){
+  color:#f7f3e9;
+  border-color:#bfae9278;
+}
+#game-dialog .detail-introduction[data-intro-tone]:not([data-intro-tone="gallery"]) :is(h2,.dialog-kicker,.game-meta,#detail-summary,.dialog-tags span,.detail-specs span){
+  color:#f7f3e9;
+}
+/* Individual scene palettes; gradients are static and GPU-light. */
+#game-dialog[data-exhibition-theme="stone"]{
+  --page-wall:#c9c4bc;--page-paper:#fbfaf7;--page-ink:#282e29;
+  --page-muted:#626861;--page-accent:#917b5d;--page-border:#c6bfb4;
+  --page-field:#f5f2ed;--page-button:#474f47;
+  background:
+    radial-gradient(ellipse at 34% 9%,#fff8e6b3,transparent 53%),
+    repeating-linear-gradient(90deg,#514c4111 0 1px,transparent 1px 210px),
+    linear-gradient(180deg,#d5d0c7,#b8b2a8);
+}
+#game-dialog[data-exhibition-theme="wood"]{
+  --page-wall:#3c2a1e;--page-paper:#efdfc4;--page-ink:#37271b;
+  --page-muted:#69503b;--page-accent:#9a6d40;--page-border:#b89568;
+  --page-field:#f9efdc;--page-button:#5f412d;--page-button-ink:#fff1d7;
+  background:
+    radial-gradient(ellipse at 53% 10%,#ffc47f28,transparent 50%),
+    repeating-linear-gradient(90deg,transparent 0 194px,#120c073f 195px,#dfaf6942 197px,transparent 199px),
+    repeating-linear-gradient(92deg,#e4b66e06 0 3px,transparent 4px 22px,#1f100912 24px,transparent 27px),
+    linear-gradient(100deg,#302015,#6e4d32 52%,#37271c);
+}
+#game-dialog[data-exhibition-theme="space"]{
+  color-scheme:dark;
+  --page-wall:#060d1b;--page-paper:#101d31;--page-ink:#eef5ff;
+  --page-muted:#b2c6dd;--page-accent:#8bbfea;--page-border:#46617e;
+  --page-field:#1b2d46;--page-button:#b4ddf5;--page-button-ink:#10243b;
+  background:
+    radial-gradient(circle,#ecf7ffa8 0 1px,transparent 1.5px) 0 0/117px 99px,
+    radial-gradient(circle,#cbdbff9b 0 1.3px,transparent 1.8px) 44px 15px/193px 174px,
+    radial-gradient(ellipse 48% 42% at 21% 15%,#5a548b6e,transparent 94%),
+    radial-gradient(ellipse 40% 35% at 83% 48%,#22638873,transparent 94%),
+    linear-gradient(140deg,#070b1d,#111d36 58%,#06111d);
+}
+#game-dialog[data-exhibition-theme="space"] .dialog-body{
+  box-shadow:0 25px 65px #000b,0 0 35px #78b9fb13;
+}
+#game-dialog[data-exhibition-theme="temple"]{
+  --page-wall:#b6a383;--page-paper:#f9f0dd;--page-ink:#34291b;
+  --page-muted:#68553c;--page-accent:#a47b42;--page-border:#bda177;
+  --page-field:#f1e4c9;--page-button:#614a2d;--page-button-ink:#fff2da;
+  background:
+    radial-gradient(ellipse 55% 65% at 49% 5%,#fff6daa3,transparent 81%),
+    repeating-linear-gradient(90deg,transparent 0 185px,#3b2b1933 188px,#f9e0b080 192px,transparent 197px),
+    linear-gradient(115deg,#8e7b60,#dbc9aa 43%,#897558);
+}
+#game-dialog[data-exhibition-theme="temple"] .dialog-cover{
+  border-style:ridge;
+}
+#game-dialog[data-exhibition-theme="deepsea"]{
+  color-scheme:dark;
+  --page-wall:#041e2b;--page-paper:#103642;--page-ink:#e4f7f4;
+  --page-muted:#b3d8d7;--page-accent:#82d9ca;--page-border:#438d92;
+  --page-field:#15434c;--page-button:#8ae3d1;--page-button-ink:#07313a;
+  background:
+    radial-gradient(circle,#c5f8e654 0 1px,transparent 1.5px) 14px 26px/179px 151px,
+    linear-gradient(108deg,transparent 20%,#8ffff01c 26%,transparent 36%,#8ce9ee16 47%,transparent 62%),
+    radial-gradient(ellipse 60% 38% at 48% 0%,#448d9e97,transparent 92%),
+    linear-gradient(180deg,#135767,#073541 50%,#021721);
+}
+#game-dialog[data-exhibition-theme="deepsea"] .dialog-body{
+  box-shadow:0 25px 65px #0008,0 0 43px #62e9d51b;
+}
+/* Odenring is a shadowed sanctuary, not a sunlit marble hall. */
+#game-dialog[data-exhibition-theme="temple"][data-game-id="odenring"]{
+  --page-paper:#eae0d3;--page-border:#997d5e;--page-accent:#9b624b;
+  background:
+    radial-gradient(ellipse at 52% 5%,#9f554733,transparent 53%),
+    repeating-linear-gradient(90deg,transparent 0 210px,#100d0b8a 214px,#92745e53 216px,transparent 223px),
+    linear-gradient(125deg,#191719,#43302d 50%,#171719);
+}
+#game-dialog[data-exhibition-theme="temple"][data-game-id="odenring"] .dialog-body{
+  box-shadow:0 27px 74px #040204ad;
+}
+@media(max-width:760px){
+  #game-dialog .dialog-inner{width:calc(100% - 24px);padding:72px 0 50px}
+  #game-dialog .exhibit-back{top:16px;min-height:38px;padding:8px 11px}
+  #game-dialog .exhibition-page-heading{font-size:9px;margin-bottom:12px}
+  #game-dialog .dialog-body{padding:19px 15px 28px}
+  #game-dialog .detail-overview{
+    display:flex;flex-direction:column;gap:16px;padding-bottom:24px;
+  }
+  #game-dialog .detail-overview .dialog-cover{
+    display:block;order:-1;width:100%;aspect-ratio:16/10;
+    min-height:0;max-height:none;border-width:4px;margin:0;
+  }
+  #game-dialog .detail-introduction{padding:10px 3px;width:100%}
+  #game-dialog .detail-introduction h2{font-size:clamp(31px,7vw,43px)}
+  #game-dialog .community-section{margin-top:22px;padding-top:19px}
+  #game-dialog .dialog-actions{gap:8px}
+}
+@media(prefers-reduced-motion:reduce){
+  #game-dialog .exhibit-back{transition:none}
+}
