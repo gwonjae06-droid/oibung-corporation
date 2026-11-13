@@ -164,10 +164,11 @@
     const favorite = favorites.has(game.id);
     const playUrl = safeSourceUrl(game.playUrl);
     const cover = coverArt(game);
-    return `<article class="game-card" data-game-id="${escapeHTML(game.id)}" tabindex="0" aria-label="${escapeHTML(game.title)} 작품 상세 페이지 열기">
+    const room = themeForGame(game);
+    return `<article class="game-card" data-game-id="${escapeHTML(game.id)}" data-exhibit-theme="${room}" tabindex="0" aria-label="${escapeHTML(game.title)} 작품 상세 페이지 열기">
       <button type="button" class="game-cover" data-details="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} 상세 보기"><span class="artwork-image-window">${cover}</span></button>
       <div class="game-card-body" data-intro-tone="${escapeHTML(game.introTone ?? 'gallery')}"><div class="game-card-title-row"><div class="artwork-identity">
-        <div class="artwork-caption"><span class="artwork-sequence">전시 ${String(displayIndex).padStart(2,'0')}</span><span class="game-genre">${escapeHTML(game.genre)}</span></div>
+        <div class="artwork-caption"><span class="artwork-sequence">전시 ${String(displayIndex).padStart(2,'0')}</span><span class="game-genre">${escapeHTML(game.genre)}</span><span class="artwork-room-chip">${exhibitLabels[room]}</span></div>
         <h3>${escapeHTML(game.title)}</h3></div>
       <div class="game-card-actions">
       <button class="icon-button edit-button" type="button" data-edit-game="${escapeHTML(game.id)}" title="게임 정보 수정" aria-label="${escapeHTML(game.title)} 정보 수정">${icon('pencil')}</button>
