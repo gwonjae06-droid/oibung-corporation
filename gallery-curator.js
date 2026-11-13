@@ -1,6 +1,8 @@
 /*
- * Oibung Gallery — exhibition introductions by the guide.
- * Data-driven from registered games. Speech remains opt-in; no server or AI API.
+ * Oibung Gallery — text-only exhibition introductions.
+ * Registered game data drives each label. Three original high-resolution
+ * illustrated poses are staged as twelve distinct, restrained compositions.
+ * No audio, speech synthesis, remote AI requests, or automatic voice playback.
  */
 (() => {
   'use strict';
@@ -10,30 +12,45 @@
   const intro = document.getElementById('gallery-guide-intro');
   const title = document.getElementById('gallery-guide-intro-title');
   const description = document.getElementById('gallery-guide-intro-description');
-  const voiceButton = document.getElementById('gallery-guide-voice');
   const detailButton = document.getElementById('gallery-guide-intro-detail');
-  if (!root || !sprite || !intro || !title || !description || !voiceButton || !detailButton) return;
+  if (!root || !sprite || !intro || !title || !description || !detailButton) return;
 
-  const poses = ['calm', 'present', 'welcome'];
-  const sources = Object.fromEntries(poses.map(pose => [
-    pose, 'assets/guide-hires-' + pose + '.webp?v=curator-1'
-  ]));
-  // Preload the original-resolution illustration poses so subsequent artworks
-  // can dissolve smoothly without a blank frame or stretched scene photo.
-  const preloaded = [];
-  for (const pose of poses) {
+  const imageSources = Object.freeze({
+    calm: 'assets/guide-hires-calm.webp?v=curator-1',
+    present: 'assets/guide-hires-present.webp?v=curator-1',
+    welcome: 'assets/guide-hires-welcome.webp?v=curator-1'
+  });
+
+  // Reuse the three true illustrations in changing orientations / stage
+  // positions rather than stretch low-resolution background photographs.
+  // The first six exhibits use all three illustrations in both directions;
+  // subsequent scenes alter the subtle stance and size as well.
+  const arrangements = Object.freeze([
+    { pose: 'calm',    x:  0, y:  0, scale: 1.00, angle:  0.0, face:  1 },
+    { pose: 'present', x:-18, y:  0, scale: 1.04, angle: -1.1, face:  1 },
+    { pose: 'welcome', x: 18, y:  5, scale: 0.98, angle:  1.3, face:  1 },
+    { pose: 'calm',    x:-16, y:  4, scale: 1.02, angle: -1.3, face: -1 },
+    { pose: 'present', x: 20, y: -3, scale: 0.97, angle:  1.4, face: -1 },
+    { pose: 'welcome', x:-15, y: -4, scale: 1.04, angle: -1.2, face: -1 },
+    { pose: 'calm',    x: 24, y:  6, scale: 0.95, angle:  1.7, face:  1 },
+    { pose: 'present', x:-26, y:  2, scale: 1.06, angle: -1.8, face:  1 },
+    { pose: 'welcome', x: 10, y: -8, scale: 1.02, angle:  0.8, face:  1 },
+    { pose: 'calm',    x:-10, y: -6, scale: 1.04, angle: -0.8, face: -1 },
+    { pose: 'present', x: 16, y:  4, scale: 1.02, angle:  1.1, face: -1 },
+    { pose: 'welcome', x:-22, y:  3, scale: 0.96, angle: -1.5, face: -1 }
+  ]);
+
+  // Browsers can decode these original image assets before the guide changes.
+  const cached = [];
+  for (const src of Object.values(imageSources)) {
     const image = new Image();
     image.decoding = 'async';
-    image.src = sources[pose];
-    preloaded.push(image);
+    image.src = src;
+    cached.push(image);
   }
 
-  let timer = 0;
+  let installTimer = 0;
   let generation = 0;
-  let voiceEnabled = false;
-  let activeNarration = '';
-  let speaking = false;
-  const canSpeak = !!(window.speechSynthesis && window.SpeechSynthesisUtterance);
 
   function currentGame() {
     const active = document.querySelector('#game-grid .game-card.walk-room-current');
@@ -52,89 +69,17 @@
   function introduction(game) {
     if (!game) return {
       title: '전시 안내',
-      body: '지금 전시 중인 작품이 없어요. 메뉴에서 검색 조건을 확인해 주세요.',
-      speech: ''
+      body: '지금 전시 중인 작품이 없어요. 메뉴에서 검색 조건을 확인해 주세요.'
     };
-    const work = String(game.title || '이 작품');
-    const developer = game.developer ? '제작자는 ' + trimText(game.developer, 60) + '입니다. ' : '';
+    const developer = game.developer
+      ? '제작자는 ' + trimText(game.developer, 60) + '입니다. ' : '';
     const genre = game.genre ? trimText(game.genre, 60) + ' 작품으로, ' : '';
     const detail = trimText(game.description || game.tagline || '', 160);
-    const body = developer + (genre ? genre : '') +
-      (detail || '액자를 선택하면 이 작품을 자세히 살펴볼 수 있어요.');
     return {
-      title: work,
-      body,
-      speech: '이번에 소개할 작품은 ' + work + '입니다. ' + body
+      title: String(game.title || '이 작품'),
+      body: developer + genre +
+        (detail || '액자를 선택하면 이 작품을 자세히 살펴볼 수 있어요.')
     };
-  }
-
-  function stopSpeech() {
-    speaking = false;
-    if (canSpeak) {
-      try { window.speechSynthesis.cancel(); }
-      catch { /* Browser may suspend audio on background tabs. */ }
-    }
-    voiceButton.textContent = voiceEnabled ? '음성 안내 켜짐' : '음성으로 듣기';
-    voiceButton.setAttribute('aria-pressed', String(voiceEnabled));
-  }
-
-  function narrate() {
-    if (!voiceEnabled || !canSpeak || !activeNarration || root.hidden ||
-        document.body.classList.contains('reviews-open') ||
-        document.querySelector('dialog[open]')) return;
-
-    stopSpeech();
-    const utterance = new window.SpeechSynthesisUtterance(activeNarration);
-    utterance.lang = 'ko-KR';
-    utterance.rate = 0.98;
-    utterance.pitch = 1.04;
-    const koreanVoice = window.speechSynthesis.getVoices?.()
-      .find(voice => String(voice.lang).toLowerCase().startsWith('ko'));
-    if (koreanVoice) utterance.voice = koreanVoice;
-    utterance.onstart = () => { speaking = true; voiceButton.textContent = '음성 안내 끄기'; };
-    utterance.onend = () => {
-      speaking = false;
-      voiceButton.textContent = voiceEnabled ? '음성 안내 켜짐' : '음성으로 듣기';
-    };
-    utterance.onerror = () => {
-      speaking = false;
-      voiceButton.textContent = voiceEnabled ? '음성 안내 켜짐' : '음성으로 듣기';
-    };
-    window.speechSynthesis.speak(utterance);
-  }
-
-  function showExhibit(index = 0, animate = true) {
-    clearTimeout(timer);
-    const token = ++generation;
-    stopSpeech();
-
-    const pose = poses[Math.abs(Number(index) || 0) % poses.length];
-    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
-      document.documentElement.classList.contains('motion-off');
-
-    if (animate && !reduceMotion && !root.hidden) intro.classList.add('is-changing');
-
-    const install = () => {
-      if (token !== generation) return; // Rapid wheel navigation: newest work wins.
-      const game = currentGame();
-      const copy = introduction(game);
-
-      sprite.src = sources[pose];
-      title.textContent = copy.title;
-      description.textContent = copy.body;
-      activeNarration = copy.speech;
-      intro.hidden = !game || root.hidden;
-      voiceButton.hidden = !canSpeak;
-      detailButton.disabled = !game;
-
-      requestAnimationFrame(() => {
-        intro.classList.remove('is-changing');
-        if (voiceEnabled) narrate();
-      });
-    };
-
-    if (animate && !reduceMotion && !root.hidden) timer = window.setTimeout(install, 390);
-    else install();
   }
 
   function currentIndex() {
@@ -143,16 +88,55 @@
     return Math.max(0, active);
   }
 
-  voiceButton.hidden = !canSpeak;
-  voiceButton.setAttribute('aria-pressed', 'false');
-  voiceButton.addEventListener('click', () => {
-    if (!canSpeak) return;
-    voiceEnabled = !voiceEnabled;
-    if (voiceEnabled) {
-      voiceButton.textContent = '음성 안내 끄기';
-      narrate();
-    } else stopSpeech();
-  });
+  function reducedMotion() {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      document.documentElement.classList.contains('motion-off');
+  }
+
+  function applyScene(index) {
+    const variantIndex = Math.abs(Number(index) || 0) % arrangements.length;
+    const arrangement = arrangements[variantIndex];
+    const game = currentGame();
+    const copy = introduction(game);
+
+    root.dataset.guidePose = arrangement.pose;
+    root.dataset.guideVariant = String(variantIndex);
+    root.style.setProperty('--curator-x', arrangement.x + 'px');
+    root.style.setProperty('--curator-y', arrangement.y + 'px');
+    root.style.setProperty('--curator-scale', String(arrangement.scale));
+    root.style.setProperty('--curator-rotate', arrangement.angle + 'deg');
+    root.style.setProperty('--curator-facing', String(arrangement.face));
+
+    if (sprite.getAttribute('src') !== imageSources[arrangement.pose]) {
+      sprite.src = imageSources[arrangement.pose];
+    }
+    title.textContent = copy.title;
+    description.textContent = copy.body;
+    intro.hidden = !game || root.hidden;
+    detailButton.disabled = !game;
+  }
+
+  function showExhibit(index = 0, animate = true) {
+    clearTimeout(installTimer);
+    const token = ++generation;
+    const shouldAnimate = animate && !reducedMotion() && !root.hidden;
+    if (shouldAnimate) {
+      root.classList.add('is-scene-changing');
+      intro.classList.add('is-changing');
+    }
+
+    const install = () => {
+      if (token !== generation) return; // Rapid swipes: only newest work wins.
+      applyScene(index);
+      requestAnimationFrame(() => {
+        root.classList.remove('is-scene-changing');
+        intro.classList.remove('is-changing');
+      });
+    };
+
+    if (shouldAnimate) installTimer = window.setTimeout(install, 320);
+    else install();
+  }
 
   detailButton.addEventListener('click', () => {
     const active = document.querySelector('#game-grid .game-card.walk-room-current');
@@ -163,20 +147,18 @@
     showExhibit(event.detail?.index ?? currentIndex(), true);
   });
   document.addEventListener('oibung-page-changed', event => {
-    if (event.detail?.page !== 'games') stopSpeech();
-    else showExhibit(currentIndex(), false);
+    if (event.detail?.page === 'games') showExhibit(currentIndex(), false);
+    else intro.hidden = true;
   });
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && speaking) stopSpeech();
-  });
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stopSpeech();
-  });
-  // The guide visibility toggle already exists in gallery-guide.js.
+
+  // The existing menu controls whether the guide is visible.
   const visibilityObserver = new MutationObserver(() => {
     if (root.hidden) {
+      clearTimeout(installTimer);
+      generation++;
+      root.classList.remove('is-scene-changing');
+      intro.classList.remove('is-changing');
       intro.hidden = true;
-      stopSpeech();
     } else showExhibit(currentIndex(), false);
   });
   visibilityObserver.observe(root, { attributes: true, attributeFilter: ['hidden'] });
