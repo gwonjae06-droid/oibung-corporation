@@ -1,0 +1,388 @@
+/*
+ * OIBUNG GALLERY · Two display modes only
+ * The original stone museum is the light design; the same architecture,
+ * cards, artwork and detail pages receive a coordinated dark palette.
+ * No game-specific visual worlds, periodic switching or new image assets.
+ */
+
+/* Compact two-choice control on all viewport sizes. */
+.gallery-mode-switch{
+  display:inline-flex;align-items:center;gap:2px;padding:3px;
+  border:1px solid #c6beb3;border-radius:8px;
+  background:#eeeae3;
+  white-space:nowrap;
+}
+.gallery-mode-switch button{
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  min-height:34px;padding:7px 10px;border:0;border-radius:5px;
+  background:transparent;color:#6d716b;
+  font:600 12px/1.2 var(--body);
+  transition:background-color .2s,color .2s,box-shadow .2s;
+}
+.gallery-mode-switch button[aria-pressed="true"]{
+  background:#fffdfa;color:#2b312e;box-shadow:0 1px 5px #201b161f;
+}
+.gallery-mode-switch button:not([aria-pressed="true"]):hover{
+  color:#292f2b;background:#ffffff75;
+}
+.gallery-mode-icon{font-size:16px;line-height:1;display:inline-block}
+@media(max-width:760px){
+  .header-inner{gap:10px}
+  .header-actions{gap:8px}
+  .gallery-mode-switch button{min-height:35px;padding:6px 9px}
+}
+@media(max-width:520px){
+  .gallery-mode-switch button{min-width:34px;padding:6px 8px}
+  .gallery-mode-text{display:none}
+}
+@media(max-width:390px){
+  .header-inner{gap:7px}
+  .header-actions{gap:6px}
+  .gallery-mode-switch{padding:2px}
+  .gallery-mode-switch button{min-width:31px;padding:6px}
+  .gallery-mode-icon{font-size:15px}
+}
+
+html[data-gallery-mode="dark"]{
+  color-scheme:dark;
+  --bg:#171d24;
+  --panel:#252d35;
+  --line:#4b5761;
+  --muted:#b3bfc5;
+  --white:#eff1f0;
+  --lime:#ceb692;
+  --orange:#c49a75;
+  --gallery-surface:#232d36;
+  --gallery-surface-raised:#29343d;
+  --gallery-ivory:#eff2f0;
+  --gallery-gold:#c3a57f;
+  --gallery-secondary:#c0c8ca;
+  --gallery-rule:#53616a;
+  --museum-wall:#29323b;
+  --museum-paper:#222c35;
+  --museum-ink:#f0f2ef;
+  --museum-muted:#b8c3c7;
+  --museum-line:#52616b;
+  --museum-bronze:#ceb18a;
+  background:#202830;
+}
+html[data-gallery-mode="dark"] body{color:#f0f2ef;background:#29323b}
+html[data-gallery-mode="dark"] ::selection{background:#9f886c;color:#141b20}
+html[data-gallery-mode="dark"] .noise{opacity:.031;mix-blend-mode:soft-light}
+/* The existing wall and oak-plank perspective remain, only dimmed. */
+html[data-gallery-mode="dark"] body::before{
+  background:
+    radial-gradient(ellipse 47% 47% at 25% 17%,#d9d3c021,transparent 83%),
+    radial-gradient(ellipse 38% 48% at 75% 29%,#bfc9cd17,transparent 85%),
+    linear-gradient(90deg,#090f1839 0%,transparent 13%,transparent 87%,#080b123b 100%),
+    linear-gradient(180deg,transparent 69%,#0b101885 69.4%,#9e95804b 69.7%,transparent 71%),
+    linear-gradient(180deg,#323b43,#27313a 58%,#202830);
+}
+html[data-gallery-mode="dark"] body::after{
+  opacity:.57;
+  background:
+    linear-gradient(180deg,#090e167a,transparent 23%,#0e12195b),
+    repeating-linear-gradient(90deg,transparent 0 136px,#160f0d89 137px,#c19c6954 139px,transparent 141px,transparent 274px),
+    repeating-linear-gradient(0deg,transparent 0 115px,#1510116b 116px,#bf9c6a36 118px,transparent 120px),
+    repeating-linear-gradient(94deg,#ffffff08 0 2px,transparent 3px 16px,#100c0c12 17px 18px,transparent 20px 38px),
+    linear-gradient(100deg,#403529,#594a38 28%,#443a2e 53%,#584a37 76%,#383024 100%);
+}
+html[data-gallery-mode="dark"] .site-header{
+  background:#1d252dea;
+  border-bottom-color:#58636c;
+  box-shadow:0 4px 22px #090d1340;
+}
+html[data-gallery-mode="dark"] .brand{color:#f3f4f0}
+html[data-gallery-mode="dark"] .brand-copy span{color:#d9bc91}
+html[data-gallery-mode="dark"] .brand-mark,
+html[data-gallery-mode="dark"] .brand-core{border-color:#bba47e}
+html[data-gallery-mode="dark"] .brand-core{background:#bba47e}
+html[data-gallery-mode="dark"] .gallery-about-link,
+html[data-gallery-mode="dark"] .mobile-nav a{color:#cbd4d6}
+html[data-gallery-mode="dark"] .gallery-about-link:hover,
+html[data-gallery-mode="dark"] .mobile-nav a:hover{color:#fff1d5}
+html[data-gallery-mode="dark"] .mobile-nav{background:#202a32}
+html[data-gallery-mode="dark"] .page-switcher,
+html[data-gallery-mode="dark"] .library-toolbar,
+html[data-gallery-mode="dark"] .review-feed-heading{border-color:#59636b}
+html[data-gallery-mode="dark"] .page-tab{color:#bec9cf}
+html[data-gallery-mode="dark"] .page-tab:hover,
+html[data-gallery-mode="dark"] .page-tab.is-active{color:#f7f4ef}
+html[data-gallery-mode="dark"] .page-tab.is-active{border-bottom-color:#cbb28b}
+html[data-gallery-mode="dark"] .section-heading-row h1,
+html[data-gallery-mode="dark"] .library h1,
+html[data-gallery-mode="dark"] .review-board h1,
+html[data-gallery-mode="dark"] .review-feed-heading h2,
+html[data-gallery-mode="dark"] .gallery-about h2{color:#f2f1eb}
+html[data-gallery-mode="dark"] .library h1 span,
+html[data-gallery-mode="dark"] .review-board h1 span,
+html[data-gallery-mode="dark"] .section-kicker,
+html[data-gallery-mode="dark"] .board-eyebrow,
+html[data-gallery-mode="dark"] .featured-eyebrow{color:#d0b48b}
+html[data-gallery-mode="dark"] .section-heading-row p,
+html[data-gallery-mode="dark"] .catalog-count,
+html[data-gallery-mode="dark"] .library-sort,
+html[data-gallery-mode="dark"] .review-feed-heading>span{color:#c3ccd0}
+html[data-gallery-mode="dark"] .button-primary,
+html[data-gallery-mode="dark"] .game-card-footer .details-link,
+html[data-gallery-mode="dark"] .play-link{
+  color:#182228;background:#d5bd98;border-color:#d5bd98;
+}
+html[data-gallery-mode="dark"] .button-primary:hover,
+html[data-gallery-mode="dark"] .game-card-footer .details-link:hover,
+html[data-gallery-mode="dark"] .play-link:hover{
+  color:#141d23;background:#f3dcb6;border-color:#f3dcb6;
+}
+html[data-gallery-mode="dark"] .button-outline,
+html[data-gallery-mode="dark"] .game-card-footer .play-link{
+  color:#eff2f0;background:transparent;border-color:#71808a;
+}
+html[data-gallery-mode="dark"] .button-outline:hover,
+html[data-gallery-mode="dark"] .game-card-footer .play-link:hover{
+  color:#fff4dc;background:#35424c;border-color:#c6ae87;
+}
+html[data-gallery-mode="dark"] .icon-button,
+html[data-gallery-mode="dark"] .favorite-button{
+  color:#e7eceb;background:#2d3942;border-color:#647078;
+}
+html[data-gallery-mode="dark"] .icon-button:hover,
+html[data-gallery-mode="dark"] .favorite-button:hover{
+  color:#fff5de;background:#3c4950;border-color:#c6aa84;
+}
+html[data-gallery-mode="dark"] .favorite-button.is-favorite{
+  color:#e8ac8d;border-color:#bc897a;background:#3c3031;
+}
+html[data-gallery-mode="dark"] .filter-chip{color:#bec9ca}
+html[data-gallery-mode="dark"] .filter-chip:hover{
+  color:#f3f2ec;background:#39434c;
+}
+html[data-gallery-mode="dark"] .filter-chip.is-active{
+  color:#171f25;background:#e5dfd5;border-color:#c7bbaa;
+}
+html[data-gallery-mode="dark"] .search-field,
+html[data-gallery-mode="dark"] .library-sort select,
+html[data-gallery-mode="dark"] #reviews-game-filter{
+  color:#eef0ed;background:#25313a;border-color:#64717a;
+}
+html[data-gallery-mode="dark"] .search-field input{color:#f3f5f3}
+html[data-gallery-mode="dark"] .search-field input::placeholder{color:#b6c2c4}
+html[data-gallery-mode="dark"] .search-field svg,
+html[data-gallery-mode="dark"] .search-field kbd{color:#bfc9cc}
+html[data-gallery-mode="dark"] .search-field kbd{border-color:#677780}
+html[data-gallery-mode="dark"] .search-field:focus-within{border-color:#dac39e}
+/* Framed paintings and their information plaques. */
+html[data-gallery-mode="dark"] .featured-exhibit{
+  background:linear-gradient(125deg,#2c353e,#202b35);
+  border-color:#62717c;
+  box-shadow:0 17px 41px #0a0d136b;
+}
+html[data-gallery-mode="dark"] .featured-exhibit::before{
+  background:linear-gradient(125deg,#f4dcc412,transparent 46%);
+}
+html[data-gallery-mode="dark"] .featured-cover{
+  background:#18212a;border-color:#b59d78;outline-color:#73808a;
+}
+html[data-gallery-mode="dark"] .featured-content h2{color:#f5f3ee}
+html[data-gallery-mode="dark"] .featured-content>p,
+html[data-gallery-mode="dark"] .featured-meta,
+html[data-gallery-mode="dark"] .featured-position{color:#c5cfd0}
+html[data-gallery-mode="dark"] .featured-meta .game-status{color:#ddcdb6;border-color:#808d94}
+html[data-gallery-mode="dark"] .featured-play-toggle,
+html[data-gallery-mode="dark"] .featured-nav-button{
+  background:#2c3942;color:#f0f2ef;border-color:#687681;
+}
+html[data-gallery-mode="dark"] .featured-play-toggle:hover,
+html[data-gallery-mode="dark"] .featured-nav-button:hover,
+html[data-gallery-mode="dark"] .featured-play-toggle[aria-pressed="true"]{
+  background:#40505a;border-color:#bda47c;
+}
+html[data-gallery-mode="dark"] .featured-progress{background:#46535b}
+html[data-gallery-mode="dark"] .featured-progress>span{background:#d2b993}
+html[data-gallery-mode="dark"] .game-card{
+  color:#f0f2ef;background:#222c35;border-color:#62707a;
+  box-shadow:0 12px 30px #080c1282;
+}
+html[data-gallery-mode="dark"] .game-card:hover,
+html[data-gallery-mode="dark"] .game-card:focus-within,
+html[data-gallery-mode="dark"].motion-active .game-card:hover,
+html[data-gallery-mode="dark"].motion-active .game-card:focus-within{
+  border-color:#c4ad88;
+  box-shadow:0 19px 38px #080c13a6;
+}
+html[data-gallery-mode="dark"] .game-card .game-cover{
+  border-color:#93897d;
+  background:linear-gradient(145deg,#66625b,#454b50 52%,#333b42);
+  box-shadow:inset 0 0 0 1px #bcb5aa46,0 8px 18px #0c1016a1;
+}
+html[data-gallery-mode="dark"] .game-card .artwork-image-window{
+  background:#11161c;
+  box-shadow:0 0 0 1px #82796f,0 2px 7px #03080b9c;
+}
+html[data-gallery-mode="dark"] .game-card-body[data-intro-tone="gallery"]{
+  color:#eef1ef;background-color:#222c35;border-top-color:#52616c;
+}
+html[data-gallery-mode="dark"] .game-card-body[data-intro-tone="gallery"] :is(h3,.game-genre,.artwork-sequence,.game-meta,.game-card-desc,.review-mini,.review-mini small){
+  color:#eef1ef;
+}
+html[data-gallery-mode="dark"] .game-card-body[data-intro-tone="gallery"] :is(.game-meta,.game-card-desc,.review-mini small,.review-mini--empty){
+  color:#b9c5c7;
+}
+html[data-gallery-mode="dark"].motion-active .game-card:hover .game-card-body[data-intro-tone="gallery"] h3,
+html[data-gallery-mode="dark"].motion-active .game-card:focus-within .game-card-body[data-intro-tone="gallery"] h3{color:#f4f5f0}
+html[data-gallery-mode="dark"] .game-meta .game-status{
+  color:#d6ddd9;background:#303b43;border-color:#71818a;
+}
+html[data-gallery-mode="dark"] .game-meta .game-status--live{
+  color:#a6d9b7;background:#253e39;border-color:#628c77;
+}
+html[data-gallery-mode="dark"] .game-meta .game-status--finished{
+  color:#d2d1e4;background:#373947;border-color:#8387a0;
+}
+html[data-gallery-mode="dark"] .game-card-footer{border-color:#57636d}
+html[data-gallery-mode="dark"] .game-card-body::after{
+  background:
+    linear-gradient(90deg,#c5a8845c,#dbd0bd36,#c5a88467) top/100% 1px no-repeat,
+    linear-gradient(180deg,#bfa17c45,transparent 70%,#bfa17c30) left/1px 100% no-repeat,
+    linear-gradient(180deg,#bfa17c45,transparent 70%,#bfa17c30) right/1px 100% no-repeat,
+    linear-gradient(90deg,#bfa17c30,transparent,#bfa17c40) bottom/100% 1px no-repeat;
+}
+/* Dark mode still honors explicit per-game intro background colors. */
+html[data-gallery-mode="dark"] .game-card-body[data-intro-tone]:not([data-intro-tone="gallery"]) :is(h3,.game-genre,.game-meta,.game-card-desc,.artwork-sequence){
+  color:#fff6ea;
+}
+/* Editorial sections, reviews and data entry. */
+html[data-gallery-mode="dark"] .manifesto{
+  background:#242e36;border-color:#59656d;
+}
+html[data-gallery-mode="dark"] .gallery-about p{color:#c6d0d0}
+html[data-gallery-mode="dark"] .site-footer{
+  color:#c4ced0;background:#202830;border-color:#59656d;
+}
+html[data-gallery-mode="dark"] .footer-top,
+html[data-gallery-mode="dark"] .footer-bottom{border-color:#52616b}
+html[data-gallery-mode="dark"] .footer-bottom{color:#b9c4c8}
+html[data-gallery-mode="dark"] .footer-bottom a:hover{color:#fff3db}
+html[data-gallery-mode="dark"] dialog:not(.media-lightbox):not(#game-dialog){
+  color:#eef1ef;background:#25313a;border-color:#697883;
+  box-shadow:0 28px 85px #070a0dbd;
+}
+html[data-gallery-mode="dark"] dialog:not(.media-lightbox):not(#game-dialog)::backdrop{
+  background:#04080bd9;
+}
+html[data-gallery-mode="dark"] :is(.guide-inner,.guide-inner h2,.dialog-kicker){color:#e9eeec}
+html[data-gallery-mode="dark"] :is(.guide-inner p,.review-editor-intro){color:#c3cdd0}
+html[data-gallery-mode="dark"] .editor-optional,
+html[data-gallery-mode="dark"] .detail-management{border-color:#5a6871}
+html[data-gallery-mode="dark"] .review-sidebar,
+html[data-gallery-mode="dark"] .review-post{
+  color:#eff1ef;background:#27323b;border-color:#61727c;
+  box-shadow:0 9px 25px #080d1370;
+}
+html[data-gallery-mode="dark"] .review-sidebar h2,
+html[data-gallery-mode="dark"] .review-post-author strong,
+html[data-gallery-mode="dark"] .review-feed-heading h2{color:#f1f3f1}
+html[data-gallery-mode="dark"] .review-filter-label,
+html[data-gallery-mode="dark"] .review-sidebar-note,
+html[data-gallery-mode="dark"] .review-post-body,
+html[data-gallery-mode="dark"] .review-post time{color:#c1cdd0}
+html[data-gallery-mode="dark"] .review-stats{color:#d7bd95;border-color:#66717b}
+html[data-gallery-mode="dark"] .review-post-game{
+  background:#3a454e;color:#e2cba9;border-color:#6d7a85;
+}
+html[data-gallery-mode="dark"] .review-post-game:hover{border-color:#c1a47c}
+html[data-gallery-mode="dark"] .review-post-stars{color:#d5ba88}
+html[data-gallery-mode="dark"] .review-feed-empty{color:#bfcbcb;border-color:#69747d}
+html[data-gallery-mode="dark"] .review-post-photos a{background:#1c252d;border-color:#586875}
+html[data-gallery-mode="dark"] .community-form :is(input,select,textarea),
+html[data-gallery-mode="dark"] .community-form input:not([type="checkbox"]),
+html[data-gallery-mode="dark"] .review-sidebar select{
+  color:#f1f4f1;background:#1d2831;border:1px solid #77818b;
+}
+html[data-gallery-mode="dark"] .community-form :is(input,textarea)::placeholder{color:#b1bdc1}
+html[data-gallery-mode="dark"] .review-old-photo{color:#c9d3d1}
+html[data-gallery-mode="dark"] .review-star-choices label span:not(.sr-only){color:#88969e}
+html[data-gallery-mode="dark"] .review-star-choices label:hover span:not(.sr-only),
+html[data-gallery-mode="dark"] .review-star-choices label:has(input:checked) span:not(.sr-only){color:#e3ba75}
+html[data-gallery-mode="dark"] .guide-inner pre{background:#161f27;color:#dfe7e4;border-color:#64727c}
+html[data-gallery-mode="dark"] .empty-state{border-color:#87919a}
+html[data-gallery-mode="dark"] .empty-state p{color:#c1cbcd}
+html[data-gallery-mode="dark"] .motion-control{
+  color:#e3ebe9;background:#293741;border-color:#6a7781;
+}
+html[data-gallery-mode="dark"] .motion-control:hover{
+  background:#394951;border-color:#c7ae85;
+}
+html[data-gallery-mode="dark"] .toast{background:#d5bd98;color:#20272b}
+html[data-gallery-mode="dark"] .screenshot-delete{color:#efa494}
+html[data-gallery-mode="dark"] :where(button,a,input,select,textarea,summary):focus-visible{
+  outline-color:#e3c38e;
+}
+/* One light or dark treatment for every full-screen artwork page. */
+html[data-gallery-mode="dark"] #game-dialog.detail-dialog{
+  color-scheme:dark;
+  --page-wall:#202a33;
+  --page-paper:#26323c;
+  --page-ink:#edf1f0;
+  --page-muted:#bbc8cc;
+  --page-accent:#c8b18d;
+  --page-border:#60717b;
+  --page-field:#1e2a33;
+  --page-button:#dbc5a2;
+  --page-button-ink:#1a242a;
+  color:var(--page-ink);
+  background:
+    radial-gradient(ellipse 58% 49% at 49% 5%,#a4aab12d,transparent 85%),
+    repeating-linear-gradient(90deg,#ffffff06 0 1px,transparent 1px 205px),
+    linear-gradient(180deg,#313c45,#1d252d);
+}
+html[data-gallery-mode="dark"] #game-dialog .dialog-body{
+  color:var(--page-ink);background:var(--page-paper);
+  border-color:var(--page-border);
+  box-shadow:0 22px 60px #060a10ad;
+}
+html[data-gallery-mode="dark"] #game-dialog .detail-introduction[data-intro-tone="gallery"]{
+  color:var(--page-ink);background:var(--page-paper);
+}
+html[data-gallery-mode="dark"] #game-dialog .detail-introduction[data-intro-tone="gallery"] :is(h2,.dialog-kicker,.game-meta,#detail-summary,.dialog-tags span,.detail-specs span){
+  color:var(--page-ink);
+}
+html[data-gallery-mode="dark"] #game-dialog .detail-introduction[data-intro-tone="gallery"] :is(#detail-summary,.game-meta){color:var(--page-muted)}
+html[data-gallery-mode="dark"] #game-dialog .detail-review-teaser p{color:var(--page-muted)}
+html[data-gallery-mode="dark"] #game-dialog .exhibit-back{
+  color:var(--page-ink);background:var(--page-paper);
+  border-color:var(--page-border);
+}
+html[data-gallery-mode="dark"] #game-dialog .exhibition-page-heading{color:var(--page-muted)}
+html[data-gallery-mode="dark"] #game-dialog .dialog-cover{border-color:var(--page-accent)}
+html[data-gallery-mode="dark"] #game-dialog .community-section{border-color:var(--page-border)}
+html[data-gallery-mode="dark"] #game-dialog .community-section :is(h3,summary,.text-action){color:var(--page-ink)}
+html[data-gallery-mode="dark"] #game-dialog :is(.detail-management,.contribution-panel[open]){
+  background:var(--page-field);border-color:var(--page-border);
+}
+html[data-gallery-mode="dark"] #game-dialog :is(input,select,textarea){
+  color:var(--page-ink);background:var(--page-field);border-color:var(--page-border);
+}
+html[data-gallery-mode="dark"] #game-dialog .button-outline{color:var(--page-ink);border-color:var(--page-border)}
+html[data-gallery-mode="dark"] #game-dialog .button-primary{color:var(--page-button-ink);background:var(--page-button);border-color:var(--page-button)}
+/* Dark theme button appearance, matching dark museum panels. */
+html[data-gallery-mode="dark"] .gallery-mode-switch{
+  background:#1b242d;border-color:#677780;
+}
+html[data-gallery-mode="dark"] .gallery-mode-switch button{color:#b7c6cd}
+html[data-gallery-mode="dark"] .gallery-mode-switch button[aria-pressed="true"]{
+  background:#3b4b55;color:#fff0d8;box-shadow:0 1px 5px #080d1580;
+}
+html[data-gallery-mode="dark"] .gallery-mode-switch button:not([aria-pressed="true"]):hover{
+  color:#f2f3ef;background:#30404b;
+}
+@media(max-width:760px){
+  html[data-gallery-mode="dark"] body::after{opacity:.38}
+}
+@media(prefers-contrast:more){
+  html[data-gallery-mode="dark"] .game-card,
+  html[data-gallery-mode="dark"] .review-post{border-color:#a7b0b4}
+  html[data-gallery-mode="dark"] body::after{opacity:.22}
+}
+@media(prefers-reduced-motion:reduce){
+  .gallery-mode-switch button{transition:none}
+}
