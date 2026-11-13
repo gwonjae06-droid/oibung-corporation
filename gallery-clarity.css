@@ -299,3 +299,33 @@ body:has(dialog[open]) #gallery-guide-intro,
 @media(prefers-reduced-motion:reduce){
   #gallery-guide-intro{transition:none!important}
 }
+
+/* Composite the moving hallway only while travelling. At rest let the browser
+   repaint the real text and paintings without persistent 3D layer promotion. */
+#games .walk-gallery .game-grid{
+  will-change:auto!important;
+}
+#games .walk-gallery-viewport.camera-moving .game-grid{
+  will-change:transform!important;
+}
+#gallery-guide .gallery-guide-avatar .guide-illustration img.guide-hires-image{
+  filter:none!important;
+}
+@media(max-width:760px){
+  #games .walk-gallery .walk-spotlight,
+  #games .hall-continuum .hall-light{
+    mix-blend-mode:normal!important;
+  }
+  #games .walk-gallery .walk-art-glow{
+    filter:blur(10px)!important;
+  }
+  #games .walk-gallery .game-card>.walk-room{
+    filter:none!important;
+  }
+  #gallery-guide .gallery-guide-avatar{
+    filter:none!important;
+  }
+  #gallery-guide .guide-illustration{
+    animation-duration:6.2s!important;
+  }
+}
