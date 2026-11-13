@@ -103,6 +103,8 @@
     root.dataset.guideVariant = String(variantIndex);
     root.style.setProperty('--curator-x', arrangement.x + 'px');
     root.style.setProperty('--curator-y', arrangement.y + 'px');
+    root.style.setProperty('--curator-mobile-x', (arrangement.x * .38).toFixed(2) + 'px');
+    root.style.setProperty('--curator-mobile-y', (arrangement.y * .38).toFixed(2) + 'px');
     root.style.setProperty('--curator-scale', String(arrangement.scale));
     root.style.setProperty('--curator-rotate', arrangement.angle + 'deg');
     root.style.setProperty('--curator-facing', String(arrangement.face));
