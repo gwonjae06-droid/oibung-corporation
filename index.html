@@ -18,13 +18,15 @@
   <link rel="stylesheet" href="gallery-museum.css?v=museum-room-3">
   <link rel="stylesheet" href="gallery-game-page.css?v=two-modes-1">
   <link rel="stylesheet" href="gallery-display-modes.css?v=two-modes-1">
+  <link rel="stylesheet" href="gallery-walk.css?v=gallery-walk-1">
   <script src="gallery-display-mode.js?v=two-modes-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=two-modes-1" defer></script>
+  <script src="app.js?v=gallery-walk-1" defer></script>
   <script type="module" src="community.js?v=gallery-polish-1"></script>
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
+  <script src="gallery-walk.js?v=gallery-walk-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -73,7 +75,7 @@
     <section class="library section-pad" id="games" role="tabpanel" aria-labelledby="tab-games">
       <div class="container">
         <div class="section-heading-row">
-          <div><h1 id="games-title">작품 전시</h1><p>친구들이 만든 게임을 둘러보고, 작품 속 세계를 만나보세요.</p></div>
+          <div><h1 id="games-title">작품 전시</h1><p>오른쪽으로 이동하며 한 점씩 감상하는 전시관입니다.</p></div>
           <button class="button-primary" type="button" data-open-editor>게임 등록하기 <svg aria-hidden="true"><use href="#i-arrow"/></svg></button>
         </div>
         <section class="featured-exhibit" id="featured-exhibit" aria-label="대표 전시 작품" hidden>
@@ -119,7 +121,21 @@
           </div>
         </div>
         <p class="catalog-count" id="catalog-count" aria-live="polite"></p>
-        <div id="game-grid" class="game-grid" aria-live="polite"></div>
+        <section class="walk-gallery" id="walk-gallery" aria-label="가로 이동형 작품 전시관">
+          <div class="walk-gallery-viewport" id="walk-gallery-viewport" tabindex="0" role="region" aria-label="작품 한 점씩 감상. 휠이나 트랙패드로 이동하고, 좌우 방향키 또는 모바일 스와이프도 사용할 수 있습니다.">
+            <div id="game-grid" class="game-grid" aria-live="polite"></div>
+          </div>
+          <div class="walk-rail-hud" aria-hidden="true">
+            <span>OIBUNG GALLERY&nbsp; / &nbsp;EXHIBITION HALL</span>
+            <span id="walk-index" class="walk-index">00 / 00</span>
+          </div>
+          <div class="walk-rail-controls">
+            <button type="button" id="walk-prev" aria-label="이전 전시 작품" title="이전 작품">←</button>
+            <span class="walk-instructions"><span id="walk-current-title">전시 작품</span> &nbsp; · &nbsp; 휠 · 좌우 키 · 스와이프</span>
+            <button type="button" id="walk-next" aria-label="다음 전시 작품" title="다음 작품">→</button>
+          </div>
+          <div class="walk-progress-track" aria-hidden="true"><span id="walk-progress-fill"></span></div>
+        </section>
         <div id="empty-state" class="empty-state" hidden><h3>조건에 맞는 작품이 없습니다.</h3><p>검색어나 필터를 바꿔 보세요.</p><button type="button" id="reset-filters" class="button-outline">전체 게임 보기 <svg><use href="#i-right"/></svg></button></div>
       </div>
     </section>
