@@ -290,7 +290,9 @@
   });
   // Maintain real elapsed viewing time, without skipping artworks when tabs/windows are hidden.
   // Hover and keyboard focus pause timing without resetting the visitor's progress.
-  window.setInterval(() => {
+  // The fullscreen museum replaces the featured slideshow completely.
+  // Do not run the old 10Hz hidden-slideshow clock behind the artworks.
+  if (!document.getElementById('walk-gallery')) window.setInterval(() => {
     const now = performance.now();
     const delta = Math.max(0, Math.min(250, now - featuredLastTick));
     featuredLastTick = now;
