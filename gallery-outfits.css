@@ -1,0 +1,161 @@
+/*
+ * OIBUNG GALLERY — themed curator wardrobe & lightweight Live2D-like motion
+ * Actual illustrated costumes (raster artwork inside self-contained SVGs);
+ * no CSS-drawn people and no heavy WebGL / Live2D dependency.
+ */
+#gallery-guide.gallery-guide {
+  --outfit-width:clamp(250px,28vw,495px);
+  --outfit-height:min(83dvh,850px);
+  --costume-breath-time:5.4s;
+  width:var(--outfit-width)!important;
+  height:var(--outfit-height)!important;
+  transform-origin:50% 95%!important;
+}
+#gallery-guide[data-guide-outfit="knight"]{
+  --outfit-width:clamp(330px,35vw,620px);
+  --outfit-height:min(84dvh,880px);
+  --costume-breath-time:6.1s;
+}
+#gallery-guide[data-guide-outfit="maid"]{
+  --outfit-width:clamp(210px,24vw,420px);
+  --outfit-height:min(86dvh,830px);
+  --costume-breath-time:4.2s;
+}
+#gallery-guide[data-guide-outfit="arena"]{
+  --outfit-width:clamp(260px,29vw,500px);
+  --outfit-height:min(84dvh,850px);
+  --costume-breath-time:4.8s;
+}
+#gallery-guide[data-guide-outfit="duelist"]{
+  --outfit-width:clamp(290px,33vw,560px);
+  --outfit-height:min(84dvh,850px);
+  --costume-breath-time:5.0s;
+}
+#gallery-guide[data-guide-outfit="commander"]{
+  --outfit-width:clamp(245px,28vw,480px);
+  --outfit-height:min(85dvh,855px);
+  --costume-breath-time:5.6s;
+}
+#gallery-guide[data-guide-outfit="egypt"]{
+  --outfit-width:clamp(245px,27vw,480px);
+  --outfit-height:min(85dvh,860px);
+}
+#gallery-guide .gallery-guide-avatar{
+  width:100%!important;height:100%!important;
+  transform:none!important;overflow:visible!important;
+}
+#gallery-guide .gallery-guide-avatar .guide-illustration {
+  position:absolute;inset:0;
+  width:100%;height:100%;
+  display:block;overflow:visible;
+  pointer-events:none;
+  transform-origin:50% 83%;
+  animation:curatorBreathing var(--costume-breath-time) ease-in-out infinite;
+  transition:opacity .26s ease;
+}
+#gallery-guide .gallery-guide-avatar .guide-illustration img{
+  position:absolute!important;inset:0!important;
+  display:block!important;
+  width:100%!important;height:100%!important;
+  object-fit:contain!important;object-position:center bottom!important;
+  image-rendering:auto!important;
+  backface-visibility:hidden;
+  pointer-events:none;
+  -webkit-user-drag:none;
+  user-select:none;
+}
+#gallery-guide .gallery-guide-avatar .guide-illustration img.guide-hires-image{
+  z-index:1;
+  transform:scaleX(var(--curator-facing,1))!important;
+  transform-origin:50% 75%;
+  filter:drop-shadow(-7px 12px 10px #07080b8c)!important;
+  opacity:1!important;
+  transition:none!important;
+}
+#gallery-guide .guide-head-rig{
+  position:absolute;inset:0;
+  z-index:2;pointer-events:none;
+  transform:translate3d(var(--guide-look-x,0px),var(--guide-look-y,0px),0);
+  transition:transform .2s ease-out;
+}
+#gallery-guide .gallery-guide-avatar .guide-illustration img.guide-costume-head{
+  transform-origin:50% 29%!important;
+  transform:scaleX(var(--curator-facing,1))!important;
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 23%,#000c 29%,transparent 40%);
+  mask-image:linear-gradient(to bottom,#000 0%,#000 23%,#000c 29%,transparent 40%);
+  animation:curatorHeadTilt calc(var(--costume-breath-time) * 1.34) ease-in-out infinite alternate;
+  filter:none!important;
+}
+#gallery-guide .gallery-guide-avatar .guide-illustration img.guide-costume-fabric{
+  z-index:3;
+  transform-origin:54% 53%;
+  transform:scaleX(var(--curator-facing,1));
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 49%,#0009 68%,#000 86%);
+  mask-image:linear-gradient(to bottom,transparent 0%,transparent 49%,#0009 68%,#000 86%);
+  animation:curatorFabricDrift calc(var(--costume-breath-time) * 1.21) ease-in-out infinite alternate;
+}
+#gallery-guide[data-guide-outfit="knight"] .guide-costume-fabric{
+  animation-duration:7.3s!important;
+}
+#gallery-guide[data-guide-outfit="maid"] .guide-costume-head{
+  animation-duration:4.9s!important;
+}
+#gallery-guide[data-guide-outfit="arena"] .guide-illustration{
+  filter:drop-shadow(0 0 7px #61d6ed24);
+}
+#gallery-guide[data-guide-outfit="duelist"] .guide-costume-fabric{
+  animation-duration:4.3s!important;
+}
+/* The existing camera keeps moving; the curator simply settles into a new costume. */
+#gallery-guide.is-scene-changing .guide-illustration{
+  opacity:0!important;
+}
+#gallery-guide:not(.is-scene-changing) .guide-illustration{
+  opacity:1;
+}
+@keyframes curatorBreathing{
+  0%,100%{transform:translateY(0) scale(1,1)}
+  48%{transform:translateY(-3px) scale(1.007,1.012)}
+}
+@keyframes curatorHeadTilt{
+  0%{rotate:-.65deg}
+  50%{rotate:.25deg}
+  100%{rotate:1.15deg}
+}
+@keyframes curatorFabricDrift{
+  0%{translate:-1.1px 0;rotate:-.35deg}
+  100%{translate:1.5px 0;rotate:.48deg}
+}
+@media(orientation:portrait){
+  #gallery-guide.gallery-guide{
+    --outfit-width:min(43vw,260px);
+    --outfit-height:min(45dvh,460px);
+    right:0!important;bottom:0!important;
+  }
+  #gallery-guide[data-guide-outfit="knight"],
+  #gallery-guide[data-guide-outfit="duelist"]{
+    --outfit-width:min(52vw,280px);
+  }
+  #gallery-guide[data-guide-outfit="maid"]{
+    --outfit-width:min(39vw,235px);
+  }
+}
+@media(max-height:520px) and (orientation:landscape){
+  #gallery-guide.gallery-guide{
+    --outfit-width:min(28vw,290px);
+    --outfit-height:96dvh;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #gallery-guide .gallery-guide-avatar .guide-illustration,
+  #gallery-guide .gallery-guide-avatar .guide-illustration .guide-costume-head,
+  #gallery-guide .gallery-guide-avatar .guide-illustration .guide-costume-fabric{
+    animation:none!important;transition:none!important;translate:none!important;rotate:none!important;
+  }
+  #gallery-guide .guide-head-rig{transition:none!important}
+}
+html.motion-off #gallery-guide .gallery-guide-avatar .guide-illustration,
+html.motion-off #gallery-guide .gallery-guide-avatar .guide-illustration img,
+html.motion-off #gallery-guide .guide-head-rig{
+  animation:none!important;transition:none!important;translate:none!important;rotate:none!important;
+}
