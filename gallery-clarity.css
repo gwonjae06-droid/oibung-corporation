@@ -329,3 +329,29 @@ body:has(dialog[open]) #gallery-guide-intro,
     animation-duration:6.2s!important;
   }
 }
+
+
+/* Readable title plaques under the painting on desktop, clear of the curator.
+   The visitor should see the art first, then its real title in a crisp label. */
+@media (min-width:860px) and (min-height:620px){
+  #games .walk-gallery .game-card .game-card-body,
+  #games .walk-gallery .game-card .game-card-body[data-intro-tone]{
+    left:43%!important;top:79%!important;
+    width:clamp(200px,24vw,360px)!important;
+    min-width:0!important;max-height:105px!important;
+    overflow:hidden!important;
+    padding:12px 17px!important;
+    border:1px solid #c6ae80!important;
+    background:#181a1bf5!important;
+    box-shadow:0 9px 25px #000b!important;
+    transform:translate(-50%,-50%)!important;
+    backdrop-filter:none!important;
+  }
+  #games .walk-gallery .game-card .game-card-body h3,
+  html[data-gallery-mode="dark"] #games .walk-gallery .game-card .game-card-body h3{
+    font:700 clamp(18px,1.6vw,23px)/1.35 'Noto Serif KR',serif!important;
+    color:#f7ecda!important;
+    text-shadow:none!important;
+    letter-spacing:-.025em!important;
+  }
+}
