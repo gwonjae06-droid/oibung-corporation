@@ -26,17 +26,16 @@
   <link rel="stylesheet" href="gallery-guide.css?v=gallery-guide-1">
   <link rel="stylesheet" href="gallery-premiere.css?v=gallery-premiere-2">
   <link rel="stylesheet" href="gallery-live-scene.css?v=gallery-live-scene-1">
-  <link rel="stylesheet" href="gallery-reference.css?v=reference-scenes-1">
-  <link rel="preload" as="image" type="image/avif" href="assets/gallery-scene-pose-0.avif">
+  <link rel="stylesheet" href="gallery-continuum.css?v=continuous-hall-1">
   <script src="gallery-display-mode.js?v=two-modes-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
   <script src="community-config.js" defer></script>
-  <script src="app.js?v=reference-scenes-2" defer></script>
+  <script src="app.js?v=continuous-hall-1" defer></script>
   <script type="module" src="community.js?v=gallery-polish-1"></script>
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
-  <script src="gallery-walk.js?v=reference-scenes-1" defer></script>
-  <script src="gallery-guide.js?v=reference-scenes-1" defer></script>
+  <script src="gallery-walk.js?v=continuous-hall-1" defer></script>
+  <script src="gallery-guide.js?v=continuous-hall-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -142,6 +141,12 @@
         <p class="catalog-count" id="catalog-count" aria-live="polite"></p>
         <section class="walk-gallery" id="walk-gallery" aria-label="가로 이동형 작품 전시관">
           <div class="walk-gallery-viewport" id="walk-gallery-viewport" tabindex="0" role="region" aria-label="작품 한 점씩 감상. 휠이나 트랙패드로 이동하고, 좌우 방향키 또는 모바일 스와이프도 사용할 수 있습니다.">
+            <div class="hall-continuum" id="hall-continuum" aria-hidden="true">
+              <div class="hall-back-wall"></div><div class="hall-corridor-left"></div>
+              <div class="hall-corridor-right"></div><div class="hall-pillars"></div>
+              <div class="hall-ceiling"></div><div class="hall-light"></div>
+              <div class="hall-floor"></div><div class="hall-vignette"></div>
+            </div>
             <div id="game-grid" class="game-grid" aria-live="polite"></div>
           </div>
           <div class="walk-rail-controls">
