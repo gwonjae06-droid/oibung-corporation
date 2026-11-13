@@ -161,3 +161,73 @@ body:has(dialog[open]) #gallery-guide .gallery-guide-intro{
   #gallery-guide .guide-hires-image,
   #gallery-guide .gallery-guide-intro{transition:none!important}
 }
+
+/* Twelve stage compositions from three real high-resolution illustrations.
+   The walking camera's X shift and the curator's per-artwork placement are
+   combined, so changing the pose doesn't detach her from the same gallery. */
+#gallery-guide.gallery-guide {
+  --curator-x:0px;
+  --curator-y:0px;
+  --curator-scale:1;
+  --curator-rotate:0deg;
+  --curator-facing:1;
+  transform:
+    translate3d(
+      calc(var(--guide-camera-shift,0px) + var(--curator-x,0px)),
+      var(--curator-y,0px),
+      0
+    )
+    rotate(calc(var(--guide-lean,0deg) + var(--curator-rotate,0deg)))
+    scale(calc(var(--guide-scale,1) * var(--curator-scale,1)))!important;
+  transition:transform .68s cubic-bezier(.2,.74,.25,1),opacity .32s ease!important;
+  transform-origin:54% 100%;
+}
+#gallery-guide .gallery-guide-avatar img.guide-hires-image {
+  /* ScaleX changes the direction of her gesture, but never rasterizes,
+     blurs, distorts or replaces the original high-resolution illustration. */
+  transform:scaleX(var(--curator-facing,1))!important;
+  transform-origin:50% 100%;
+  image-rendering:auto!important;
+  filter:none!important;
+  transition:opacity .31s ease!important;
+}
+#gallery-guide.is-scene-changing.gallery-guide {
+  opacity:0!important;
+  transform:
+    translate3d(
+      calc(var(--guide-camera-shift,0px) + var(--curator-x,0px) + 15px),
+      calc(var(--curator-y,0px) + 6px),
+      0
+    )
+    rotate(calc(var(--guide-lean,0deg) + var(--curator-rotate,0deg)))
+    scale(.96)!important;
+}
+#gallery-guide.is-scene-changing .gallery-guide-avatar img.guide-hires-image {
+  opacity:0!important;
+}
+@media(orientation:portrait) {
+  #gallery-guide.gallery-guide {
+    /* Stage movement stays subtle on a small mobile screen. */
+    transform:
+      translate3d(
+        calc(var(--guide-camera-shift,0px) + var(--curator-x,0px) * .38),
+        calc(var(--curator-y,0px) * .38),
+        0
+      )
+      rotate(calc(var(--guide-lean,0deg) + var(--curator-rotate,0deg)))
+      scale(calc(var(--guide-scale,1) * var(--curator-scale,1)))!important;
+  }
+}
+@media(prefers-reduced-motion:reduce) {
+  #gallery-guide.gallery-guide,
+  #gallery-guide .gallery-guide-avatar img.guide-hires-image {
+    transition:none!important;
+  }
+  #gallery-guide.is-scene-changing.gallery-guide {
+    opacity:1!important;
+  }
+}
+html.motion-off #gallery-guide.gallery-guide,
+html.motion-off #gallery-guide .gallery-guide-avatar img.guide-hires-image {
+  transition:none!important;
+}
