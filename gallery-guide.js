@@ -12,18 +12,10 @@
   const message = document.getElementById('gallery-guide-message');
   const hideButton = document.getElementById('gallery-guide-hide');
   const menuToggle = document.getElementById('menu-toggle-guide');
-  const guidePortrait = avatar?.querySelector('img');
   if (!root || !avatar || !panel || !closeButton || !message || !hideButton || !menuToggle) return;
 
   const preferenceKey = 'oibung-gallery:guide-visible';
   const poses = ['calm', 'present', 'welcome'];
-  // Small vector poses are cached up front so swapping doesn't flash white.
-  if (typeof Image !== 'undefined') {
-    poses.forEach(pose => {
-      const preview = new Image();
-      preview.src = 'assets/guide-egypt-' + pose + '.svg?v=1';
-    });
-  }
   let currentPose = 'calm';
   let poseTimer = 0;
   function showPose(index, animate = true) {
@@ -33,7 +25,6 @@
     const install = () => {
       currentPose = pose;
       root.dataset.guidePose = pose;
-      if (guidePortrait) guidePortrait.src = 'assets/guide-egypt-' + pose + '.svg?v=1';
       requestAnimationFrame(() => root.classList.remove('is-scene-changing'));
     };
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
@@ -78,7 +69,7 @@
   function setVisible(visible) {
     root.hidden = !visible;
     menuToggle.setAttribute('aria-pressed', String(visible));
-    menuToggle.textContent = visible ? '가이드 숨기기' : '가이드 보이기';
+    menuToggle.textContent = visible ? '가이드 기능 끄기' : '가이드 기능 켜기';
     if (!visible) setPanelOpen(false);
     try { localStorage.setItem(preferenceKey, visible ? 'on' : 'off'); }
     catch { /* No persistent preference in private mode. */ }
