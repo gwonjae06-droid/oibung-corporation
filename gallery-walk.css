@@ -449,3 +449,33 @@ html[data-gallery-mode="dark"] .walk-rail-hud{color:#f9f4e9}
   .walk-progress-track>span{transition:none}
 }
 html.motion-off .walk-gallery .game-cover{transition:none!important}
+
+/* Museum tools are accessible but do not crowd the exhibited paintings. */
+#games .walk-filter-drawer{margin:0 0 8px}
+#games .walk-filter-drawer>summary{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:6px 0;margin-bottom:2px;
+  list-style:none;cursor:pointer;
+  color:#666961;font:600 11px/1.4 var(--body);
+  letter-spacing:.025em;
+}
+#games .walk-filter-drawer>summary::-webkit-details-marker{display:none}
+#games .walk-filter-drawer>summary::before{
+  content:"";width:7px;height:7px;flex:none;
+  border-right:1px solid currentColor;border-bottom:1px solid currentColor;
+  transform:rotate(-45deg);
+  transition:transform .2s ease;
+}
+#games .walk-filter-drawer[open]>summary::before{transform:rotate(45deg)}
+#games .walk-filter-drawer>summary:hover{color:#383e38}
+#games .walk-filter-drawer .library-toolbar{
+  padding:12px 0 12px;margin:0 0 10px;
+  border-top:1px solid #b6b3a8;
+  border-bottom:1px solid #b6b3a8;
+}
+html[data-gallery-mode="dark"] #games .walk-filter-drawer>summary{color:#c5cece}
+html[data-gallery-mode="dark"] #games .walk-filter-drawer>summary:hover{color:#fff4dc}
+html[data-gallery-mode="dark"] #games .walk-filter-drawer .library-toolbar{border-color:#65717a}
+@media(prefers-reduced-motion:reduce){
+  #games .walk-filter-drawer>summary::before{transition:none}
+}
