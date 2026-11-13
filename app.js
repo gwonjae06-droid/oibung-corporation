@@ -152,9 +152,8 @@
     const favorite = favorites.has(game.id);
     const playUrl = safeSourceUrl(game.playUrl);
     const cover = coverArt(game);
-    return `<article class="game-card" data-game-id="${escapeHTML(game.id)}" data-hall-scene="${(displayIndex - 1) % 3}" data-reference-scene="${(displayIndex - 1) % 4}" tabindex="0" aria-label="${escapeHTML(game.title)} 작품 상세 페이지 열기">
+    return `<article class="game-card" data-game-id="${escapeHTML(game.id)}" data-hall-room="${displayIndex - 1}" tabindex="0" aria-label="${escapeHTML(game.title)} 작품 상세 페이지 열기">
       <div class="museum-scene-stage">
-        <div class="museum-scene-photo" aria-hidden="true"></div>
         <button type="button" class="game-cover" data-details="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} 상세 보기"><span class="artwork-image-window">${cover}</span></button>
       </div>
       <div class="game-card-body" data-intro-tone="${escapeHTML(game.introTone ?? 'gallery')}"><div class="game-card-title-row"><div class="artwork-identity">
