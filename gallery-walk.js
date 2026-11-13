@@ -58,6 +58,7 @@
       card.style.setProperty('--walk-shift', shift.toFixed(2) + 'px');
       card.style.setProperty('--walk-shift-plaque', (shift * .42).toFixed(2) + 'px');
       card.style.setProperty('--walk-focus', (1 - Math.abs(limited) * .23).toFixed(3));
+      card.style.setProperty('--walk-scene-opacity', (1 - Math.abs(limited) * .23).toFixed(3));
     });
   }
 
