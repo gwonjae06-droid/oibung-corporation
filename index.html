@@ -27,6 +27,8 @@
   <link rel="stylesheet" href="gallery-premiere.css?v=gallery-premiere-2">
   <link rel="stylesheet" href="gallery-live-scene.css?v=gallery-live-scene-1">
   <link rel="stylesheet" href="gallery-continuum.css?v=continuous-hall-1">
+  <link rel="stylesheet" href="gallery-curator.css?v=curator-1">
+  <link rel="preload" as="image" type="image/webp" href="assets/guide-hires-calm.webp">
   <script src="gallery-display-mode.js?v=two-modes-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
   <script src="community-config.js" defer></script>
@@ -36,6 +38,7 @@
   <script src="motion.js?v=museum-daylight-1" defer></script>
   <script src="gallery-walk.js?v=continuous-hall-1" defer></script>
   <script src="gallery-guide.js?v=continuous-hall-1" defer></script>
+  <script src="gallery-curator.js?v=curator-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -360,7 +363,18 @@
       aria-expanded="false" aria-controls="gallery-guide-panel" aria-label="가이드 비서에게 말 걸기"
       title="전시관 가이드">
       <span class="sr-only">전시관 가이드 안내 열기</span>
+      <img id="gallery-guide-image" class="guide-hires-image" src="assets/guide-hires-calm.webp?v=curator-1"
+        width="465" height="855" alt="" decoding="async" fetchpriority="high">
     </button>
+    <section id="gallery-guide-intro" class="gallery-guide-intro" aria-label="비서의 작품 소개" aria-live="polite" aria-atomic="true" hidden>
+      <p class="guide-intro-overline">OIBUNG GALLERY · CURATOR</p>
+      <h2 id="gallery-guide-intro-title" class="guide-intro-title"></h2>
+      <p id="gallery-guide-intro-description" class="guide-intro-description"></p>
+      <div class="guide-intro-controls">
+        <button id="gallery-guide-intro-detail" type="button" data-curator="detail">작품 자세히</button>
+        <button id="gallery-guide-voice" type="button" aria-pressed="false">음성으로 듣기</button>
+      </div>
+    </section>
     <section id="gallery-guide-panel" class="gallery-guide-panel" role="dialog"
       aria-modal="false" aria-labelledby="gallery-guide-title" hidden>
       <header class="gallery-guide-panel-head">
