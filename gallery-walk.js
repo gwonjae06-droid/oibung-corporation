@@ -14,6 +14,7 @@
   const previous = document.getElementById('walk-prev');
   const next = document.getElementById('walk-next');
   const indexLabel = document.getElementById('walk-index');
+  const dots = document.getElementById('walk-dots');
   const progress = document.getElementById('walk-progress-fill');
   if (!room || !viewport || !track || !previous || !next || !indexLabel || !progress) return;
 
@@ -33,6 +34,7 @@
   let suppressSwipeClick = false;
   let clickSafetyTimer = 0;
   let lastSelectedId = '';
+  let lastAnnouncedId = null;
 
   const formatIndex = n => String(n).padStart(2, '0');
   const reduced = () => reduceMotion.matches || document.documentElement.classList.contains('motion-off');
@@ -96,7 +98,20 @@
       card.inert = !isActive;
       card.setAttribute('aria-hidden', String(!isActive));
     });
-    if (count) lastSelectedId = cards[index].dataset.gameId || '';
+    if (dots) {
+      [...dots.children].forEach((button, i) => {
+        const current = i === index;
+        button.setAttribute('aria-current', String(current));
+        button.setAttribute('aria-pressed', String(current));
+      });
+    }
+    lastSelectedId = count ? (cards[index].dataset.gameId || '') : '';
+    if (lastSelectedId !== lastAnnouncedId) {
+      lastAnnouncedId = lastSelectedId;
+      document.dispatchEvent(new CustomEvent('oibung-exhibit-change', {
+        detail: { index, total: count, gameId: lastSelectedId }
+      }));
+    }
   }
 
   function goTo(nextIndex, instant = false) {
@@ -134,6 +149,19 @@
     cards = [...track.children].filter(node => node.classList.contains('game-card'));
     const keep = prior ? cards.findIndex(card => card.dataset.gameId === prior) : -1;
     index = keep >= 0 ? keep : 0;
+    if (dots) {
+      const desired = cards.length <= 12 ? cards.length : 0;
+      dots.hidden = desired === 0;
+      dots.replaceChildren();
+      for (let i = 0; i < desired; i++) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.setAttribute('aria-label', (i + 1) + '번째 작품으로 이동');
+        button.title = (i + 1) + '번째 작품';
+        button.addEventListener('click', () => goTo(i));
+        dots.appendChild(button);
+      }
+    }
     room.hidden = cards.length === 0;
     if (!cards.length) lastSelectedId = '';
     updateLabels();
