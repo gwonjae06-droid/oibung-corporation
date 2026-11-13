@@ -329,3 +329,15 @@ body.reviews-open #gallery-guide,body:has(dialog[open]) #gallery-guide{opacity:0
   #gallery-guide .gallery-guide-avatar,
   .walk-dots button{transition:none!important}
 }
+
+/* A gentle luminance dissolve as the 3D camera passes between adjoining rooms. */
+#games .walk-gallery .game-card>.walk-room{
+  opacity:var(--walk-scene-opacity,1);
+}
+#games .walk-gallery .game-card .walk-art-glow{
+  opacity:calc(.56 * var(--walk-scene-opacity,1));
+}
+.walk-dots[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){
+  #games .walk-gallery .game-card>.walk-room{opacity:1}
+}
