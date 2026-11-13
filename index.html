@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="gallery-immersive.css?v=gallery-immersive-1">
   <link rel="stylesheet" href="gallery-cinematic.css?v=cinematic-museum-1">
   <link rel="stylesheet" href="gallery-atelier.css?v=gallery-atelier-2">
+  <link rel="stylesheet" href="gallery-guide.css?v=gallery-guide-1">
   <script src="gallery-display-mode.js?v=two-modes-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
   <script src="community-config.js" defer></script>
@@ -30,6 +31,7 @@
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
   <script src="gallery-walk.js?v=gallery-atelier-2" defer></script>
+  <script src="gallery-guide.js?v=gallery-guide-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -72,6 +74,7 @@
       <button id="motion-toggle" class="motion-control" type="button" aria-label="애니메이션 줄이기" aria-pressed="false">
         <svg aria-hidden="true"><use href="#i-check"/></svg><span class="motion-control-label">움직임 줄이기</span>
       </button>
+      <button type="button" id="menu-toggle-guide" aria-pressed="true">가이드 숨기기</button>
     </nav>
   </header>
 
@@ -341,6 +344,33 @@
       </form>
     </div>
   </dialog>
+  <aside id="gallery-guide" class="gallery-guide" aria-label="오이붕 갤러리 안내 비서">
+    <button type="button" id="gallery-guide-avatar" class="gallery-guide-avatar"
+      aria-expanded="false" aria-controls="gallery-guide-panel" aria-label="가이드 비서에게 말 걸기"
+      title="전시관 가이드">
+      <img src="assets/gallery-guide.svg?v=1" width="400" height="640" alt="" decoding="async">
+      <span class="gallery-guide-mark" aria-hidden="true">?</span>
+    </button>
+    <section id="gallery-guide-panel" class="gallery-guide-panel" role="dialog"
+      aria-modal="false" aria-labelledby="gallery-guide-title" hidden>
+      <header class="gallery-guide-panel-head">
+        <h2 id="gallery-guide-title">전시 안내</h2>
+        <button type="button" id="gallery-guide-close" class="gallery-guide-close" aria-label="안내 닫기">×</button>
+      </header>
+      <p id="gallery-guide-message" class="gallery-guide-message" role="status" aria-live="polite"></p>
+      <div class="gallery-guide-actions">
+        <button type="button" data-guide-action="about">이 작품은?</button>
+        <button type="button" data-guide-action="previous">이전 작품</button>
+        <button type="button" data-guide-action="next">다음 작품</button>
+        <button type="button" data-guide-action="detail">작품 자세히</button>
+        <button type="button" data-guide-action="search">작품 찾기</button>
+        <button type="button" data-guide-action="reviews">관람 후기</button>
+      </div>
+      <div class="gallery-guide-panel-foot">
+        <button type="button" id="gallery-guide-hide" class="gallery-guide-hide">가이드 감추기</button>
+      </div>
+    </section>
+  </aside>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
