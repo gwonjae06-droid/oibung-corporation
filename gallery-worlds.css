@@ -423,3 +423,12 @@ html[data-gallery-theme="deepsea"] .theme-picker-dot{
 @media(prefers-reduced-motion:reduce){
   .theme-picker{transition:none}
 }
+
+/* Smooth, short transitions on supported browsers; no perpetual animation. */
+::view-transition-old(root),::view-transition-new(root){
+  animation-duration:.42s;
+  animation-timing-function:ease-in-out;
+}
+@media(prefers-reduced-motion:reduce){
+  ::view-transition-old(root),::view-transition-new(root){animation-duration:0s}
+}
