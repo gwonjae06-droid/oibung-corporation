@@ -81,15 +81,19 @@
       tab.setAttribute('aria-selected', String(selected));
       tab.tabIndex = selected ? 0 : -1;
     });
-    document.querySelector('#games').hidden = current !== 'games';
+    // The exhibition hall always remains behind any secondary panel.
+    document.querySelector('#games').hidden = false;
     document.querySelector('#reviews').hidden = current !== 'reviews';
+    document.body.classList.toggle('reviews-open', current === 'reviews');
     window.OIBUNG_CURRENT_VIEW = current;
     if (navigate) {
       const nextUrl = new URL(location.href);
       nextUrl.searchParams.delete('game');
       nextUrl.hash = current;
       history.replaceState(null, '', nextUrl.pathname + nextUrl.search + nextUrl.hash);
-      document.querySelector('.page-switcher').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (current === 'reviews') {
+        requestAnimationFrame(() => document.getElementById('close-reviews-overlay')?.focus({ preventScroll: true }));
+      }
     }
     document.dispatchEvent(new CustomEvent('oibung-page-changed', { detail: { page: current } }));
   }
@@ -472,12 +476,39 @@
   });
   const menuToggle = document.querySelector('#menu-toggle');
   const mobileNav = document.querySelector('#mobile-nav');
+  function closeMuseumMenu() {
+    mobileNav.hidden = true;
+    menuToggle.setAttribute('aria-expanded', 'false');
+    menuToggle.setAttribute('aria-label', '전시관 메뉴 열기');
+  }
   menuToggle.addEventListener('click', () => {
-    mobileNav.hidden = !mobileNav.hidden;
-    menuToggle.setAttribute('aria-expanded', String(!mobileNav.hidden));
+    const wasHidden = mobileNav.hidden;
+    mobileNav.hidden = !wasHidden;
+    menuToggle.setAttribute('aria-expanded', String(wasHidden));
+    menuToggle.setAttribute('aria-label', wasHidden ? '전시관 메뉴 닫기' : '전시관 메뉴 열기');
   });
-  mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {mobileNav.hidden = true;menuToggle.setAttribute('aria-expanded', 'false');}));
-  document.querySelector('#year').textContent = String(new Date().getFullYear());
+  mobileNav.querySelectorAll('a,[data-open-editor]').forEach(item => {
+    item.addEventListener('click', closeMuseumMenu);
+  });
+  document.querySelector('#menu-open-filters').addEventListener('click', () => {
+    closeMuseumMenu();
+    showPage('games', true);
+    const filters = document.getElementById('walk-filter-drawer');
+    if (filters) filters.open = true;
+    searchInput.focus({ preventScroll: true });
+  });
+  document.querySelector('#close-reviews-overlay').addEventListener('click', () => {
+    showPage('games', true);
+    menuToggle.focus({ preventScroll: true });
+  });
+  document.addEventListener('pointerdown', event => {
+    if (mobileNav.hidden || mobileNav.contains(event.target) || menuToggle.contains(event.target)) return;
+    closeMuseumMenu();
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !mobileNav.hidden) closeMuseumMenu();
+  });
+  // The exhibition occupies the whole viewport; there is no footer/year block.
   render();
   if (pendingLinkedGame && byId.has(pendingLinkedGame)) openDetail(pendingLinkedGame, { fromHistory: true });
 })();
