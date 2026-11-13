@@ -33,6 +33,10 @@
   const readRecent = () => { try { const a = JSON.parse(localStorage.getItem(recentKey) || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
   let recent = readRecent();
   let pendingLinkedGame = new URLSearchParams(location.search).get('game');
+  let detailHistoryPushed = false;
+  let suppressNextDetailCloseNavigation = false;
+  let detailReturnFocus = null;
+  const galleryTitle = document.title;
   let activeFilter = 'all';
   let toastTimer;
 
@@ -48,6 +52,22 @@
     `<span class="game-status${normalizedStatus(game) === 'live_service' ? ' game-status--live' : normalizedStatus(game) === 'finished' ? ' game-status--finished' : ''}">${statusLabels[normalizedStatus(game)]}</span>`
   ].filter(Boolean).join('');
   const visualClass = game => visualOptions.has(game.visual) ? game.visual : 'custom';
+  const exhibitThemes = new Set(['stone', 'wood', 'space', 'temple', 'deepsea']);
+  const exhibitLabels = {
+    stone: '미술관', wood: '원목 전시관', space: '우주 전시관',
+    temple: '고대 신전', deepsea: '심해 전시관'
+  };
+  function themeForGame(game) {
+    const explicit = game.exhibitTheme || game.exhibitionTheme;
+    if (exhibitThemes.has(explicit)) return explicit;
+    // For community-submitted games without a theme column, classify by subject.
+    const subject = [game.title, game.genre, game.description, ...(game.tags || [])].join(' ').toLowerCase();
+    if (/심해|해저|해양|바다|잠수|수중|ocean|underwater|submarine/.test(subject)) return 'deepsea';
+    if (/보스|소울|던전|신화|판타지|기사|신전|고대|사원|신성|temple|fantasy|dungeon/.test(subject)) return 'temple';
+    if (/우주|은하|미래|로봇|행성|별|핀볼|자동.?전투|space|sci-fi|galaxy|arena/.test(subject)) return 'space';
+    if (/자연|숲|나무|캠퍼스|대학|농장|생존|전략|경영|전선|forest|farm|strategy/.test(subject)) return 'wood';
+    return 'stone';
+  }
   const coverArt = game => safeSourceUrl(game.thumbnailUrl)
     ? `<img class="game-thumbnail" src="${escapeHTML(game.thumbnailUrl)}" alt="" loading="lazy">`
     : `<div class="cover-art cover-${visualClass(game)}" aria-hidden="true"><span class="decor decor-a"></span><span class="decor decor-b"></span><span class="decor decor-c"></span></div>`;
@@ -81,7 +101,10 @@
     document.querySelector('#reviews').hidden = current !== 'reviews';
     window.OIBUNG_CURRENT_VIEW = current;
     if (navigate) {
-      history.replaceState(null, '', '#' + current);
+      const nextUrl = new URL(location.href);
+      nextUrl.searchParams.delete('game');
+      nextUrl.hash = current;
+      history.replaceState(null, '', nextUrl.pathname + nextUrl.search + nextUrl.hash);
       document.querySelector('.page-switcher').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
     document.dispatchEvent(new CustomEvent('oibung-page-changed', { detail: { page: current } }));
@@ -110,6 +133,8 @@
   });
   document.querySelector('#detail-open-reviews').addEventListener('click', () => {
     const id = detailDialog.dataset.gameId;
+    suppressNextDetailCloseNavigation = true;
+    detailHistoryPushed = false;
     detailDialog.close();
     showPage('reviews', true);
     document.dispatchEvent(new CustomEvent('oibung-review-game', { detail: { gameId: id } }));
@@ -139,7 +164,7 @@
     const favorite = favorites.has(game.id);
     const playUrl = safeSourceUrl(game.playUrl);
     const cover = coverArt(game);
-    return `<article class="game-card" data-game-id="${escapeHTML(game.id)}">
+    return `<article class="game-card" data-game-id="${escapeHTML(game.id)}" tabindex="0" aria-label="${escapeHTML(game.title)} 작품 상세 페이지 열기">
       <button type="button" class="game-cover" data-details="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} 상세 보기"><span class="artwork-image-window">${cover}</span></button>
       <div class="game-card-body" data-intro-tone="${escapeHTML(game.introTone ?? 'gallery')}"><div class="game-card-title-row"><div class="artwork-identity">
         <div class="artwork-caption"><span class="artwork-sequence">전시 ${String(displayIndex).padStart(2,'0')}</span><span class="game-genre">${escapeHTML(game.genre)}</span></div>
@@ -289,6 +314,10 @@
 
   function renderDetail(game) {
     detailDialog.querySelector('.detail-introduction').dataset.introTone = game.introTone ?? 'gallery';
+    const room = themeForGame(game);
+    detailDialog.dataset.exhibitionTheme = room;
+    document.querySelector('#detail-room-label').textContent = exhibitLabels[room];
+    document.title = game.title + ' | ' + galleryTitle;
     const detailCover = document.querySelector('#dialog-cover');
     detailCover.innerHTML = coverArt(game);
     document.querySelector('#detail-genre').textContent = game.genre || 'GAME';
@@ -312,11 +341,18 @@
     // The share button remains useful even for APK/mod entries with no web play link.
     play.parentElement.hidden = false;
   }
-  function openDetail(id) {
+  function openDetail(id, options = {}) {
     const game = byId.get(id);
     if (!game) return;
-    renderDetail(game);
+    if (!detailDialog.open) detailReturnFocus = document.activeElement;
+    if (!options.fromHistory && new URLSearchParams(location.search).get('game') !== id) {
+      const url = new URL(location.href);
+      url.searchParams.set('game', id);
+      history.pushState({ oibungGame: id }, '', url.pathname + url.search + url.hash);
+      detailHistoryPushed = true;
+    }
     detailDialog.dataset.gameId = id;
+    renderDetail(game);
     if (!detailDialog.open) detailDialog.showModal();
     markRecent(id);
     if (pendingLinkedGame === id) pendingLinkedGame = null;
@@ -336,7 +372,18 @@
       return;
     }
     const detailButton = event.target.closest('[data-details]');
-    if (detailButton) openDetail(detailButton.dataset.details);
+    if (detailButton) { openDetail(detailButton.dataset.details); return; }
+    const card = event.target.closest('.game-card');
+    if (card && !event.target.closest('button,a,input,select,textarea,label,summary')) {
+      openDetail(card.dataset.gameId);
+    }
+  });
+  grid.addEventListener('keydown', event => {
+    if ((event.key === 'Enter' || event.key === ' ') &&
+        event.target.classList.contains('game-card')) {
+      event.preventDefault();
+      openDetail(event.target.dataset.gameId);
+    }
   });
   tabs.forEach(tab => tab.addEventListener('click', () => setFilter(tab.dataset.filter)));
   sortSelect.addEventListener('change', render);
@@ -355,8 +402,37 @@
     dialog.addEventListener('click', event => { if (event.target === dialog) closeDialog(dialog); });
     dialog.addEventListener('close', () => {
       document.body.classList.toggle('no-scroll', detailDialog.open || guideDialog.open);
+      if (dialog !== detailDialog) return;
+      document.title = galleryTitle;
+      if (!suppressNextDetailCloseNavigation) {
+        const url = new URL(location.href);
+        if (url.searchParams.get('game') === detailDialog.dataset.gameId) {
+          if (detailHistoryPushed) {
+            detailHistoryPushed = false;
+            history.back();
+          } else {
+            url.searchParams.delete('game');
+            history.replaceState(null, '', url.pathname + url.search + url.hash);
+          }
+        }
+      }
+      suppressNextDetailCloseNavigation = false;
+      if (detailReturnFocus && detailReturnFocus.isConnected) {
+        detailReturnFocus.focus({ preventScroll: true });
+      }
+      detailReturnFocus = null;
     });
   }
+  window.addEventListener('popstate', () => {
+    const id = new URLSearchParams(location.search).get('game');
+    detailHistoryPushed = false;
+    if (id && byId.has(id)) {
+      openDetail(id, { fromHistory: true });
+    } else if (detailDialog.open) {
+      suppressNextDetailCloseNavigation = true;
+      detailDialog.close();
+    }
+  });
   function syncOpenDetail() {
     if (!detailDialog.open) return;
     const game = byId.get(detailDialog.dataset.gameId);
@@ -364,6 +440,7 @@
   }
   window.OIBUNG_CATALOG = {
     openDetail,
+    getTheme: id => byId.has(id) ? themeForGame(byId.get(id)) : 'stone',
     getGame: id => byId.get(id),
     setReviewStats(rows) {
       stats.clear();
@@ -389,7 +466,7 @@
       next.forEach((game, id) => byId.set(id, game));
       render();
       syncOpenDetail();
-      if (pendingLinkedGame && byId.has(pendingLinkedGame) && !detailDialog.open) openDetail(pendingLinkedGame);
+      if (pendingLinkedGame && byId.has(pendingLinkedGame) && !detailDialog.open) openDetail(pendingLinkedGame, { fromHistory: true });
     }
   };
   document.addEventListener('keydown', event => {
@@ -406,5 +483,5 @@
   mobileNav.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {mobileNav.hidden = true;menuToggle.setAttribute('aria-expanded', 'false');}));
   document.querySelector('#year').textContent = String(new Date().getFullYear());
   render();
-  if (pendingLinkedGame && byId.has(pendingLinkedGame)) openDetail(pendingLinkedGame);
+  if (pendingLinkedGame && byId.has(pendingLinkedGame)) openDetail(pendingLinkedGame, { fromHistory: true });
 })();
