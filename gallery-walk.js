@@ -58,6 +58,10 @@
       card.style.setProperty('--walk-shift', shift.toFixed(2) + 'px');
       card.style.setProperty('--walk-shift-plaque', (shift * .42).toFixed(2) + 'px');
       card.style.setProperty('--walk-focus', (1 - Math.abs(limited) * .23).toFixed(3));
+      card.style.setProperty('--scene-depth', (allowDepth ? -Math.abs(limited) * 78 : 0).toFixed(2) + 'px');
+      card.style.setProperty('--scene-photo-shift', (allowDepth ? limited * 68 : 0).toFixed(2) + 'px');
+      card.style.setProperty('--scene-photo-opacity', (.22 + (1 - Math.abs(limited)) * .07).toFixed(3));
+      card.style.setProperty('--scene-art-opacity', (1 - Math.abs(limited) * (allowDepth ? .3 : 0)).toFixed(3));
       card.style.setProperty('--walk-scene-opacity', (1 - Math.abs(limited) * .23).toFixed(3));
     });
   }
