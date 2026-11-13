@@ -168,6 +168,8 @@ body:has(dialog[open]) #gallery-guide .gallery-guide-intro{
 #gallery-guide.gallery-guide {
   --curator-x:0px;
   --curator-y:0px;
+  --curator-mobile-x:0px;
+  --curator-mobile-y:0px;
   --curator-scale:1;
   --curator-rotate:0deg;
   --curator-facing:1;
@@ -178,7 +180,7 @@ body:has(dialog[open]) #gallery-guide .gallery-guide-intro{
       0
     )
     rotate(calc(var(--guide-lean,0deg) + var(--curator-rotate,0deg)))
-    scale(calc(var(--guide-scale,1) * var(--curator-scale,1)))!important;
+    scale(var(--curator-scale,1))!important;
   transition:transform .68s cubic-bezier(.2,.74,.25,1),opacity .32s ease!important;
   transform-origin:54% 100%;
 }
@@ -210,12 +212,12 @@ body:has(dialog[open]) #gallery-guide .gallery-guide-intro{
     /* Stage movement stays subtle on a small mobile screen. */
     transform:
       translate3d(
-        calc(var(--guide-camera-shift,0px) + var(--curator-x,0px) * .38),
-        calc(var(--curator-y,0px) * .38),
+        calc(var(--guide-camera-shift,0px) + var(--curator-mobile-x,0px)),
+        var(--curator-mobile-y,0px),
         0
       )
       rotate(calc(var(--guide-lean,0deg) + var(--curator-rotate,0deg)))
-      scale(calc(var(--guide-scale,1) * var(--curator-scale,1)))!important;
+      scale(var(--curator-scale,1))!important;
   }
 }
 @media(prefers-reduced-motion:reduce) {
