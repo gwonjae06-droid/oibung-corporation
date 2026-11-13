@@ -468,3 +468,10 @@ body::after{
   body::after{opacity:.34}
   .game-card{border-color:#7e776f}
 }
+
+/* A complete artwork card is an interactive gallery doorway. */
+.game-card{cursor:pointer}
+.game-card:focus-visible{
+  outline:3px solid #8b7657;
+  outline-offset:4px;
+}
