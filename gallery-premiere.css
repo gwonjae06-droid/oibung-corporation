@@ -1,0 +1,331 @@
+/*
+ * OIBUNG GALLERY — cinematic exhibition premiere
+ * Full-screen landscape-first museum, real game artwork, minimal controls.
+ * Reference: dark realistic side corridors, golden spotlight, illustrated
+ * black-bob Egyptian hostess presenting each painting on the right.
+ */
+:root{--premiere-gold:#cfac70;--premiere-gold-soft:#f1ddb4}
+#games.library.section-pad,
+#games .walk-gallery,
+#games .walk-gallery .game-card,
+html[data-gallery-mode="dark"] #games .walk-gallery{
+  background:#090a0c!important;
+}
+#games .walk-gallery-viewport{
+  perspective:1750px!important;
+  perspective-origin:45% 45%;
+  background:radial-gradient(ellipse 61% 66% at 46% 28%,#594c3a24,transparent 89%),#09090b!important;
+}
+#games .walk-gallery .game-card>.walk-room{
+  inset:-4% -4%;
+  transform:perspective(1550px) rotateY(var(--walk-yaw,0deg)) scale(1.055);
+  filter:brightness(var(--walk-focus,1));
+}
+#games .walk-gallery .walk-back-wall,
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-back-wall{
+  inset:0 16% 19.5% 17%;
+  background:
+    radial-gradient(ellipse 45% 67% at 45% 33%,#b3a08430,transparent 88%),
+    linear-gradient(90deg,#07080aca,transparent 16%,transparent 87%,#07080acb),
+    repeating-linear-gradient(92deg,transparent 0 27px,#ffffff03 29px,transparent 33px),
+    linear-gradient(170deg,#1c1b1c,#2c292a 58%,#19191b)!important;
+  box-shadow:inset 12px 0 21px #030303a8,inset -17px 0 31px #030303ba,0 24px 41px #0008;
+}
+#games .walk-gallery .walk-side-left,
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-side-left{
+  width:17.1%!important;
+  background:
+    linear-gradient(110deg,#08090a 0%,#262427 35%,#3a3430 70%,#0b0a0b 100%)!important;
+  box-shadow:inset -22px 0 34px #000b;
+  transform:perspective(1200px) rotateY(-18deg);
+}
+#games .walk-gallery .walk-side-right,
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-side-right{
+  width:16.4%!important;
+  background:linear-gradient(265deg,#06070a,#29282b 53%,#0a090b)!important;
+  transform:perspective(1200px) rotateY(19deg);
+}
+#games .walk-gallery .walk-side-left::before,
+#games .walk-gallery .walk-side-right::before{
+  content:"";
+  position:absolute;top:30%;bottom:29%;
+  width:39%;
+  border:clamp(4px,.6vw,9px) ridge #9f7a49;
+  background:
+    radial-gradient(ellipse at 40% 30%,#a98b665e,transparent 54%),
+    linear-gradient(125deg,#332f32,#151d25 48%,#2c2922);
+  box-shadow:0 8px 18px #000b,0 0 19px #d6ba8455;
+  filter:blur(.6px);
+}
+#games .walk-gallery .walk-side-left::before{left:12%;transform:skewY(2deg)}
+#games .walk-gallery .walk-side-right::before{right:16%;transform:skewY(-2deg)}
+#games .walk-gallery .walk-ceiling,
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-ceiling{
+  height:3.5%!important;
+  background:linear-gradient(180deg,#0b0b0b 0%,#2b2824 37%,#111113 75%,#08090a)!important;
+}
+#games .walk-gallery .walk-floor,
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-floor{
+  bottom:-7%;height:35%;
+  clip-path:polygon(0 21%,16% 0,84% 0,100% 21%,100% 100%,0 100%);
+  transform-origin:50% 0;
+  transform:perspective(1060px) rotateX(26deg) scale(1.13);
+  background:
+    radial-gradient(ellipse 33% 67% at 48% 1%,#ffd9a52e,transparent 90%),
+    linear-gradient(180deg,#000000bb,transparent 26%,#00000079),
+    repeating-linear-gradient(90deg,transparent 0 148px,#15120e90 150px,#a99a8747 151px,transparent 153px),
+    repeating-linear-gradient(0deg,transparent 0 90px,#08080883 91px,#e0d8c630 93px,transparent 95px),
+    linear-gradient(94deg,#252427,#5d5550 51%,#29262a)!important;
+  box-shadow:inset 0 15px 38px #000c;
+}
+#games .walk-gallery .walk-floor::after{
+  content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse at 47% 0%,#f6d8a527,transparent 56%),
+    linear-gradient(90deg,#05050691,transparent 21%,transparent 81%,#0405058f);
+  pointer-events:none;
+}
+#games .walk-gallery .walk-spotlight,
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-spotlight{
+  left:45.8%!important;
+  width:70%!important;
+  height:78%;
+  background:radial-gradient(ellipse 31% 39% at 50% 38%,#fff4d69c,#e9cda943 46%,transparent 100%)!important;
+  opacity:.73!important;
+  mix-blend-mode:screen;
+}
+#games .walk-gallery .walk-light-beam{
+  left:14.8%!important;width:62%!important;
+  opacity:.42!important;
+  background:linear-gradient(180deg,#fff0c505,#ffe7b218 59%,transparent)!important;
+}
+#games .walk-gallery .walk-light-fixture{
+  left:46%!important;top:2.8%;
+  width:32px;
+  box-shadow:0 2px 10px #0008,0 0 14px #ffe5b128;
+}
+#games .walk-gallery .walk-art-glow,
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-art-glow{
+  left:46%;top:43%;
+  width:min(59%,920px);height:73%;
+  filter:blur(22px) brightness(var(--walk-focus,1));
+  background:radial-gradient(ellipse 52% 47%,#f5e0b472,#ba985032 44%,transparent 80%)!important;
+  opacity:.56;
+}
+#games .walk-gallery .game-cover,
+#games .walk-gallery .game-card:hover .game-cover,
+#games .walk-gallery .game-card:focus-within .game-cover,
+.motion-active #games .walk-gallery .game-cover{
+  left:45.6%!important;top:42.2%!important;
+  width:min(43.8%,760px)!important;
+  max-height:59%!important;
+  aspect-ratio:16/10!important;
+  transform:translate(calc(-50% + var(--walk-shift,0px)),-50%) perspective(1450px) rotateY(var(--walk-yaw,0deg)) translateZ(32px)!important;
+  border:clamp(9px,1.16vw,19px) ridge #b58c50!important;
+  outline:1px solid #f6d599a0!important;
+  background:linear-gradient(140deg,#e2bf7d,#996d36 40%,#dbc18a 70%,#6f4b23)!important;
+  box-shadow:
+    inset 0 0 0 3px #2e210cbd,
+    0 0 0 1px #c8ad70bb,
+    0 3px 0 #1d160c,
+    0 25px 41px #000b,
+    0 0 32px #ffd89a5a!important;
+}
+#games .walk-gallery .game-cover .artwork-image-window{
+  inset:5px!important;
+  box-shadow:inset 0 0 0 3px #050608,0 0 0 3px #c3ac7d90!important;
+  background:#070b11;
+}
+#games .walk-gallery .game-cover :is(img,.game-thumbnail){
+  width:100%!important;height:100%!important;
+  object-fit:contain!important;
+}
+#games .walk-gallery .game-cover .cover-art{object-fit:cover!important}
+#games .walk-gallery .game-cover .artwork-image-window::after{
+  background:linear-gradient(135deg,#fff5d020,transparent 28%,transparent 76%,#00000029);
+}
+/* The title placard is tiny; the painting itself is the CTA. */
+#games .walk-gallery .game-card-body,
+#games .walk-gallery .game-card-body[data-intro-tone],
+html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
+  left:70%!important;top:45%!important;
+  width:clamp(98px,9.6vw,158px)!important;
+  max-width:none!important;
+  padding:8px 9px!important;
+  border:1px solid #847967a8!important;
+  background:#211f1ebd!important;
+  color:#f5ecda!important;
+  box-shadow:0 7px 17px #0008!important;
+  transform:translate(calc(-50% + var(--walk-shift-plaque,0px)),-44%) perspective(1500px) rotateY(var(--walk-yaw,0deg)) translateZ(12px)!important;
+  backdrop-filter:blur(6px);
+}
+#games .walk-gallery .game-card-body h3,
+html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body h3{
+  font:500 clamp(10px,1vw,13px)/1.35 'Noto Serif KR',serif!important;
+  color:#ead9b9!important;text-align:left;
+}
+#games .walk-gallery .game-card-actions{opacity:0}
+#games .walk-gallery .game-card-body:focus-within .game-card-actions,
+#games .walk-gallery .game-card-body:hover .game-card-actions{opacity:1}
+#games .walk-gallery::after{
+  background:
+    radial-gradient(ellipse 80% 86% at 46% 44%,transparent 37%,#01020355 82%,#0102039d 100%),
+    linear-gradient(180deg,#0505068e,transparent 19%,transparent 75%,#02030482)!important;
+}
+#games .walk-rail-controls{
+  inset:0!important;
+  bottom:auto!important;
+  display:contents;
+}
+#games .walk-rail-controls button{
+  position:fixed;z-index:41;
+  top:50%;
+  width:50px!important;height:64px!important;
+  border:0!important;border-radius:1px!important;
+  color:#e9ca94!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  text-shadow:0 0 14px #b28652;
+  font:300 43px/1 Georgia,serif;
+  opacity:.65;transition:opacity .2s,transform .2s;
+  pointer-events:auto;
+}
+#games #walk-prev{left:clamp(14px,2.5vw,44px);transform:translateY(-50%)}
+#games #walk-next{right:clamp(14px,2.5vw,44px);transform:translateY(-50%)}
+#games .walk-rail-controls button:hover:not(:disabled){opacity:1;background:transparent!important}
+#games .walk-rail-controls button:disabled{opacity:.12}
+#games .walk-rail-controls .walk-index{
+  position:fixed;
+  z-index:42;bottom:19px;left:50%;
+  transform:translateX(-50%);
+  font:500 10px/1.2 Georgia,serif;
+  letter-spacing:.21em;
+  opacity:0;
+  pointer-events:none;
+}
+#games .walk-gallery .walk-progress-track{display:none}
+.walk-dots{
+  position:fixed;z-index:42;
+  bottom:clamp(14px,2.7vh,28px);
+  left:50%;transform:translateX(-50%);
+  display:flex;align-items:center;justify-content:center;gap:11px;
+  pointer-events:auto;
+}
+.walk-dots button{
+  display:block;width:8px;height:8px;
+  padding:0;border:1px solid #d8b67d;
+  background:transparent;border-radius:50%;
+  opacity:.66;cursor:pointer;
+  box-shadow:0 0 8px #0008;
+  transition:background .25s,opacity .25s,transform .25s;
+}
+.walk-dots button[aria-current="true"]{
+  background:#ffe5ae;border-color:#ffe5ae;opacity:1;transform:scale(1.3);
+  box-shadow:0 0 12px #fbd69b7a;
+}
+.walk-dots button:focus-visible{outline:2px solid #ffe1a1;outline-offset:4px}
+.walk-dots button:hover{opacity:1;transform:scale(1.35)}
+/* The secretary is stage-sized, like the provided reference, not a tiny widget. */
+#gallery-guide.gallery-guide{
+  left:auto!important;
+  right:clamp(0px,1vw,25px)!important;
+  bottom:calc(-1.2vh + env(safe-area-inset-bottom,0px))!important;
+  width:clamp(240px,28vw,510px)!important;
+  height:min(88dvh,980px)!important;
+  z-index:33;
+  pointer-events:none;
+  --guide-offset:0px;
+  --guide-lean:0deg;
+  --guide-scale:1;
+  transition:transform 1.2s cubic-bezier(.19,.8,.22,1),opacity .42s ease;
+  transform:translateX(var(--guide-offset)) rotate(var(--guide-lean)) scale(var(--guide-scale));
+}
+#gallery-guide .gallery-guide-avatar{
+  position:absolute;inset:0;
+  width:100%!important;height:100%!important;
+  filter:drop-shadow(-14px 14px 12px #0009)!important;
+  transition:opacity .32s ease,filter .28s ease!important;
+}
+#gallery-guide .gallery-guide-avatar img{
+  display:block;width:100%;height:100%;
+  object-fit:contain;object-position:bottom center;
+  filter:drop-shadow(0 0 17px #d3b58530);
+}
+#gallery-guide .gallery-guide-avatar:hover{
+  transform:none!important;
+  filter:drop-shadow(-17px 15px 16px #000b) brightness(1.04)!important;
+}
+#gallery-guide .gallery-guide-mark{
+  top:auto;bottom:15%;right:14%;
+  width:30px;height:30px;
+  border-color:#cfab71a8;
+  background:#151616dd;
+  opacity:.75;
+}
+#gallery-guide .gallery-guide-panel{
+  left:auto;right:calc(100% + 4px);
+  bottom:18%;
+  width:min(355px,calc(100vw - 440px));
+  max-height:min(66dvh,480px);
+}
+#gallery-guide .gallery-guide-panel::before{
+  left:auto;right:-5px;bottom:40px;
+  border-left:0;border-right:1px solid #a99e8b;
+}
+#gallery-guide[data-guide-pose="calm"]{--guide-offset:0px;--guide-lean:0deg;--guide-scale:1}
+#gallery-guide[data-guide-pose="present"]{--guide-offset:-1vw;--guide-lean:-1deg;--guide-scale:1.025}
+#gallery-guide[data-guide-pose="welcome"]{--guide-offset:1vw;--guide-lean:1.3deg;--guide-scale:.985}
+#gallery-guide.is-scene-changing .gallery-guide-avatar{opacity:0}
+#gallery-guide.is-scene-changing{transform:translateX(calc(var(--guide-offset) + 28px)) rotate(1deg) scale(.97)}
+#gallery-guide.is-scene-changing .gallery-guide-panel{display:none!important}
+body.reviews-open #gallery-guide,body:has(dialog[open]) #gallery-guide{opacity:0;pointer-events:none}
+@media (max-width:1000px) and (orientation:landscape){
+  #gallery-guide.gallery-guide{width:clamp(175px,25vw,350px)!important;height:85dvh!important}
+  #games .walk-gallery .game-cover{width:46%!important;left:44%!important;top:45%!important;max-height:63%!important}
+  #games .walk-gallery .game-card-body{left:70%!important}
+  #gallery-guide .gallery-guide-panel{width:min(310px,calc(100vw - 310px))}
+}
+@media(orientation:portrait){
+  #games .walk-gallery .game-cover,
+  .motion-active #games .walk-gallery .game-cover{
+    top:35%!important;left:49%!important;
+    width:min(85%,620px)!important;
+    max-height:46%!important;
+  }
+  #games .walk-gallery .walk-art-glow{top:35%;left:49%;width:94%;height:53%}
+  #games .walk-gallery .walk-spotlight,
+  #games .walk-gallery .walk-light-fixture{left:49%!important}
+  #games .walk-gallery .game-card-body,
+  #games .walk-gallery .game-card-body[data-intro-tone],
+  html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
+    top:63%!important;left:39%!important;
+    width:min(36%,175px)!important;
+    transform:translate(-50%,-50%)!important;
+  }
+  #gallery-guide.gallery-guide{
+    right:1vw!important;bottom:0!important;
+    width:min(44vw,260px)!important;
+    height:min(44dvh,450px)!important;
+  }
+  #gallery-guide .gallery-guide-mark{right:13%;bottom:7%}
+  #gallery-guide .gallery-guide-panel{
+    right:8px;bottom:95%;
+    width:min(340px,calc(100vw - 24px));
+    max-height:46dvh;
+  }
+  #games #walk-prev{left:8px}#games #walk-next{right:8px}
+}
+@media(max-height:510px) and (orientation:landscape){
+  #gallery-guide.gallery-guide{width:clamp(135px,22vw,250px)!important;height:91dvh!important}
+  #games .walk-gallery .game-cover,
+  .motion-active #games .walk-gallery .game-cover{
+    left:44%!important;top:49%!important;width:42%!important;max-height:67%!important;
+  }
+  #games .walk-gallery .game-card-body{top:50%!important;left:70%!important}
+  #gallery-guide .gallery-guide-panel{max-height:66dvh;bottom:9%}
+}
+@media(prefers-reduced-motion:reduce){
+  #gallery-guide.gallery-guide,
+  #gallery-guide .gallery-guide-avatar,
+  .walk-dots button{transition:none!important}
+}
