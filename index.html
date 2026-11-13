@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="gallery-continuum.css?v=continuous-hall-1">
   <link rel="stylesheet" href="gallery-curator.css?v=curator-poses-2">
   <link rel="stylesheet" href="gallery-outfits.css?v=costumes-1">
+  <link rel="stylesheet" href="gallery-clarity.css?v=explore-1">
   <link rel="preload" as="image" type="image/svg+xml" href="assets/guide-costume-knight.svg">
   <script src="gallery-display-mode.js?v=two-modes-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
@@ -39,7 +40,7 @@
   <script src="motion.js?v=museum-daylight-1" defer></script>
   <script src="gallery-walk.js?v=continuous-hall-1" defer></script>
   <script src="gallery-guide.js?v=curator-poses-2" defer></script>
-  <script src="gallery-curator.js?v=costumes-1" defer></script>
+  <script src="gallery-curator.js?v=explore-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -375,14 +376,6 @@
           width="416" height="512" alt="" decoding="async">
       </span>
     </button>
-    <section id="gallery-guide-intro" class="gallery-guide-intro" aria-label="비서의 작품 소개" aria-live="polite" aria-atomic="true" hidden>
-      <p class="guide-intro-overline">OIBUNG GALLERY · CURATOR</p>
-      <h2 id="gallery-guide-intro-title" class="guide-intro-title"></h2>
-      <p id="gallery-guide-intro-description" class="guide-intro-description"></p>
-      <div class="guide-intro-controls">
-        <button id="gallery-guide-intro-detail" type="button" data-curator="detail">작품 자세히</button>
-      </div>
-    </section>
     <section id="gallery-guide-panel" class="gallery-guide-panel" role="dialog"
       aria-modal="false" aria-labelledby="gallery-guide-title" hidden>
       <header class="gallery-guide-panel-head">
@@ -403,6 +396,15 @@
       </div>
     </section>
   </aside>
+  <!-- Independent reading surface: never transform this text with the 3D curator. -->
+  <section id="gallery-guide-intro" class="gallery-guide-intro" aria-label="비서의 작품 소개" aria-live="polite" aria-atomic="true" hidden>
+    <p class="guide-intro-overline">OIBUNG GALLERY · CURATOR</p>
+    <h2 id="gallery-guide-intro-title" class="guide-intro-title"></h2>
+    <p id="gallery-guide-intro-description" class="guide-intro-description"></p>
+    <div class="guide-intro-controls">
+      <button id="gallery-guide-intro-detail" type="button" data-curator="detail">작품 자세히</button>
+    </div>
+  </section>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
