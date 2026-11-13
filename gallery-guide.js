@@ -36,7 +36,7 @@
     }
     setPanelOpen(false);
     root.classList.add('is-scene-changing');
-    poseTimer = window.setTimeout(install, 520);
+    poseTimer = window.setTimeout(install, 400);
   }
   document.addEventListener('oibung-exhibit-change', event => {
     showPose(event.detail?.index ?? 0, true);
