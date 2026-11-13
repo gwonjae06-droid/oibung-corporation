@@ -370,7 +370,10 @@
     const detailButton = event.target.closest('[data-details]');
     if (detailButton) { openDetail(detailButton.dataset.details); return; }
     const card = event.target.closest('.game-card');
-    if (card && !event.target.closest('button,a,input,select,textarea,label,summary')) {
+    // In the immersive reference scenes, the room is scenery: only the
+    // physical painting itself (or Enter on the focused card) opens details.
+    if (card && !card.querySelector('.museum-scene-stage') &&
+        !event.target.closest('button,a,input,select,textarea,label,summary')) {
       openDetail(card.dataset.gameId);
     }
   });
