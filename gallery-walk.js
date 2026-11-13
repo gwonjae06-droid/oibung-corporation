@@ -11,6 +11,8 @@
   const room = document.getElementById('walk-gallery');
   const viewport = document.getElementById('walk-gallery-viewport');
   const track = document.getElementById('game-grid');
+  const hall = document.getElementById('hall-continuum');
+  const guideActor = document.getElementById('gallery-guide');
   const previous = document.getElementById('walk-prev');
   const next = document.getElementById('walk-next');
   const indexLabel = document.getElementById('walk-index');
@@ -48,6 +50,20 @@
     // depths, rather than just sliding a flat screenshot sideways.
     const camera = position / width;
     const allowDepth = !reduced();
+    // The physical corridor never swaps. Back wall / columns / floor recede
+    // at different rates as the same virtual camera follows the paintings.
+    if (hall) {
+      hall.style.setProperty('--hall-pan', (-position * (allowDepth ? .28 : 0)).toFixed(2) + 'px');
+      hall.style.setProperty('--hall-floor-pan', (-position * (allowDepth ? .55 : 0)).toFixed(2) + 'px');
+    }
+    if (guideActor) {
+      // The host travels alongside the camera. Her position eases naturally
+      // instead of disappearing with a completely replaced background.
+      const progress = camera - Math.floor(camera);
+      const travelling = allowDepth ? Math.sin(progress * Math.PI) : 0;
+      guideActor.style.setProperty('--guide-camera-shift', (-52 * travelling).toFixed(2) + 'px');
+      guideActor.style.setProperty('--guide-lean', (1.5 * travelling).toFixed(2) + 'deg');
+    }
     cards.forEach((card, i) => {
       const distance = i - camera;
       if (Math.abs(distance) > 1.35) return; // Only two visible rooms update.
@@ -60,9 +76,9 @@
       card.style.setProperty('--walk-focus', (1 - Math.abs(limited) * .23).toFixed(3));
       card.style.setProperty('--scene-depth', (allowDepth ? -Math.abs(limited) * 78 : 0).toFixed(2) + 'px');
       card.style.setProperty('--scene-photo-shift', (allowDepth ? limited * 68 : 0).toFixed(2) + 'px');
-      card.style.setProperty('--scene-photo-opacity', (.22 + (1 - Math.abs(limited)) * .07).toFixed(3));
-      card.style.setProperty('--scene-art-opacity', (1 - Math.abs(limited) * (allowDepth ? .3 : 0)).toFixed(3));
-      card.style.setProperty('--walk-scene-opacity', (1 - Math.abs(limited) * .23).toFixed(3));
+      card.style.setProperty('--scene-photo-opacity', '0');
+      card.style.setProperty('--scene-art-opacity', (1 - Math.abs(limited) * (allowDepth ? .17 : 0)).toFixed(3));
+      card.style.setProperty('--walk-scene-opacity', '1');
     });
   }
 
@@ -92,7 +108,6 @@
     const count = cards.length;
     const visibleNumber = count ? index + 1 : 0;
     indexLabel.textContent = formatIndex(visibleNumber) + ' / ' + formatIndex(count);
-    room.dataset.activeScene = count ? (cards[index]?.dataset.referenceScene || '0') : '0';
     previous.disabled = index <= 0 || count === 0;
     next.disabled = index >= count - 1 || count === 0;
     progress.style.transform = 'scaleX(' + (count ? (index + 1) / count : 0) + ')';
