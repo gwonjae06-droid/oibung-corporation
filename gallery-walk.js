@@ -41,6 +41,23 @@
 
   function paint() {
     track.style.transform = 'translate3d(' + (-position).toFixed(3) + 'px,0,0)';
+    if (!width) return;
+    // A travelling camera sees the outgoing wall turn away and the incoming
+    // wall rotate toward the lens. The frame, plaque and room move at different
+    // depths, rather than just sliding a flat screenshot sideways.
+    const camera = position / width;
+    const allowDepth = !reduced();
+    cards.forEach((card, i) => {
+      const distance = i - camera;
+      if (Math.abs(distance) > 1.35) return; // Only two visible rooms update.
+      const limited = Math.max(-1, Math.min(1, distance));
+      const angle = allowDepth ? -19 * limited : 0;
+      const shift = allowDepth ? -32 * limited : 0;
+      card.style.setProperty('--walk-yaw', angle.toFixed(2) + 'deg');
+      card.style.setProperty('--walk-shift', shift.toFixed(2) + 'px');
+      card.style.setProperty('--walk-shift-plaque', (shift * .42).toFixed(2) + 'px');
+      card.style.setProperty('--walk-focus', (1 - Math.abs(limited) * .23).toFixed(3));
+    });
   }
 
   function stopAnimation() {
@@ -174,34 +191,66 @@
   }
 
   function onPointerDown(event) {
-    if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
+    if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0) ||
+        room.hidden || document.querySelector('dialog[open]')) return;
     pointerStart = {
-      x: event.clientX,
-      y: event.clientY,
-      pointerId: event.pointerId,
-      type: event.pointerType
+      x: event.clientX, y: event.clientY,
+      pointerId: event.pointerId, type: event.pointerType,
+      startPosition: position,
+      startIndex: index,
+      time: performance.now(),
+      dragging: false
     };
+  }
+
+  function onPointerMove(event) {
+    if (!pointerStart || event.pointerId !== pointerStart.pointerId) return;
+    const dx = event.clientX - pointerStart.x;
+    const dy = event.clientY - pointerStart.y;
+    if (!pointerStart.dragging) {
+      // Let the browser handle ordinary vertical page scrolling.
+      if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+      pointerStart.dragging = true;
+      stopAnimation();
+      viewport.classList.add('is-dragging');
+      try { viewport.setPointerCapture?.(event.pointerId); } catch { /* optional */ }
+    }
+    // Dragging is a LIVE camera motion, not a slide that waits for pointerup.
+    position = Math.max(0, Math.min((cards.length - 1) * width, pointerStart.startPosition - dx));
+    paint();
   }
 
   function onPointerUp(event) {
     if (!pointerStart || pointerStart.pointerId !== event.pointerId) return;
     const start = pointerStart;
     pointerStart = null;
+    viewport.classList.remove('is-dragging');
     const dx = event.clientX - start.x;
     const dy = event.clientY - start.y;
-    const threshold = start.type === 'mouse' ? 65 : 44;
-    if (Math.abs(dx) < threshold || Math.abs(dx) < Math.abs(dy) * 1.25) return;
-    suppressSwipeClick = true;
-    clearTimeout(clickSafetyTimer);
-    clickSafetyTimer = window.setTimeout(() => { suppressSwipeClick = false; }, 320);
+    const enough = Math.abs(dx) >= Math.min(100, Math.max(44, width * .075));
+    const flick = Math.abs(dx) >= 35 && performance.now() - start.time < 330;
+    if (!start.dragging && (!enough || Math.abs(dx) < Math.abs(dy) * 1.2)) return;
+    if (start.dragging) {
+      suppressSwipeClick = true;
+      clearTimeout(clickSafetyTimer);
+      clickSafetyTimer = window.setTimeout(() => { suppressSwipeClick = false; }, 350);
+    }
     const direction = dx < 0 ? 1 : -1;
-    goTo(index + direction);
+    goTo(start.startIndex + (enough || flick ? direction : 0));
+  }
+
+  function onPointerCancel() {
+    const wasDragging = pointerStart?.dragging;
+    pointerStart = null;
+    viewport.classList.remove('is-dragging');
+    if (wasDragging) goTo(index);
   }
 
   viewport.addEventListener('wheel', wheelMove, { passive: false });
   viewport.addEventListener('pointerdown', onPointerDown, { passive: true });
+  viewport.addEventListener('pointermove', onPointerMove, { passive: true });
   viewport.addEventListener('pointerup', onPointerUp, { passive: true });
-  viewport.addEventListener('pointercancel', () => { pointerStart = null; });
+  viewport.addEventListener('pointercancel', onPointerCancel);
   viewport.addEventListener('click', event => {
     if (!suppressSwipeClick) return;
     suppressSwipeClick = false;
