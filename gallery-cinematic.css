@@ -169,7 +169,7 @@
 #games .walk-gallery .game-card-body,
 #games .walk-gallery .game-card-body[data-intro-tone],
 html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
-  transform:translate(calc(-50% + var(--walk-shift,0px) * .44),-44%) perspective(1400px) rotateY(var(--walk-yaw,0deg)) translateZ(12px)!important;
+  transform:translate(calc(-50% + var(--walk-shift-plaque,0px)),-44%) perspective(1400px) rotateY(var(--walk-yaw,0deg)) translateZ(12px)!important;
   background:#ddd7c8f2!important;
   border-color:#b3a68b!important;
   color:#222521!important;
@@ -266,7 +266,7 @@ html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body .game-card-f
   #games .walk-gallery .game-card-body,
   #games .walk-gallery .game-card-body[data-intro-tone],
   html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
-    transform:translate(calc(-50% + var(--walk-shift,0px) * .25),-49%) perspective(1300px) rotateY(var(--walk-yaw,0deg))!important;
+    transform:translate(calc(-50% + var(--walk-shift-plaque,0px)),-49%) perspective(1300px) rotateY(var(--walk-yaw,0deg))!important;
   }
 }
 @media(max-height:560px) and (min-width:600px){
