@@ -30,7 +30,7 @@
   background:
     radial-gradient(ellipse 45% 63% at 45% 28%,#e1b78c30,transparent 90%),
     repeating-linear-gradient(90deg,transparent 0 398px,#07050765 400px,#f9eee414 403px,transparent 407px),
-    repeating-linear-gradient(0deg,transparent 0 155px,#ffffff055 156px,transparent 160px),
+    repeating-linear-gradient(0deg,transparent 0 155px,#ffffff0d 156px,transparent 160px),
     linear-gradient(110deg,#191719,#322c2d 48%,#1a1819);
   background-position:0 0,var(--hall-pan,0px) 0,0 0,0 0;
   box-shadow:inset 0 28px 40px #000b,inset 0 -18px 27px #050304dc;
@@ -137,7 +137,7 @@
   content:"";position:absolute;z-index:1;pointer-events:none;
   inset:15% 17% 20% 16%;
   background:radial-gradient(ellipse 48% 53% at 43% 37%,#d9af8253,transparent 91%);
-  opacity:calc(.52 * var(--walk-focus,1));
+  opacity:var(--walk-scene-opacity,1);
 }
 /* One physical gold frame per real game — large, sharp, never duplicated
    inside baked scenery. */
@@ -160,7 +160,7 @@
     0 0 0 2px #37220e,
     0 19px 34px #000b,
     0 0 38px #efc78b68!important;
-  filter:brightness(calc(.89 + .11 * var(--walk-focus,1)))!important;
+  filter:brightness(var(--walk-focus,1))!important;
   opacity:var(--scene-art-opacity,1)!important;
   transition:box-shadow .18s ease,opacity .16s ease!important;
   cursor:zoom-in;
@@ -247,6 +247,7 @@
   background-size:auto 100%;
   background-position:90% 50%;
   filter:contrast(1.11) saturate(1.055);
+  transition:opacity .27s ease;
   mask-image:linear-gradient(90deg,transparent 0%,#000 17%,#000 82%,transparent 100%);
 }
 #gallery-guide[data-guide-pose="present"] .gallery-guide-avatar::before{
@@ -261,7 +262,7 @@
 #gallery-guide .gallery-guide-mark,
 #gallery-guide .gallery-guide-avatar::after{display:none!important}
 #gallery-guide.is-scene-changing .gallery-guide-avatar::before{
-  opacity:.55;filter:contrast(1.11) saturate(1.055);
+  opacity:0;filter:contrast(1.11) saturate(1.055);
 }
 #gallery-guide .gallery-guide-panel{
   right:calc(100% + 10px)!important;left:auto!important;
