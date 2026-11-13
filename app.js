@@ -152,7 +152,7 @@
     const favorite = favorites.has(game.id);
     const playUrl = safeSourceUrl(game.playUrl);
     const cover = coverArt(game);
-    return `<article class="game-card" data-game-id="${escapeHTML(game.id)}" tabindex="0" aria-label="${escapeHTML(game.title)} 작품 상세 페이지 열기">
+    return `<article class="game-card" data-game-id="${escapeHTML(game.id)}" data-hall-scene="${(displayIndex - 1) % 3}" tabindex="0" aria-label="${escapeHTML(game.title)} 작품 상세 페이지 열기">
       <div class="walk-room" aria-hidden="true">
         <span class="walk-back-wall"></span><span class="walk-side-left"></span><span class="walk-side-right"></span>
         <span class="walk-ceiling"></span><span class="walk-floor"></span><span class="walk-spotlight"></span>
