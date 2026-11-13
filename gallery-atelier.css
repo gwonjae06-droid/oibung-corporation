@@ -193,8 +193,8 @@ html[data-gallery-mode="dark"] #games .walk-gallery .game-card{
   background:
     radial-gradient(ellipse 35% 52% at 44% 39%,#ccbe9f40 0%,#bca78218 51%,transparent 93%),
     linear-gradient(90deg,#050607b8,transparent 17%,transparent 83%,#050607bb),
-    repeating-linear-gradient(94deg,transparent 0 16px,#ffffff015 19px,transparent 22px,#00000005 35px,transparent 42px),
-    repeating-linear-gradient(0deg,transparent 0 141px,#ffffff035 142px,transparent 143px),
+    repeating-linear-gradient(94deg,transparent 0 16px,#ffffff05 19px,transparent 22px,#00000005 35px,transparent 42px),
+    repeating-linear-gradient(0deg,transparent 0 141px,#ffffff09 142px,transparent 143px),
     linear-gradient(112deg,#191b1d,#242526 51%,#181a1b)!important;
   box-shadow:inset 12px 0 35px #050607aa,inset -13px 0 33px #050607ad,inset 0 29px 49px #050607b8,inset 0 -27px 35px #050607c9;
 }
@@ -207,21 +207,21 @@ html[data-gallery-mode="dark"] #games .walk-gallery .game-card{
 #games .walk-gallery .walk-side-left{
   background:
     radial-gradient(ellipse at 90% 36%,#a09b8b1a,transparent 71%),
-    repeating-linear-gradient(94deg,transparent 0 21px,#ffffff015 24px,transparent 26px),
+    repeating-linear-gradient(94deg,transparent 0 21px,#ffffff05 24px,transparent 26px),
     linear-gradient(90deg,#0e1011,#303234 68%,#0a0c0e)!important;
   box-shadow:inset -25px 0 35px #000c,inset 18px 0 24px #0005;
 }
 #games .walk-gallery .walk-side-right{
   background:
     radial-gradient(ellipse at 12% 34%,#aca5941a,transparent 70%),
-    repeating-linear-gradient(94deg,transparent 0 23px,#ffffff015 26px,transparent 29px),
+    repeating-linear-gradient(94deg,transparent 0 23px,#ffffff05 26px,transparent 29px),
     linear-gradient(270deg,#0d1012,#303334 63%,#0a0c0d)!important;
   box-shadow:inset 27px 0 33px #000c,inset -16px 0 22px #0005;
 }
 #games .walk-gallery .walk-floor{
   background:
     linear-gradient(180deg,#09090a9c 0%,#05060722 33%,#0b0e107b 100%),
-    repeating-linear-gradient(90deg,#ffffff025 0 1px,transparent 2px 24px,#000000045 27px,transparent 37px),
+    repeating-linear-gradient(90deg,#ffffff06 0 1px,transparent 2px 24px,#0000000b 27px,transparent 37px),
     repeating-linear-gradient(90deg,transparent 0 185px,#0c10127a 186px,#cbc4b026 188px,transparent 190px),
     repeating-linear-gradient(0deg,transparent 0 96px,#1115179c 98px,#8e8a7a24 100px,transparent 102px),
     linear-gradient(104deg,#353739,#646362 48%,#343636)!important;
@@ -367,7 +367,7 @@ html[data-gallery-mode="dark"] #games .walk-gallery .walk-back-wall{
   background:
     radial-gradient(ellipse 35% 52% at 44% 39%,#c5d1e237,transparent 94%),
     linear-gradient(90deg,#020406cc,transparent 17%,transparent 83%,#020406dd),
-    repeating-linear-gradient(94deg,transparent 0 17px,#ffffff019 20px,transparent 23px),
+    repeating-linear-gradient(94deg,transparent 0 17px,#ffffff09 20px,transparent 23px),
     linear-gradient(112deg,#101418,#1c2125 52%,#0d1216)!important;
 }
 html[data-gallery-mode="dark"] #games .walk-gallery .walk-art-glow{
