@@ -9,17 +9,40 @@
 
   const root = document.getElementById('gallery-guide');
   const sprite = document.getElementById('gallery-guide-image');
+  const head = document.getElementById('gallery-guide-head');
+  const fabric = document.getElementById('gallery-guide-fabric');
   const intro = document.getElementById('gallery-guide-intro');
   const title = document.getElementById('gallery-guide-intro-title');
   const description = document.getElementById('gallery-guide-intro-description');
   const detailButton = document.getElementById('gallery-guide-intro-detail');
   if (!root || !sprite || !intro || !title || !description || !detailButton) return;
 
-  const imageSources = Object.freeze({
-    calm: 'assets/guide-hires-calm.webp?v=curator-1',
-    present: 'assets/guide-hires-present.webp?v=curator-1',
-    welcome: 'assets/guide-hires-welcome.webp?v=curator-1'
+  const wardrobe = Object.freeze({
+    knight: 'assets/guide-costume-knight.svg',
+    maid: 'assets/guide-costume-maid.svg',
+    arena: 'assets/guide-costume-arena.svg',
+    duelist: 'assets/guide-costume-duelist.svg',
+    commander: 'assets/guide-costume-commander.svg',
+    egypt: 'assets/guide-costume-egypt.svg'
   });
+  // Titles and genres can come from the public Supabase catalog, not only
+  // the four seed games. Explicit names take priority over generic genres.
+  function wardrobeFor(game) {
+    if (!game) return 'egypt';
+    const name = [game.id, game.title, game.english, game.name].filter(Boolean).join(' ').toLowerCase();
+    const genre = [game.genre, game.category, ...(Array.isArray(game.tags) ? game.tags : [])]
+      .filter(Boolean).join(' ').toLowerCase();
+    if (/퍼리|furry|furi|furrycorp|furry-corp|furry corp/.test(name)) return 'maid';
+    if (/오든링|oden.?ring|elden.?ring/.test(name)) return 'knight';
+    if (/아레나|arena|오레나|ballfight/.test(name)) return 'arena';
+    if (/오이챔스|ochams|듀얼|duel/.test(name)) return 'duelist';
+    if (/대학전선|campus|frontier/.test(name)) return 'commander';
+    if (/고양이|cat|메이드|maid|퍼리|furry/.test(genre)) return 'maid';
+    if (/보스|소울|boss|souls|기사|knight/.test(genre)) return 'knight';
+    if (/핀볼|pinball|격투|brawl|battle/.test(genre)) return 'arena';
+    if (/전략|strategy|시뮬|tactics/.test(genre)) return 'commander';
+    return 'egypt';
+  }
 
   // Reuse the three true illustrations in changing orientations / stage
   // positions rather than stretch low-resolution background photographs.
@@ -40,9 +63,9 @@
     { pose: 'welcome', x:-22, y:  3, scale: 0.96, angle: -1.5, face: -1 }
   ]);
 
-  // Browsers can decode these original image assets before the guide changes.
+  // Warm the six existing costume illustrations, without generating copies.
   const cached = [];
-  for (const src of Object.values(imageSources)) {
+  for (const src of Object.values(wardrobe)) {
     const image = new Image();
     image.decoding = 'async';
     image.src = src;
@@ -100,6 +123,9 @@
     const copy = introduction(game);
 
     root.dataset.guidePose = arrangement.pose;
+    const outfit = wardrobeFor(game);
+    root.dataset.guideOutfit = outfit;
+    const source = wardrobe[outfit];
     root.dataset.guideVariant = String(variantIndex);
     root.style.setProperty('--curator-x', arrangement.x + 'px');
     root.style.setProperty('--curator-y', arrangement.y + 'px');
@@ -109,8 +135,8 @@
     root.style.setProperty('--curator-rotate', arrangement.angle + 'deg');
     root.style.setProperty('--curator-facing', String(arrangement.face));
 
-    if (sprite.getAttribute('src') !== imageSources[arrangement.pose]) {
-      sprite.src = imageSources[arrangement.pose];
+    for (const image of [sprite, head, fabric]) {
+      if (image && image.getAttribute('src') !== source) image.src = source;
     }
     title.textContent = copy.title;
     description.textContent = copy.body;
