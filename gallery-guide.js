@@ -17,6 +17,13 @@
 
   const preferenceKey = 'oibung-gallery:guide-visible';
   const poses = ['calm', 'present', 'welcome'];
+  // Small vector poses are cached up front so swapping doesn't flash white.
+  if (typeof Image !== 'undefined') {
+    poses.forEach(pose => {
+      const preview = new Image();
+      preview.src = 'assets/guide-egypt-' + pose + '.svg?v=1';
+    });
+  }
   let currentPose = 'calm';
   let poseTimer = 0;
   function showPose(index, animate = true) {
