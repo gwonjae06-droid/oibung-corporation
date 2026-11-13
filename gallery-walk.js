@@ -230,7 +230,7 @@
     const enough = Math.abs(dx) >= Math.min(100, Math.max(44, width * .075));
     const flick = Math.abs(dx) >= 35 && performance.now() - start.time < 330;
     if (!start.dragging && (!enough || Math.abs(dx) < Math.abs(dy) * 1.2)) return;
-    if (start.dragging) {
+    if (start.dragging || enough) {
       suppressSwipeClick = true;
       clearTimeout(clickSafetyTimer);
       clickSafetyTimer = window.setTimeout(() => { suppressSwipeClick = false; }, 350);
