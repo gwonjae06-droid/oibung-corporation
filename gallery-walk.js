@@ -43,7 +43,14 @@
   const clampIndex = n => Math.min(Math.max(0, n), Math.max(0, cards.length - 1));
 
   function paint() {
-    track.style.transform = 'translate3d(' + (-position).toFixed(3) + 'px,0,0)';
+    // During travel the GPU pans the hall smoothly; at each painting's rest
+    // position use pixel-aligned 2D translation for crisp artwork and labels.
+    const stationary = !frameId && !pointerStart?.dragging &&
+      Math.abs(position - target) < .36;
+    track.style.transform = stationary
+      ? 'translateX(' + Math.round(-position) + 'px)'
+      : 'translate3d(' + (-position).toFixed(3) + 'px,0,0)';
+    viewport.classList.toggle('camera-moving', !stationary);
     if (!width) return;
     // A travelling camera sees the outgoing wall turn away and the incoming
     // wall rotate toward the lens. The frame, plaque and room move at different
@@ -96,8 +103,8 @@
     position += (target - position) * eased;
     if (Math.abs(target - position) < 0.35) {
       position = target;
-      paint();
       stopAnimation();
+      paint();
       return;
     }
     paint();
