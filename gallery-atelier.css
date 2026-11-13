@@ -1,0 +1,455 @@
+/*
+ * OIBUNG GALLERY — ATELIER, a single room with no webpage below.
+ * Fixed immersive space + realistic gallery materials; content and editor
+ * remain accessible from one discreet menu. Works without any 3D library.
+ */
+
+/* A single fixed exhibition, not a conventional page with a footer. */
+html,body{
+  height:100%;
+  min-height:100%;
+  overflow:hidden!important;
+  overscroll-behavior:none;
+}
+body{height:100svh;height:100dvh}
+main{height:100svh;height:100dvh;min-height:0!important;overflow:hidden}
+#games.library.section-pad{
+  height:100svh;height:100dvh;
+  min-height:0!important;
+  padding:0!important;
+}
+#games>.container{height:100%;max-height:none}
+body .site-header .header-inner{
+  height:72px;
+  width:calc(100% - clamp(30px,4.5vw,80px));
+  border-bottom:0!important;
+}
+body .site-header .brand{
+  display:inline-flex;
+  opacity:.78;
+  transition:opacity .2s ease;
+}
+body .site-header .brand:hover,body .site-header .brand:focus-visible{opacity:1}
+body .site-header .brand-copy{display:none!important}
+body .site-header .brand-mark{
+  width:29px;height:29px;
+  border-width:3px;
+}
+body .site-header .brand-core{width:8px;height:8px}
+body .site-header .menu-toggle{
+  display:grid!important;
+  place-items:center;
+  width:44px;height:44px;
+  border:1px solid #ece5d495!important;
+  border-radius:2px;
+  color:#f7f1e7!important;
+  background:#13181bbd!important;
+  box-shadow:0 5px 18px #0007;
+  backdrop-filter:blur(12px);
+  opacity:.92;
+}
+body .site-header .menu-toggle:hover,
+body .site-header .menu-toggle[aria-expanded="true"]{
+  opacity:1;background:#303639e8!important;
+  border-color:#fff5e1!important;
+}
+body .site-header .menu-toggle:focus-visible{
+  outline:2px solid #f3d7a5;outline-offset:4px;
+}
+body .site-header #mobile-nav{
+  position:fixed!important;
+  display:flex;flex-direction:column;gap:3px;
+  top:clamp(63px,9vh,79px);
+  right:clamp(15px,2.9vw,48px);
+  left:auto;
+  width:min(270px,calc(100vw - 30px));
+  max-width:none;margin:0;padding:14px;
+  pointer-events:auto;
+  background:linear-gradient(150deg,#20262af7,#111619fa)!important;
+  border:1px solid #b7a99279;
+  border-radius:3px;
+  box-shadow:0 22px 55px #000a,inset 0 1px 0 #ffffff13;
+  backdrop-filter:blur(18px);
+  z-index:100;
+}
+body .site-header #mobile-nav[hidden]{display:none!important}
+body .site-header #mobile-nav :is(a,button:not([data-gallery-mode-choice])){
+  display:flex;align-items:center;
+  justify-content:flex-start;gap:8px;
+  text-align:left;
+  width:100%;min-height:42px;
+  margin:0;padding:10px 11px;
+  color:#eae7e1!important;
+  background:transparent!important;
+  border:1px solid transparent!important;
+  border-radius:2px;
+  font:500 13px/1.4 var(--body);
+  text-shadow:none;
+}
+body .site-header #mobile-nav :is(a,button):hover:not(:disabled){
+  background:#ffffff12!important;
+  border-color:#c9b89932!important;
+  color:#fff6df!important;
+}
+body .site-header #mobile-nav .gallery-mode-switch{
+  display:flex;justify-content:stretch;align-items:stretch;
+  width:100%;gap:3px;
+  margin:9px 0 2px;padding:3px;
+  border:1px solid #c8bea766!important;
+  background:#0d1215!important;
+  box-shadow:none;
+}
+body .site-header #mobile-nav .gallery-mode-switch button{
+  flex:1;justify-content:center;
+  min-height:37px;
+  border:0!important;
+  font-size:12px;
+}
+body .site-header #mobile-nav .gallery-mode-switch button[aria-pressed="true"]{
+  color:#202725!important;background:#e5ded0!important;
+}
+body .site-header #mobile-nav .motion-control{
+  border-top:1px solid #b9a88b3c!important;
+  border-radius:0;
+  margin-top:5px!important;
+  font-size:12px!important;
+  opacity:.84;
+}
+body .site-header #mobile-nav .motion-control svg{height:15px;width:15px}
+
+/* Old webpage headings and navigation never cover the art. */
+main>.page-switcher.container,
+#games .section-heading-row,
+#games .catalog-count,
+#games .featured-exhibit{display:none!important}
+#games .walk-filter-drawer:not([open]){display:none!important}
+#games .walk-filter-drawer[open]{
+  display:block!important;
+  top:clamp(69px,10vh,93px);
+  right:clamp(15px,3vw,50px);
+  z-index:45;
+}
+#games .walk-filter-drawer>summary{font-size:11px!important;min-height:34px}
+#games .walk-filter-drawer>summary::after{content:none!important}
+#games .walk-filter-drawer .library-toolbar{max-height:65dvh}
+#games .walk-filter-drawer .filter-chip{font-size:11px}
+#games .empty-state:not([hidden]){z-index:31}
+
+/* Only tiny, functional controls remain on the exhibition floor. */
+#games .walk-rail-hud{display:none!important}
+#games .walk-rail-controls{
+  left:clamp(14px,2.4vw,38px);
+  right:clamp(14px,2.4vw,38px);
+  bottom:clamp(12px,2.9vh,23px);
+  z-index:25;
+  pointer-events:none;
+}
+#games .walk-rail-controls button{
+  width:clamp(38px,3.7vw,48px);
+  height:clamp(38px,3.7vw,48px);
+  border-radius:50%;
+  font:300 29px/1 Georgia,serif;
+  background:#0c0f10a8;
+  border:1px solid #d6cbb3a0;
+  color:#f3eddd;
+  opacity:.68;
+  pointer-events:auto;
+  box-shadow:0 4px 15px #0009;
+  backdrop-filter:blur(8px);
+}
+#games .walk-rail-controls button:hover:not(:disabled),
+#games .walk-rail-controls button:focus-visible:not(:disabled){
+  background:#282e30ef;
+  border-color:#fff0d1;
+  opacity:1;
+}
+#games .walk-rail-controls button:disabled{opacity:.11}
+#games .walk-rail-controls .walk-index{
+  flex:1;display:inline-flex;align-items:center;justify-content:center;
+  color:#f6eee0;
+  font:500 11px/1.2 'Cormorant Garamond',Georgia,serif;
+  letter-spacing:.22em;
+  font-variant-numeric:tabular-nums;
+  text-shadow:0 2px 8px #000;
+  opacity:.67;
+  white-space:nowrap;
+}
+#games .walk-progress-track{height:2px;opacity:.72}
+
+/* A museum wall has subtle painted grain, a recessed exhibition bay and
+   a believable strip of light near the centre, not a uniform flat gradient. */
+#games .walk-gallery,
+#games .walk-gallery .game-card,
+html[data-gallery-mode="dark"] #games .walk-gallery,
+html[data-gallery-mode="dark"] #games .walk-gallery .game-card{
+  background:#0a0b0d!important;
+}
+#games .walk-gallery-viewport{
+  background:
+    radial-gradient(ellipse 53% 57% at 44% 39%,#4c463b2c,transparent 88%),
+    linear-gradient(180deg,#090b0c,#151617 52%,#090a0c)!important;
+}
+#games .walk-gallery .walk-back-wall{
+  background:
+    radial-gradient(ellipse 35% 52% at 44% 39%,#ccbe9f40 0%,#bca78218 51%,transparent 93%),
+    linear-gradient(90deg,#050607b8,transparent 17%,transparent 83%,#050607bb),
+    repeating-linear-gradient(94deg,transparent 0 16px,#ffffff015 19px,transparent 22px,#00000005 35px,transparent 42px),
+    repeating-linear-gradient(0deg,transparent 0 141px,#ffffff035 142px,transparent 143px),
+    linear-gradient(112deg,#191b1d,#242526 51%,#181a1b)!important;
+  box-shadow:inset 12px 0 35px #050607aa,inset -13px 0 33px #050607ad,inset 0 29px 49px #050607b8,inset 0 -27px 35px #050607c9;
+}
+#games .walk-gallery .walk-back-wall::after{
+  content:"";display:block;position:absolute;
+  height:5px;left:0;right:0;bottom:0;
+  background:linear-gradient(180deg,#55544e 0 1px,#242526 2px,#0a0c0d 5px);
+  box-shadow:0 -3px 9px #0008,0 3px 11px #0203059a;
+}
+#games .walk-gallery .walk-side-left{
+  background:
+    radial-gradient(ellipse at 90% 36%,#a09b8b1a,transparent 71%),
+    repeating-linear-gradient(94deg,transparent 0 21px,#ffffff015 24px,transparent 26px),
+    linear-gradient(90deg,#0e1011,#303234 68%,#0a0c0e)!important;
+  box-shadow:inset -25px 0 35px #000c,inset 18px 0 24px #0005;
+}
+#games .walk-gallery .walk-side-right{
+  background:
+    radial-gradient(ellipse at 12% 34%,#aca5941a,transparent 70%),
+    repeating-linear-gradient(94deg,transparent 0 23px,#ffffff015 26px,transparent 29px),
+    linear-gradient(270deg,#0d1012,#303334 63%,#0a0c0d)!important;
+  box-shadow:inset 27px 0 33px #000c,inset -16px 0 22px #0005;
+}
+#games .walk-gallery .walk-floor{
+  background:
+    linear-gradient(180deg,#09090a9c 0%,#05060722 33%,#0b0e107b 100%),
+    repeating-linear-gradient(90deg,#ffffff025 0 1px,transparent 2px 24px,#000000045 27px,transparent 37px),
+    repeating-linear-gradient(90deg,transparent 0 185px,#0c10127a 186px,#cbc4b026 188px,transparent 190px),
+    repeating-linear-gradient(0deg,transparent 0 96px,#1115179c 98px,#8e8a7a24 100px,transparent 102px),
+    linear-gradient(104deg,#353739,#646362 48%,#343636)!important;
+  box-shadow:inset 0 40px 37px #020303ae;
+}
+#games .walk-gallery .walk-floor::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 27% 34% at 44% 0%,#ddcba219,transparent 90%),
+    linear-gradient(180deg,#00000036,transparent 41%,#00000019);
+}
+#games .walk-gallery .walk-ceiling{
+  background:linear-gradient(180deg,#060809,#181a1b 48%,#131516 72%,#030506)!important;
+}
+
+/* Physical spotlight: restrained cone plus reflected light on the plaster. */
+#games .walk-gallery .walk-spotlight{
+  opacity:.95;
+  background:radial-gradient(ellipse 31% 41% at 50% 41%,#fff0c378 0%,#e8d4af38 46%,transparent 96%)!important;
+}
+#games .walk-gallery .walk-light-beam{
+  opacity:.44;
+  background:linear-gradient(180deg,#f9ebca02,#e9d9ae0e 44%,#eedcb321 78%,transparent)!important;
+}
+#games .walk-gallery .walk-art-glow{
+  opacity:.56;
+  filter:blur(25px) brightness(var(--walk-focus,1));
+  background:radial-gradient(ellipse 55% 49% at 50% 50%,#f9e9be87,#e2c1893c 43%,transparent 76%)!important;
+}
+#games .walk-gallery .walk-art-glow::after{
+  content:"";position:absolute;
+  top:50%;left:50%;width:74%;height:66%;
+  transform:translate(-51%,-46%) skewX(-3deg);
+  background:#00000066;
+  filter:blur(17px);
+  z-index:-1;
+}
+#games .walk-gallery .walk-light-fixture{
+  width:42px;height:14px;
+  background:linear-gradient(90deg,#121517,#515252 35%,#6b685d 49%,#16191a 86%);
+  border-color:#777262;
+  box-shadow:inset 0 2px 3px #0008,0 2px 8px #000b;
+}
+#games .walk-gallery .walk-light-fixture::after{
+  bottom:-2px;height:3px;
+  box-shadow:0 0 8px 2px #f5e5bd8d;
+}
+
+/* Frame construction: bevel, gilding, mat, glass reflection and weight. */
+#games .walk-gallery .game-cover,
+#games .walk-gallery .game-card:hover .game-cover,
+#games .walk-gallery .game-card:focus-within .game-cover{
+  border:clamp(10px,1.14vw,18px) ridge #aa8e5d!important;
+  outline:1px solid #d9c08d9c!important;
+  background:linear-gradient(110deg,#47361f,#e6c895 19%,#a28151 57%,#43301b 100%)!important;
+  box-shadow:
+    inset 0 0 0 2px #181510,
+    inset 0 0 11px #ffe7b44a,
+    0 0 0 1px #2f2415,
+    0 4px 0 #121313,
+    0 16px 28px #010304c9,
+    0 37px 69px #000b,
+    0 0 46px #ffe2ad38!important;
+}
+#games .walk-gallery .game-cover .artwork-image-window{
+  inset:6px!important;
+  border:1px solid #171717!important;
+  box-shadow:inset 0 0 0 1px #c3b18f77,0 0 0 4px #e9e3d5!important;
+  background:#101112!important;
+}
+#games .walk-gallery .artwork-image-window::after{
+  content:"";position:absolute;inset:0;
+  pointer-events:none;z-index:3;
+  background:
+    linear-gradient(118deg,#fff9e421 0%,#fff9e406 17%,transparent 27%,transparent 72%,#00000020 100%),
+    linear-gradient(162deg,transparent 0%,transparent 46%,#fffbee08 50%,transparent 55%);
+  box-shadow:inset 0 0 17px #07080891;
+}
+#games .walk-gallery .game-cover .artwork-image-window img{
+  filter:brightness(1.075) contrast(1.04) saturate(1.035);
+}
+#games .walk-gallery .game-cover .artwork-image-window .cover-art{
+  filter:brightness(1.045) contrast(1.035);
+}
+
+/* Only the artwork nameplate remains; full descriptions live inside the work. */
+#games .walk-gallery .game-card-body,
+#games .walk-gallery .game-card-body[data-intro-tone],
+html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
+  width:min(15%,210px)!important;
+  max-height:none!important;
+  overflow:visible!important;
+  padding:10px 12px!important;
+  gap:2px!important;
+  border:1px solid #b0a597!important;
+  background:#dbd8d0f0!important;
+  box-shadow:0 8px 24px #0009,inset 0 1px 0 #fff8!important;
+}
+#games .walk-gallery .game-card-body :is(.artwork-caption,.game-meta,.game-card-desc,.game-card-score,.game-card-footer){display:none!important}
+#games .walk-gallery .game-card-body .artwork-identity{min-width:0}
+#games .walk-gallery .game-card-body .game-card-title-row{align-items:center;gap:5px}
+#games .walk-gallery .game-card-body h3,
+.motion-active #games .walk-gallery .game-card-body h3{
+  color:#272922!important;
+  font:600 clamp(12px,1.1vw,16px)/1.37 'Noto Serif KR',serif!important;
+  text-align:left;
+  letter-spacing:-.04em!important;
+  overflow-wrap:anywhere;
+  margin:0;
+}
+#games .walk-gallery .game-card-actions{
+  display:flex;flex:none;gap:3px;
+  opacity:.18;transition:opacity .2s ease;
+}
+#games .walk-gallery .game-card:hover .game-card-actions,
+#games .walk-gallery .game-card:focus-within .game-card-actions{
+  opacity:1;
+}
+#games .walk-gallery .game-card-actions :is(.icon-button,.favorite-button){
+  background:transparent!important;
+  border:0!important;
+  width:24px!important;height:24px!important;
+  min-width:24px!important;
+  color:#3a3c36!important;
+  padding:3px;
+}
+#games .walk-gallery .game-card-actions :is(.icon-button,.favorite-button):hover{
+  background:#6d64452b!important;
+}
+#games .walk-gallery .game-card-actions svg{width:13px;height:13px}
+html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body,
+html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
+  background:#313436eF!important;border-color:#797e7f!important;
+  box-shadow:0 9px 25px #000d,inset 0 1px 0 #cdd1d115!important;
+}
+html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body h3{
+  color:#f2f0e9!important;
+}
+html[data-gallery-mode="dark"] #games .walk-gallery .game-card-actions :is(.icon-button,.favorite-button){
+  color:#dcdad2!important;
+}
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-back-wall{
+  background:
+    radial-gradient(ellipse 35% 52% at 44% 39%,#c5d1e237,transparent 94%),
+    linear-gradient(90deg,#020406cc,transparent 17%,transparent 83%,#020406dd),
+    repeating-linear-gradient(94deg,transparent 0 17px,#ffffff019 20px,transparent 23px),
+    linear-gradient(112deg,#101418,#1c2125 52%,#0d1216)!important;
+}
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-art-glow{
+  background:radial-gradient(ellipse 55% 49% at 50% 50%,#e1eaf17a,#c1d0e13b 43%,transparent 76%)!important;
+}
+html[data-gallery-mode="dark"] #games .walk-gallery .walk-spotlight{
+  background:radial-gradient(ellipse 31% 41% at 50% 41%,#cedce883,#b3c9dc34 46%,transparent 96%)!important;
+}
+
+/* Review page is an in-museum overlay, not a second below-the-fold page. */
+#reviews.review-board.section-pad{
+  position:fixed!important;
+  inset:0;
+  width:100%;height:100svh;height:100dvh;
+  min-height:0;
+  padding:clamp(70px,10vh,100px) 0 44px!important;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  z-index:42;
+  color:#f2efe8;
+  background:linear-gradient(180deg,#151a1df5,#101416f9);
+  box-shadow:inset 0 0 110px #0007;
+}
+#reviews[hidden]{display:none!important}
+#reviews>.container{width:min(100% - 40px,1180px);max-width:none;margin:auto}
+#reviews .section-heading-row h1,#reviews .review-feed-heading h2{color:#f3f0e8}
+#reviews .section-heading-row p,#reviews .review-feed-heading>span{color:#ccd1cb}
+#reviews .reviews-return{
+  position:fixed;z-index:44;
+  top:clamp(22px,3vh,32px);
+  right:clamp(75px,6vw,105px);
+  width:42px;height:42px;
+  color:#f4eee1;
+  background:#272e31;
+  border:1px solid #6e7777;
+  border-radius:2px;
+  font:300 28px/1 Georgia,serif;
+  box-shadow:0 6px 14px #0006;
+}
+#reviews .reviews-return:hover{background:#455054;border-color:#d5c49f}
+#reviews .review-sidebar,#reviews .review-post{
+  color:#eceeea;background:#242b2e;border:1px solid #536062;
+}
+#reviews .review-sidebar h2,#reviews .review-post-author strong{color:#f0efe9}
+#reviews .review-post-body,#reviews .review-sidebar-note{color:#becacb}
+#reviews .review-sidebar select{color:#e9eeea;background:#1b252a;border-color:#66747a}
+#reviews .review-feed-empty{color:#c4ced0}
+body.reviews-open .site-header{z-index:56}
+/* Keep the standard dim option and allow OS-level reduced motion. */
+@media(max-width:830px){
+  body .site-header .header-inner{height:60px;width:calc(100% - 30px)}
+  body .site-header #mobile-nav{top:60px;right:14px}
+  #games .walk-gallery .game-card-body,
+  #games .walk-gallery .game-card-body[data-intro-tone],
+  html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
+    top:67%!important;left:50%!important;
+    width:min(66%,320px)!important;
+    transform:translate(calc(-50% + var(--walk-shift-plaque,0px)),-49%) perspective(1300px) rotateY(var(--walk-yaw,0deg))!important;
+    padding:9px 12px!important;
+  }
+  #games .walk-gallery .game-card-body h3{font-size:13px!important}
+  #reviews.review-board.section-pad{padding-top:85px!important}
+  #reviews .reviews-return{top:14px;right:78px;width:38px;height:38px}
+}
+@media(max-height:560px) and (min-width:600px){
+  #games .walk-gallery .game-card-body,
+  #games .walk-gallery .game-card-body[data-intro-tone],
+  html[data-gallery-mode="dark"] #games .walk-gallery .game-card-body[data-intro-tone]{
+    top:49%!important;left:78.5%!important;
+    width:min(19%,200px)!important;
+    transform:translate(calc(-50% + var(--walk-shift-plaque,0px)),-44%) perspective(1400px) rotateY(var(--walk-yaw,0deg))!important;
+  }
+}
+@media(max-width:420px){
+  body .site-header #mobile-nav{width:min(255px,calc(100vw - 28px))}
+  #games .walk-gallery .game-card-body h3{font-size:12px!important}
+  #games .walk-rail-controls button{width:40px;height:40px}
+  #reviews .reviews-return{right:66px}
+}
+@media(hover:none),(pointer:coarse){
+  #games .walk-gallery .game-card-actions{opacity:.68}
+}
+@media(prefers-reduced-motion:reduce){
+  #games .walk-gallery .game-card-actions{transition:none}
+}
