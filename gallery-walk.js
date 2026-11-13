@@ -14,7 +14,6 @@
   const previous = document.getElementById('walk-prev');
   const next = document.getElementById('walk-next');
   const indexLabel = document.getElementById('walk-index');
-  const nameLabel = document.getElementById('walk-current-title');
   const progress = document.getElementById('walk-progress-fill');
   if (!room || !viewport || !track || !previous || !next || !indexLabel || !progress) return;
 
@@ -86,10 +85,6 @@
     const count = cards.length;
     const visibleNumber = count ? index + 1 : 0;
     indexLabel.textContent = formatIndex(visibleNumber) + ' / ' + formatIndex(count);
-    if (nameLabel) {
-      const title = cards[index]?.querySelector('h3')?.textContent || '';
-      nameLabel.textContent = title || '전시 작품';
-    }
     previous.disabled = index <= 0 || count === 0;
     next.disabled = index >= count - 1 || count === 0;
     progress.style.transform = 'scaleX(' + (count ? (index + 1) / count : 0) + ')';
