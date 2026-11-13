@@ -231,11 +231,13 @@
   }
 
   function keyMove(event) {
-    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    const back = event.key === 'ArrowLeft' || event.code === 'KeyA' || event.code === 'KeyS';
+    const forward = event.key === 'ArrowRight' || event.code === 'KeyD' || event.code === 'KeyW';
+    if (!back && !forward) return;
     if (event.altKey || event.ctrlKey || event.metaKey || !isGalleryVisible()) return;
     if (event.target.closest?.('input,textarea,select,[contenteditable="true"]')) return;
     if (event.target.closest?.('button,a') && !event.target.closest('#walk-gallery')) return;
-    const direction = event.key === 'ArrowRight' ? 1 : -1;
+    const direction = forward ? 1 : -1;
     if ((direction < 0 && index === 0) || (direction > 0 && index === cards.length - 1)) return;
     event.preventDefault();
     goTo(index + direction);
