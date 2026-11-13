@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="gallery-walk.css?v=gallery-walk-2">
   <link rel="stylesheet" href="gallery-immersive.css?v=gallery-immersive-1">
   <link rel="stylesheet" href="gallery-cinematic.css?v=cinematic-museum-1">
+  <link rel="stylesheet" href="gallery-atelier.css?v=gallery-atelier-1">
   <script src="gallery-display-mode.js?v=two-modes-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
   <script src="community-config.js" defer></script>
@@ -52,20 +53,25 @@
         <span class="brand-copy">오이붕 갤러리<span lang="en">OIBUNG GALLERY</span></span>
       </a>
       <div class="header-actions">
-        <a class="gallery-about-link" href="#about">갤러리 소개</a>
-        <div class="gallery-mode-switch" role="group" aria-label="화면 테마">
-          <button type="button" data-gallery-mode-choice="light" aria-pressed="true" aria-label="라이트 테마" title="라이트 테마">
-            <span class="gallery-mode-icon" aria-hidden="true">☀</span><span class="gallery-mode-text">라이트</span>
-          </button>
-          <button type="button" data-gallery-mode-choice="dark" aria-pressed="false" aria-label="다크 테마" title="다크 테마">
-            <span class="gallery-mode-icon" aria-hidden="true">☾</span><span class="gallery-mode-text">다크</span>
-          </button>
-        </div>
-        <button type="button" class="menu-toggle icon-button" id="menu-toggle" aria-expanded="false" aria-label="메뉴 열기"><svg><use href="#i-menu"/></svg></button>
+        <button type="button" class="menu-toggle icon-button" id="menu-toggle" aria-expanded="false" aria-controls="mobile-nav" aria-label="전시관 메뉴 열기" title="전시관 메뉴"><svg><use href="#i-menu"/></svg></button>
       </div>
     </div>
-    <nav class="mobile-nav container" id="mobile-nav" aria-label="모바일 메뉴" hidden>
-      <a href="#games">작품 전시</a><a href="#reviews">평가·후기</a><a href="#about">갤러리 소개</a>
+    <nav class="mobile-nav container" id="mobile-nav" aria-label="전시관 메뉴" hidden>
+      <a href="#games">전시관</a>
+      <a href="#reviews">관람객 후기</a>
+      <button type="button" data-open-editor>작품 등록</button>
+      <button type="button" id="menu-open-filters">작품 검색 · 분류</button>
+      <div class="gallery-mode-switch" role="group" aria-label="전시관 밝기">
+        <button type="button" data-gallery-mode-choice="light" aria-pressed="true" aria-label="라이트 테마" title="라이트 테마">
+          <span class="gallery-mode-icon" aria-hidden="true">☀</span><span class="gallery-mode-text">라이트</span>
+        </button>
+        <button type="button" data-gallery-mode-choice="dark" aria-pressed="false" aria-label="다크 테마" title="다크 테마">
+          <span class="gallery-mode-icon" aria-hidden="true">☾</span><span class="gallery-mode-text">다크</span>
+        </button>
+      </div>
+      <button id="motion-toggle" class="motion-control" type="button" aria-label="애니메이션 줄이기" aria-pressed="false">
+        <svg aria-hidden="true"><use href="#i-check"/></svg><span class="motion-control-label">움직임 줄이기</span>
+      </button>
     </nav>
   </header>
 
@@ -77,7 +83,7 @@
     <section class="library section-pad" id="games" role="tabpanel" aria-labelledby="tab-games">
       <div class="container">
         <div class="section-heading-row">
-          <div><h1 id="games-title">작품 전시</h1><p>오른쪽으로 이동하며 한 점씩 감상하는 전시관입니다.</p></div>
+          <div><h1 id="games-title">작품 전시</h1></div>
           <button class="button-primary" type="button" data-open-editor>게임 등록하기 <svg aria-hidden="true"><use href="#i-arrow"/></svg></button>
         </div>
         <section class="featured-exhibit" id="featured-exhibit" aria-label="대표 전시 작품" hidden>
@@ -102,7 +108,7 @@
           </div>
         </section>
         <details class="walk-filter-drawer" id="walk-filter-drawer">
-          <summary>작품 검색 · 상태별 분류 · 전시순 정렬</summary>
+          <summary>검색 및 분류</summary>
           <div class="library-toolbar">
           <div class="filter-viewport" id="filter-viewport">
             <div class="filter-tabs" id="filter-tabs" role="group" aria-label="게임 상태 필터">
@@ -130,14 +136,10 @@
           <div class="walk-gallery-viewport" id="walk-gallery-viewport" tabindex="0" role="region" aria-label="작품 한 점씩 감상. 휠이나 트랙패드로 이동하고, 좌우 방향키 또는 모바일 스와이프도 사용할 수 있습니다.">
             <div id="game-grid" class="game-grid" aria-live="polite"></div>
           </div>
-          <div class="walk-rail-hud" aria-hidden="true">
-            <span>OIBUNG GALLERY&nbsp; / &nbsp;EXHIBITION HALL</span>
-            <span id="walk-index" class="walk-index">00 / 00</span>
-          </div>
           <div class="walk-rail-controls">
-            <button type="button" id="walk-prev" aria-label="이전 전시 작품" title="이전 작품">←</button>
-            <span class="walk-instructions"><span id="walk-current-title">전시 작품</span> &nbsp; · &nbsp; 휠 · 좌우 키 · 스와이프</span>
-            <button type="button" id="walk-next" aria-label="다음 전시 작품" title="다음 작품">→</button>
+            <button type="button" id="walk-prev" aria-label="이전 작품" title="이전 작품"><span aria-hidden="true">‹</span></button>
+            <span id="walk-index" class="walk-index" aria-live="polite">00 / 00</span>
+            <button type="button" id="walk-next" aria-label="다음 작품" title="다음 작품"><span aria-hidden="true">›</span></button>
           </div>
           <div class="walk-progress-track" aria-hidden="true"><span id="walk-progress-fill"></span></div>
         </section>
@@ -147,6 +149,7 @@
 
 
     <section class="review-board section-pad" id="reviews" role="tabpanel" aria-labelledby="tab-reviews" hidden>
+      <button type="button" class="reviews-return" id="close-reviews-overlay" aria-label="전시관으로 돌아가기"><span aria-hidden="true">×</span></button>
       <div class="container">
         <div class="section-heading-row">
           <div>
@@ -176,18 +179,7 @@
       </div>
     </section>
 
-    <section class="manifesto" id="about" aria-labelledby="about-title">
-      <div class="container gallery-about">
-        <h2 id="about-title">갤러리 소개</h2>
-        <p>오이붕 갤러리는 친구들이 직접 만든 게임을 전시하는 온라인 작품관입니다. 작품마다 다른 세계와 플레이어들의 감상을 함께 만나보세요.</p>
-      </div>
-    </section>
-
   </main>
-
-  <footer class="site-footer"><div class="container"><div class="footer-top"><a class="brand brand-footer" href="#top"><span class="brand-mark" aria-hidden="true"><span class="brand-core"></span></span><span class="brand-copy">오이붕 갤러리<span lang="en">OIBUNG GALLERY</span></span></a></div><div class="footer-bottom"><span>© <span id="year">2026</span> 오이붕 갤러리</span>
-    <button id="motion-toggle" class="motion-control" type="button" aria-label="애니메이션 줄이기" aria-pressed="false"><svg aria-hidden="true"><use href="#i-check"/></svg><span class="motion-control-label">움직임 줄이기</span></button>
-    <a href="#top">맨 위로 ↑</a></div></div></footer>
 
   <dialog class="detail-dialog" id="game-dialog" aria-labelledby="detail-title">
     <div class="dialog-inner">
