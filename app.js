@@ -149,6 +149,10 @@
     const playUrl = safeSourceUrl(game.playUrl);
     const cover = coverArt(game);
     return `<article class="game-card" data-game-id="${escapeHTML(game.id)}" tabindex="0" aria-label="${escapeHTML(game.title)} 작품 상세 페이지 열기">
+      <div class="walk-room" aria-hidden="true">
+        <span class="walk-back-wall"></span><span class="walk-side-left"></span><span class="walk-side-right"></span>
+        <span class="walk-ceiling"></span><span class="walk-floor"></span><span class="walk-spotlight"></span>
+      </div>
       <button type="button" class="game-cover" data-details="${escapeHTML(game.id)}" aria-label="${escapeHTML(game.title)} 상세 보기"><span class="artwork-image-window">${cover}</span></button>
       <div class="game-card-body" data-intro-tone="${escapeHTML(game.introTone ?? 'gallery')}"><div class="game-card-title-row"><div class="artwork-identity">
         <div class="artwork-caption"><span class="artwork-sequence">전시 ${String(displayIndex).padStart(2,'0')}</span><span class="game-genre">${escapeHTML(game.genre)}</span></div>
@@ -187,6 +191,11 @@
     allCount.textContent = formatCount(games.length);
   }
   function renderFeatured() {
+    // The horizontal museum is the primary exhibit; avoid a second auto-rotating hero.
+    if (document.getElementById('walk-gallery')) {
+      featuredSection.hidden = true;
+      return;
+    }
     const ranked = [...games].sort((a, b) => {
       const ar = reviewStat(a.id), br = reviewStat(b.id);
       const av = ar.count >= 2 ? ar.average * 2 + Math.log2(ar.count + 1) : 0;
