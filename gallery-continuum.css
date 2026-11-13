@@ -1,0 +1,310 @@
+/*
+ * OIBUNG GALLERY — ONE CONTINUOUS HALL (2026)
+ * All artwork shares ONE real corridor: walls, lighting and stone floor never
+ * swap on exhibit changes. The camera and pictures pan at different depths.
+ * Original reference photographs remain only a small, bounded sprite source
+ * for the guide's poses. No low-resolution scene stretched over the viewport.
+ */
+#games .walk-gallery-viewport{
+  isolation:isolate!important;
+  background:#0b090b!important;
+  overflow:hidden!important;
+  perspective:1800px!important;
+}
+#games .hall-continuum{
+  --hall-pan:0px;--hall-floor-pan:0px;
+  position:absolute;inset:0;
+  overflow:hidden;pointer-events:none;
+  background:#080708;z-index:0;
+}
+#games .hall-continuum::before{
+  content:"";position:absolute;inset:-3% -3%;
+  z-index:1;
+  background:
+    radial-gradient(ellipse 42% 36% at 46% 36%,#cb986d22,transparent 84%),
+    linear-gradient(90deg,#010203a6,transparent 18%,transparent 83%,#010203a6),
+    linear-gradient(180deg,#111011,#292527 59%,#151214);
+}
+#games .hall-continuum .hall-back-wall{
+  position:absolute;z-index:2;inset:0 16% 21%;
+  background:
+    radial-gradient(ellipse 45% 63% at 45% 28%,#e1b78c30,transparent 90%),
+    repeating-linear-gradient(90deg,transparent 0 398px,#07050765 400px,#f9eee414 403px,transparent 407px),
+    repeating-linear-gradient(0deg,transparent 0 155px,#ffffff055 156px,transparent 160px),
+    linear-gradient(110deg,#191719,#322c2d 48%,#1a1819);
+  background-position:0 0,var(--hall-pan,0px) 0,0 0,0 0;
+  box-shadow:inset 0 28px 40px #000b,inset 0 -18px 27px #050304dc;
+  transform:translateZ(-160px) scale(1.13);
+}
+#games .hall-continuum .hall-corridor-left,
+#games .hall-continuum .hall-corridor-right{
+  position:absolute;z-index:2;top:-4%;height:88%;width:19%;
+  background:
+    linear-gradient(90deg,#0b0a0d45,#0c090d6b),
+    var(--hall-photograph);
+  background-size:100% 100%,auto 115%;
+  filter:brightness(.48) saturate(.65);
+}
+#games .hall-continuum .hall-corridor-left{
+  left:-2%;background-position:center,0% center;
+  box-shadow:inset -35px 0 30px #000a;
+  clip-path:polygon(0 0,100% 0,94% 100%,0 100%);
+  transform-origin:right center;transform:perspective(1000px) rotateY(-12deg);
+}
+#games .hall-continuum .hall-corridor-right{
+  right:-2%;background-position:center,100% center;
+  box-shadow:inset 35px 0 30px #000c;
+  clip-path:polygon(0 0,100% 0,100% 100%,6% 100%);
+  transform-origin:left center;transform:perspective(1000px) rotateY(12deg);
+}
+#games .hall-continuum .hall-pillars{
+  position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:
+    repeating-linear-gradient(90deg,
+      transparent 0 270px,#0504058a 276px,
+      #52403a57 283px,#0c090a 300px,transparent 306px),
+    linear-gradient(90deg,#03030458,transparent 29%,transparent 74%,#03030478);
+  background-position:var(--hall-pan,0px) 0,center;
+  mask-image:linear-gradient(90deg,#000 0%,#000c 21%,transparent 36%,transparent 64%,#000d 81%,#000 100%);
+}
+#games .hall-continuum .hall-ceiling{
+  position:absolute;z-index:5;inset:0 0 auto;height:9%;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 310px,#ffffff0f 311px,transparent 314px),
+    linear-gradient(180deg,#080809,#171314 46%,#161315a5,transparent);
+  background-position:var(--hall-pan,0px) 0,0 0;
+  box-shadow:0 11px 24px #050404c0;
+}
+#games .hall-continuum .hall-light{
+  position:absolute;z-index:5;
+  top:0;left:43%;
+  height:77%;width:43%;
+  transform:translateX(-50%);
+  background:
+    radial-gradient(ellipse 38% 44% at 50% 28%,#ffe2b887,#d39e6840 49%,transparent 95%),
+    linear-gradient(180deg,#ffe8bf06,#ecd1ac05 31%,transparent 100%);
+  mix-blend-mode:screen;
+}
+#games .hall-continuum .hall-light::after{
+  content:"";position:absolute;top:1%;left:50%;
+  transform:translateX(-50%);
+  width:27px;height:12px;
+  background:linear-gradient(90deg,#0a090b,#5f513d 50%,#0c0b0c);
+  border:1px solid #beab815e;border-radius:0 0 6px 6px;
+  box-shadow:0 5px 11px #ffe5a748,0 7px 13px #000a;
+}
+#games .hall-continuum .hall-floor{
+  position:absolute;z-index:4;inset:auto -4% -9%;height:37%;
+  transform-origin:50% 0;
+  transform:perspective(1300px) rotateX(25deg) scale(1.1);
+  clip-path:polygon(0 22%,15% 0,85% 0,100% 22%,100% 100%,0 100%);
+  background:
+    radial-gradient(ellipse 28% 54% at 43% 0%,#e5bb843f,transparent 95%),
+    linear-gradient(180deg,#09080bb3,transparent 27%,#0b090bc2),
+    repeating-linear-gradient(90deg,transparent 0 180px,#09060890 182px,#b49d793b 184px,transparent 187px),
+    repeating-linear-gradient(0deg,transparent 0 105px,#151315b0 107px,#a9937532 109px,transparent 112px),
+    linear-gradient(94deg,#2a2829,#726966 49%,#222124);
+  background-position:0 0,0 0,var(--hall-floor-pan,0px) 0,0 0,0 0;
+  box-shadow:inset 0 38px 42px #040404ad;
+}
+#games .hall-continuum .hall-vignette{
+  position:absolute;z-index:7;inset:0;
+  background:
+    radial-gradient(ellipse 81% 79% at 42% 42%,transparent 40%,#03020371 87%,#020203ae 100%),
+    linear-gradient(180deg,#05040585,transparent 26%,transparent 70%,#05040582);
+}
+#games .walk-gallery .game-grid{
+  z-index:8!important;
+  will-change:transform;
+}
+/* Old low-resolution full-screen scene photos are intentionally gone. */
+#games .walk-gallery .museum-scene-photo{display:none!important}
+#games .walk-gallery .museum-scene-stage{
+  position:absolute!important;inset:0!important;
+  top:0!important;left:0!important;
+  width:100%!important;height:100%!important;
+  aspect-ratio:auto!important;
+  transform:none!important;
+  background:none!important;
+  isolation:isolate;
+  pointer-events:none;
+}
+#games .walk-gallery .game-card{
+  background:transparent!important;
+  overflow:hidden;
+}
+#games .walk-gallery .game-card::before{
+  content:"";position:absolute;z-index:1;pointer-events:none;
+  inset:15% 17% 20% 16%;
+  background:radial-gradient(ellipse 48% 53% at 43% 37%,#d9af8253,transparent 91%);
+  opacity:calc(.52 * var(--walk-focus,1));
+}
+/* One physical gold frame per real game — large, sharp, never duplicated
+   inside baked scenery. */
+#games .walk-gallery .museum-scene-stage .game-cover,
+#games .walk-gallery .game-card:hover .museum-scene-stage .game-cover,
+.motion-active #games .walk-gallery .museum-scene-stage .game-cover{
+  display:block!important;position:absolute!important;
+  z-index:12!important;pointer-events:auto!important;
+  left:44.2%!important;top:43%!important;
+  width:min(47%,790px)!important;height:auto!important;
+  max-height:64%!important;aspect-ratio:16/10!important;
+  transform:translate(calc(-50% + var(--walk-shift,0px)),-50%)
+    perspective(1800px) rotateY(var(--walk-yaw,0deg)) translateZ(32px)!important;
+  border:clamp(11px,1.22vw,21px) ridge #c49a59!important;
+  outline:1px solid #f7dc9a8a!important;
+  border-radius:1px!important;
+  background:#221c18!important;
+  box-shadow:
+    inset 0 0 0 2px #1e1408,
+    0 0 0 2px #37220e,
+    0 19px 34px #000b,
+    0 0 38px #efc78b68!important;
+  filter:brightness(calc(.89 + .11 * var(--walk-focus,1)))!important;
+  opacity:var(--scene-art-opacity,1)!important;
+  transition:box-shadow .18s ease,opacity .16s ease!important;
+  cursor:zoom-in;
+  overflow:visible!important;
+}
+#games .walk-gallery .museum-scene-stage .game-cover::before{
+  content:"";position:absolute;inset:-8px;z-index:13;pointer-events:none;
+  border:1px solid #e2be807d;
+  background:
+    radial-gradient(circle at 2% 2%,#ffe6b163,transparent 6%),
+    radial-gradient(circle at 98% 2%,#ffe6b163,transparent 6%),
+    radial-gradient(circle at 2% 98%,#ffe6b163,transparent 6%),
+    radial-gradient(circle at 98% 98%,#ffe6b163,transparent 6%);
+}
+#games .walk-gallery .museum-scene-stage .game-cover .artwork-image-window{
+  position:absolute!important;inset:4px!important;
+  display:block!important;
+  background:#11151b!important;border:2px solid #16110a!important;
+  overflow:hidden!important;
+}
+#games .walk-gallery .museum-scene-stage .game-cover :is(img,.game-thumbnail,.cover-art){
+  display:block!important;position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;
+  object-fit:contain!important;
+  image-rendering:auto!important;
+  filter:none!important;
+  transform:none!important;
+}
+#games .walk-gallery .museum-scene-stage .game-cover .cover-art{object-fit:cover!important}
+#games .walk-gallery .museum-scene-stage .game-cover::after{
+  content:"";position:absolute;inset:4px;z-index:16;pointer-events:none;
+  background:linear-gradient(153deg,#ffffff18,transparent 23%,transparent 82%,#08080839);
+}
+/* Visible quiet label; detailed description stays in the detail dialog. */
+#games .walk-gallery .game-card .game-card-body,
+#games .walk-gallery .game-card .game-card-body[data-intro-tone]{
+  display:block!important;z-index:12!important;
+  top:46%!important;left:73%!important;
+  width:clamp(96px,9.5vw,158px)!important;
+  max-height:80px!important;
+  overflow:hidden!important;
+  padding:9px 10px!important;
+  background:#161414dd!important;
+  border:1px solid #aa906563!important;
+  backdrop-filter:blur(5px);
+  transform:translate(calc(-50% + var(--walk-shift-plaque,0px)),-46%)!important;
+  box-shadow:0 7px 21px #000a!important;
+}
+#games .walk-gallery .game-card .game-card-body h3{
+  font:500 clamp(10px,1vw,13px)/1.35 'Noto Serif KR',serif!important;
+  color:#f0ddbd!important;
+}
+#games .walk-gallery .game-card .game-card-body :is(.artwork-caption,.game-meta,.game-card-desc,.game-card-score,.game-card-footer,.game-card-actions){display:none!important}
+#games .walk-gallery .game-card .game-card-body::after{display:none!important}
+/* Show the real guide as an independent stage actor, not baked into a room
+   image. Original existing 3 reference images supply her illustrated poses.
+   Crop gently and avoid stretching an entire 768px image over a 4K monitor. */
+#gallery-guide.gallery-guide{
+  position:fixed!important;
+  top:auto!important;left:auto!important;
+  right:clamp(0px,2vw,36px)!important;
+  bottom:-2dvh!important;
+  width:clamp(205px,22vw,400px)!important;
+  height:min(79dvh,690px)!important;
+  z-index:36!important;
+  transform:translate3d(var(--guide-camera-shift,0px),0,0)
+    rotate(var(--guide-lean,0deg)) scale(var(--guide-scale,1))!important;
+  pointer-events:none!important;
+  opacity:1!important;
+  transition:opacity .25s ease,transform .32s ease;
+}
+#gallery-guide .gallery-guide-avatar{
+  position:absolute!important;inset:0!important;display:block!important;
+  width:100%!important;height:100%!important;
+  opacity:1!important;pointer-events:auto!important;
+  border:0!important;background:transparent!important;
+  filter:drop-shadow(-9px 11px 12px #000a)!important;
+  transform:none!important;
+}
+#gallery-guide .gallery-guide-avatar::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:url("assets/gallery-scene-pose-1.avif");
+  background-repeat:no-repeat;
+  background-size:auto 100%;
+  background-position:90% 50%;
+  filter:contrast(1.11) saturate(1.055);
+  mask-image:linear-gradient(90deg,transparent 0%,#000 17%,#000 82%,transparent 100%);
+}
+#gallery-guide[data-guide-pose="present"] .gallery-guide-avatar::before{
+  background-image:url("assets/gallery-scene-pose-0.avif");
+  background-position:91% 50%;
+}
+#gallery-guide[data-guide-pose="welcome"] .gallery-guide-avatar::before{
+  background-image:url("assets/gallery-scene-pose-2.avif");
+  background-position:89% 50%;
+}
+#gallery-guide .gallery-guide-avatar img,
+#gallery-guide .gallery-guide-mark,
+#gallery-guide .gallery-guide-avatar::after{display:none!important}
+#gallery-guide.is-scene-changing .gallery-guide-avatar::before{
+  opacity:.55;filter:contrast(1.11) saturate(1.055);
+}
+#gallery-guide .gallery-guide-panel{
+  right:calc(100% + 10px)!important;left:auto!important;
+  bottom:17%!important;z-index:60!important;
+  width:min(355px,calc(100vw - 60px));
+}
+#games .walk-gallery .walk-rail-controls,
+#games .walk-gallery .walk-dots{
+  z-index:48!important;
+}
+#games .walk-gallery .walk-rail-controls button{
+  opacity:.72!important;
+  font-size:36px!important;
+  color:#d5b27e!important;
+  background:none!important;
+  border:0!important;
+  pointer-events:auto!important;
+}
+#games .walk-gallery .walk-rail-controls button:disabled{opacity:.18!important}
+#games .walk-gallery .walk-dots{opacity:1!important}
+#games .walk-gallery .walk-dots button{opacity:.7}
+#games .walk-gallery .walk-dots button[aria-current="true"]{opacity:1}
+@media(orientation:portrait){
+  #games .walk-gallery .museum-scene-stage .game-cover,
+  #games .walk-gallery .game-card:hover .museum-scene-stage .game-cover{
+    left:50%!important;top:34%!important;
+    width:min(79%,650px)!important;max-height:44%!important;
+  }
+  #games .walk-gallery .game-card .game-card-body{
+    left:31%!important;top:65%!important;width:min(33%,170px)!important;
+  }
+  #gallery-guide.gallery-guide{
+    width:min(44vw,240px)!important;height:min(43dvh,420px)!important;
+    right:0!important;bottom:0!important;
+  }
+  #gallery-guide .gallery-guide-panel{
+    right:4px!important;bottom:100%!important;
+    max-height:52dvh;
+  }
+  #games .hall-continuum .hall-back-wall{inset:0 7% 21%}
+  #games .hall-continuum .hall-corridor-left,
+  #games .hall-continuum .hall-corridor-right{width:9%}
+}
+@media(prefers-reduced-motion:reduce){
+  #gallery-guide.gallery-guide{transition:none!important}
+}
