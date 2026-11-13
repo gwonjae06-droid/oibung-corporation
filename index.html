@@ -17,7 +17,8 @@
   <link rel="stylesheet" href="motion.css?v=gallery-motion-1">
   <link rel="stylesheet" href="gallery-museum.css?v=museum-room-1">
   <link rel="stylesheet" href="gallery-wood.css?v=wood-gallery-1">
-  <script src="gallery-theme.js?v=wood-gallery-1"></script>
+  <link rel="stylesheet" href="gallery-worlds.css?v=gallery-worlds-1">
+  <script src="gallery-theme.js?v=gallery-worlds-1"></script>
   <script src="games.js" defer></script>
   <script src="community-config.js" defer></script>
   <script src="app.js?v=museum-frame-1" defer></script>
@@ -48,9 +49,17 @@
       </a>
       <div class="header-actions">
         <a class="gallery-about-link" href="#about">갤러리 소개</a>
-        <button type="button" class="theme-toggle" id="gallery-theme-toggle" aria-pressed="false" title="누르면 나무 전시관으로 변경">
-          <span class="theme-toggle-swatch" aria-hidden="true"></span><span class="theme-toggle-label">나무 테마</span>
-        </button>
+        <label class="theme-picker" for="gallery-theme-select">
+          <span class="theme-picker-label">전시관</span>
+          <span class="theme-picker-dot" aria-hidden="true"></span>
+          <select id="gallery-theme-select" aria-label="전시관 테마 선택">
+            <option value="stone">회색 미술관</option>
+            <option value="wood">나무 전시관</option>
+            <option value="space">우주 전시관</option>
+            <option value="temple">신전 전시관</option>
+            <option value="deepsea">심해 전시관</option>
+          </select>
+        </label>
         <button type="button" class="menu-toggle icon-button" id="menu-toggle" aria-expanded="false" aria-label="메뉴 열기"><svg><use href="#i-menu"/></svg></button>
       </div>
     </div>
