@@ -251,3 +251,46 @@ html[data-gallery-mode="dark"] #games .world-all-games>summary{background:#34473
  #games .world-enter{order:1;flex:0 0 auto;min-width:113px}
  #games .world-hint{display:none}
 }
+
+
+/* The original catalog detail dialog becomes a themed interior rather than a
+   second gameplay system. Actual screenshots, ratings and controls stay intact. */
+#game-dialog .world-interior-banner{display:none}
+#game-dialog[data-world-theme] .world-interior-banner{
+  --interior-ink:#f9e8d1;--interior-wall:#39464d;--interior-trim:#d6b284;
+  display:flex;align-items:center;gap:16px;
+  padding:17px clamp(14px,3vw,30px);
+  background:var(--interior-wall);color:var(--interior-ink);
+  border-top:4px solid var(--interior-trim);
+  border-bottom:4px solid var(--interior-trim);
+  box-shadow:inset 0 0 0 3px #11182450;
+  font-family:'Noto Sans KR',system-ui,sans-serif
+}
+#game-dialog[data-world-theme] .world-interior-crest{
+  display:grid;place-items:center;
+  width:50px;height:50px;flex:0 0 50px;
+  border:4px solid var(--interior-trim);background:#17283280;
+  color:var(--interior-trim);font:bold 25px monospace
+}
+#game-dialog[data-world-theme] .world-interior-banner>div{min-width:0;flex:1}
+#game-dialog[data-world-theme] .world-interior-banner small{
+  display:block;font:bold 10px/1.4 monospace;letter-spacing:.12em;color:var(--interior-trim)
+}
+#game-dialog[data-world-theme] .world-interior-banner strong{
+  display:block;margin-top:4px;
+  font:900 clamp(19px,2.6vw,30px)/1.3 'Noto Sans KR',system-ui,sans-serif;
+  color:var(--interior-ink);overflow-wrap:anywhere
+}
+#game-dialog .world-interior-pixels{font:bold 24px/1 monospace;opacity:.5;white-space:nowrap}
+#game-dialog[data-world-theme="castle"] .world-interior-banner{--interior-wall:#403248;--interior-trim:#d09191}
+#game-dialog[data-world-theme="arena"] .world-interior-banner{--interior-wall:#6a5044;--interior-trim:#f1d095}
+#game-dialog[data-world-theme="duel"] .world-interior-banner{--interior-wall:#343f69;--interior-trim:#f1b6b5}
+#game-dialog[data-world-theme="tactics"] .world-interior-banner{--interior-wall:#3a554c;--interior-trim:#a7cf9a}
+#game-dialog[data-world-theme="cat"] .world-interior-banner{--interior-wall:#865c7f;--interior-trim:#f9d6c2}
+#game-dialog[data-world-theme="studio"] .world-interior-banner{--interior-wall:#345968;--interior-trim:#edd09d}
+#game-dialog[data-world-theme="tower"] .world-interior-banner{--interior-wall:#625674;--interior-trim:#f3d6a2}
+@media(max-width:600px){
+ #game-dialog[data-world-theme] .world-interior-banner{gap:10px;padding:12px}
+ #game-dialog[data-world-theme] .world-interior-crest{width:35px;height:35px;flex-basis:35px;font-size:17px;border-width:2px}
+ #game-dialog .world-interior-pixels{display:none}
+}
