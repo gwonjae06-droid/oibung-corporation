@@ -17,7 +17,8 @@
     '</button>',
     '<section class="gallery-room-map-panel" id="gallery-room-map-panel" aria-label="전시 지도" hidden>',
       '<h2>전시실 안내</h2>',
-      '<p>작품을 선택하면 해당 전시실로 이동합니다.</p>',
+      '<p>성의 중앙 로비와 2층에 흩어진 액자들을 찾아보세요.</p>',
+      '<canvas class="gallery-hub-schematic" width="320" height="218" role="img" aria-label="중앙 로비 평면도. 황금 점은 액자, 민트 점은 내 위치입니다." hidden></canvas>',
       '<ol class="gallery-room-map-list"></ol>',
     '</section>'
   ].join('');
@@ -26,13 +27,74 @@
   const toggle = dock.querySelector('.gallery-room-map-toggle');
   const panel = dock.querySelector('.gallery-room-map-panel');
   const list = dock.querySelector('.gallery-room-map-list');
-  let buttons = [];
-  let activeIndex = 0;
+  const schematic=dock.querySelector('.gallery-hub-schematic');
+  let layout=[],visitor=null;
+  let buttons=[];
+  let activeIndex=0;
+  function paintSchematic(){
+    if(!layout.length){schematic.hidden=true;return;}
+    schematic.hidden=false;
+    const ctx=schematic.getContext('2d');
+    if(!ctx)return;
+    const W=schematic.width,H=schematic.height,s=9.2;
+    const X=x=>W/2+x*s,Z=z=>H/2+z*s;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#141a21';ctx.fillRect(0,0,W,H);
+    ctx.lineWidth=3;ctx.strokeStyle='#c3a779';
+    ctx.fillStyle='#293a42';
+    ctx.fillRect(X(-9.6),Z(-9.6),19.2*s,19.2*s);
+    ctx.strokeRect(X(-9.6),Z(-9.6),19.2*s,19.2*s);
+    // Main floor, arch doorway, 2nd level and real staircase.
+    ctx.fillStyle='#39545a';ctx.fillRect(X(-7.8),0,15.6*s,Z(-9.6));
+    ctx.strokeStyle='#c4a575';ctx.beginPath();
+    ctx.moveTo(X(-3.4),Z(-9.6));ctx.lineTo(X(3.4),Z(-9.6));ctx.stroke();
+    ctx.fillStyle='#725d8b8f';
+    ctx.fillRect(X(5.55),Z(-6.65),(9.3-5.55)*s,(1.88+6.65)*s);
+    ctx.fillStyle='#baa777';
+    ctx.fillRect(X(5.55),Z(1.88),(9.3-5.55)*s,(6.38-1.88)*s);
+    for(let i=0;i<10;i++){
+      ctx.strokeStyle='#dec795';ctx.lineWidth=.7;
+      const z=6.38-i*.45;
+      ctx.beginPath();ctx.moveTo(X(5.55),Z(z));ctx.lineTo(X(9.3),Z(z));ctx.stroke();
+    }
+    ctx.strokeStyle='#caa66c';ctx.lineWidth=2;ctx.beginPath();
+    ctx.arc(X(0),Z(2.3),2.40*s,0,Math.PI*2);ctx.stroke();
+    // Paintings are positioned using the exact dynamic world coordinates.
+    const painted=[];
+    layout.forEach((p,i)=>{
+      if(p.z<-10){painted.push(i);return;}
+      const x=X(p.x),y=Z(p.z);
+      ctx.fillStyle=i===activeIndex?'#fff1c3':'#d7ad65';
+      ctx.beginPath();ctx.arc(x,y,i===activeIndex?5.4:3.6,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#17232b';ctx.font='700 9px sans-serif';
+      ctx.textAlign='center';ctx.fillText(String(i+1),x,y-8);
+    });
+    if(painted.length){
+      ctx.fillStyle='#d2bf98';ctx.font='600 11px sans-serif';ctx.textAlign='center';
+      ctx.fillText('안쪽 전시 복도  '+painted.length+'점',W/2,13);
+    }
+    if(visitor&&visitor.room==='hall'){
+      const x=X(Math.max(-10,Math.min(10,visitor.x)));
+      const y=Z(Math.max(-10,Math.min(10,visitor.z)));
+      ctx.fillStyle='#7ee3ca';ctx.beginPath();ctx.arc(x,y,5.1,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#152e31';ctx.lineWidth=1.8;ctx.stroke();
+      ctx.strokeStyle='#caffed';ctx.lineWidth=2.1;ctx.beginPath();
+      const yaw=visitor.yaw||0;
+      ctx.moveTo(x,y);
+      ctx.lineTo(x-Math.sin(yaw)*11,y-Math.cos(yaw)*11);
+      ctx.stroke();
+    }
+    ctx.fillStyle='#e3d5bb';ctx.font='600 11px sans-serif';
+    ctx.textAlign='left';ctx.fillText('◇ 로비',13,H-12);
+    ctx.fillStyle='#9adcca';ctx.textAlign='right';ctx.fillText('● 나',W-13,H-12);
+  }
+
 
   function openMap(open) {
     panel.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
     if (open) {
+      paintSchematic();
       (buttons[activeIndex] || buttons[0])?.focus({ preventScroll: true });
     } else {
       toggle.focus({ preventScroll: true });
@@ -46,6 +108,7 @@
       button.setAttribute('aria-current', active ? 'location' : 'false');
       button.parentElement.classList.toggle('is-current', active);
     });
+    if(!panel.hidden)paintSchematic();
   }
 
   function syncRooms() {
@@ -106,6 +169,14 @@
   });
   document.addEventListener('oibung-page-changed', () => {
     if (!panel.hidden) openMap(false);
+  });
+  document.addEventListener('oibung-gallery-layout',event=>{
+    layout=Array.isArray(event.detail?.placements)?event.detail.placements:[];
+    if(!panel.hidden)paintSchematic();
+  });
+  document.addEventListener('oibung-gallery-player-motion',event=>{
+    visitor=event.detail||null;
+    if(!panel.hidden)paintSchematic();
   });
   new MutationObserver(syncRooms).observe(grid, { childList: true });
   syncRooms();
