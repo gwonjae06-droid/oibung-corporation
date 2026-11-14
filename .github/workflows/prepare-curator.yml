@@ -1,0 +1,26 @@
+name: Prepare approved curator sprites
+on:
+  push:
+    branches: [main]
+    paths: [assets/curator-poses.png, .github/workflows/prepare-curator.yml, tools/prepare_curator.py]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install Pillow
+      - run: python tools/prepare_curator.py
+      - run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets gallery-scenes.js docs/CURATOR_ASSET_AUDIT.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'assets: install approved curator poses and prune unused art'
+            git push origin HEAD:main
+          fi
