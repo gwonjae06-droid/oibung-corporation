@@ -37,7 +37,7 @@
   let createAnimeCurator = null;
   let vrmCuratorModule;
   try {
-    vrmCuratorModule = await import('./gallery-vrm-curator.js?v=vrm-sculpt-1');
+    vrmCuratorModule = await import('./gallery-vrm-curator.js?v=vrm-sculpt-2');
   } catch (error) {
     console.warn('[3D Gallery] Licensed VRoid loader unavailable; retaining illustrated fallback.',error);
   }
