@@ -32,14 +32,18 @@
     console.warn('[3D Gallery] Three.js could not load. Using the original exhibition.');
     return;
   }
-  // The old primitive character is retired. Once the CC0 VRoid loads, use
-  // the smooth skinned mesh and textured face for every gallery exhibit.
+  // Dedicated gallery-owned sculpt: no external VRM URL, no cross-origin
+  // model or duplicated Three.js runtime. A real organic BufferGeometry actor.
   let createAnimeCurator = null;
-  let vrmCuratorModule;
+  let sculptImportError = null;
   try {
-    vrmCuratorModule = await import('./gallery-vrm-curator.js?v=vrm-sculpt-4');
-  } catch (error) {
-    console.warn('[3D Gallery] Licensed VRoid loader unavailable; retaining illustrated fallback.',error);
+    const localSculpt = await import('./gallery-mint-curator.js?v=mint-sculpt-2');
+    if(typeof localSculpt.createMintCurator !== 'function')
+      throw new Error('Mint curator export is missing');
+    createAnimeCurator = (_three,opts)=>localSculpt.createMintCurator(_three,opts);
+  } catch(error){
+    sculptImportError=error;
+    console.error('[3D Gallery] Local sculpt import failed; illustrated fallback will remain:',error);
   }
   let renderer;
   try {
@@ -446,11 +450,11 @@
       // A themed curator is physically stationed alongside this artwork.
       const costume=costumeKey(game);
       if(createAnimeCurator){
-        // Every exhibit has its own real three-dimensional adult-proportioned
-        // anime curator, positioned beside the artwork and facing the aisle.
+        // Each exhibit gets a locally sculpted mint-haired curator with real
+        // continuous face, body and hairstyle meshes (not a remote VRM).
         let rig;
         try { rig=createAnimeCurator(THREE,{costume,mobile}); }
-        catch(error){console.warn('[3D Gallery] Sculpted curator creation failed; falling back to artwork.',error);}
+        catch(error){console.warn('[3D Gallery] Organic curator creation failed; showing illustrated stand-in.',error);}
         if(rig){
           const model=rig.group;
           model.position.set(side*3.62,0,z-1.73);
@@ -805,59 +809,15 @@
   });
   // The 2D guide panel visibility is deliberately independent of 3D NPCs.
   new MutationObserver(()=>build()).observe(grid,{childList:true});
-  // A failure must never leave invisible characters. The 2D stand-ins are
-  // present immediately, and are replaced atomically only when the VRM is ready.
-  const curatorStatus=document.createElement('div');
-  curatorStatus.className='gallery-3d-curator-status';
-  curatorStatus.setAttribute('role','status');
-  curatorStatus.hidden=true;
-  curatorStatus.innerHTML='<span class="gallery-3d-curator-message"></span><button type="button" hidden>다시 시도</button>';
-  surface.appendChild(curatorStatus);
-  const curatorMessage=curatorStatus.querySelector('.gallery-3d-curator-message');
-  const curatorRetry=curatorStatus.querySelector('button');
-  let curatorAttempt=0;
-  async function loadRealCurator(){
-    const attempt=++curatorAttempt;
-    if(!vrmCuratorModule?.getVRMCuratorFactory){
-      curatorStatus.hidden=false;
-      curatorMessage.textContent='3D 비서 모듈을 불러오지 못했습니다. 일러스트로 표시합니다.';
-      curatorRetry.hidden=false;
-      return;
-    }
-    curatorStatus.hidden=false;
-    curatorRetry.hidden=true;
-    curatorMessage.textContent='3D 비서 모델을 불러오는 중 · 일러스트 안내는 계속 볼 수 있어요';
-    try{
-      const factory=await vrmCuratorModule.getVRMCuratorFactory();
-      if(attempt!==curatorAttempt)return;
-      // Create one clone in advance. Bad source material/skeleton must not
-      // replace a functioning illustrated exhibition.
-      const probe=factory({costume:'knight'});
-      if(!probe?.group)throw new Error('VRM factory returned no model');
-      let actualGeometry=false;
-      probe.group.traverse(node=>{
-        if((node.isSkinnedMesh || node.isMesh) && node.geometry?.attributes?.position?.count) actualGeometry=true;
-      });
-      probe.dispose?.();
-      if(!actualGeometry)throw new Error('VRM model contained no renderable mesh');
-      createAnimeCurator=(_THREE,opts)=>factory(opts);
-      if(!build())throw new Error('VRM world reconstruction failed');
-      curatorStatus.hidden=true;
-    }catch(error){
-      console.warn('[3D Gallery] VRoid unavailable. Keeping illustrated curators:',error);
-      createAnimeCurator=null;
-      curatorMessage.textContent='3D 비서 로딩 실패 · 일러스트로 표시 중';
-      curatorRetry.hidden=false;
-    }
+  // The new model ships with the site; there is no 18 MB remote model
+  // fetch and no perpetual "3D model loading failed" loop.
+  if(sculptImportError){
+    const note=document.createElement('div');
+    note.className='gallery-3d-curator-status';
+    note.setAttribute('role','status');
+    note.textContent='3D 비서를 표시하지 못해 기존 일러스트를 사용 중입니다.';
+    surface.appendChild(note);
   }
-  curatorRetry.addEventListener('click',async()=>{
-    if(!vrmCuratorModule){
-      try{vrmCuratorModule=await import('./gallery-vrm-curator.js?v=vrm-sculpt-4&retry='+Date.now());}
-      catch(error){console.warn('[3D Gallery] Retry import failed:',error);}
-    }
-    loadRealCurator();
-  });
-  loadRealCurator();
   new MutationObserver(()=>applyLighting()).observe(document.documentElement,{
     attributes:true,attributeFilter:['data-gallery-mode']
   });
