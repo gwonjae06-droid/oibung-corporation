@@ -22,8 +22,8 @@
 
   let THREE;
   for (const url of [
-    'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js',
-    'https://unpkg.com/three@0.180.0/build/three.module.js'
+    'https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js',
+    'https://unpkg.com/three@0.169.0/build/three.module.js'
   ]) {
     try { THREE = await import(url); break; }
     catch (error) { console.warn('[3D Gallery] Module source unavailable:', url, error); }
