@@ -877,6 +877,83 @@
     }
   }
 
+  function paintingLocation(index){
+    // Castle paintings are intentionally discoverable from several directions.
+    if(index===0)return {x:-4.28,y:2.72,z:-9.34,angle:0,nx:0,nz:1,upper:false};
+    if(index===1)return {x:4.28,y:2.72,z:-9.34,angle:0,nx:0,nz:1,upper:false};
+    if(index===2)return {x:-9.35,y:2.77,z:-3.50,angle:Math.PI/2,nx:1,nz:0,upper:false};
+    if(index===3)return {x:-9.35,y:2.77,z:3.75,angle:Math.PI/2,nx:1,nz:0,upper:false};
+    if(index===4)return {x:9.35,y:4.30,z:-3.30,angle:-Math.PI/2,nx:-1,nz:0,upper:true};
+    if(index===5)return {x:9.35,y:4.30,z:1.05,angle:-Math.PI/2,nx:-1,nz:0,upper:true};
+    const n=index-6,side=n%2===0?-1:1;
+    return {x:side*7.52,y:2.85,z:-16.2-Math.floor(n/2)*7.1,
+      angle:side<0?Math.PI/2:-Math.PI/2,
+      nx:side<0?1:-1,nz:0,upper:false};
+  }
+  function floorHeightAt(x,z){
+    if(sceneMode==='inside')return 0;
+    // A short staircase rises to a walkable upper gallery along the east wall.
+    if(x>=5.55 && x<=9.30){
+      if(z>=-6.65 && z<=1.88)return 1.60;
+      if(z>1.88 && z<=6.38){
+        const step=Math.floor((6.38-z)/.45)+1;
+        return Math.max(0,Math.min(1.60,step*.16));
+      }
+    }
+    return 0;
+  }
+  function stageWall(parent,x,y,z,w,h,d,mat,collidable=true){
+    const block=elBox(parent,x,y,z,w,h,d,mat);
+    if(collidable){
+      walls.push({
+        minX:x-w/2,maxX:x+w/2,
+        minZ:z-d/2,maxZ:z+d/2,
+        minY:y-h/2,maxY:y+h/2
+      });
+      cameraWalls.push(new THREE.Box3(
+        new THREE.Vector3(x-w/2,y-h/2,z-d/2),
+        new THREE.Vector3(x+w/2,y+h/2,z+d/2)));
+    }
+    return block;
+  }
+  function blockedAt(x,z){
+    const feet=groundY+jumpHeight;
+    for(const b of walls){
+      if(feet>b.maxY+.05||feet+1.45<b.minY)continue;
+      const closestX=THREE.MathUtils.clamp(x,b.minX,b.maxX);
+      const closestZ=THREE.MathUtils.clamp(z,b.minZ,b.maxZ);
+      if((x-closestX)**2+(z-closestZ)**2<playerRadius*playerRadius)return true;
+    }
+    return false;
+  }
+  function moveWithCollision(dx,dz){
+    const x=camera.position.x,z=camera.position.z;
+    const candidateX=x+dx,candidateZ=z+dz;
+    const currentGround=floorHeightAt(x,z);
+    // Prevent magically hopping up to the raised gallery from below.
+    const canStep=(cx,cz)=>jumpHeight>.3||
+      floorHeightAt(cx,cz)<=currentGround+.24;
+    const nextX=canStep(candidateX,z)&&!blockedAt(candidateX,z)?candidateX:x;
+    const nextZ=canStep(nextX,candidateZ)&&!blockedAt(nextX,candidateZ)
+      ?candidateZ:z;
+    camera.position.x=nextX;
+    camera.position.z=nextZ;
+    if(nextX===x)moveVelX=0;
+    if(nextZ===z)moveVelZ=0;
+  }
+  function tiledHubFloor(){
+    const canvas=makeCanvas(512,512),ctx=canvas.getContext('2d');
+    for(let row=0;row<8;row++)for(let col=0;col<8;col++){
+      ctx.fillStyle=(row+col)%2===0?'#d5c7ac':'#46525b';
+      ctx.fillRect(col*64,row*64,64,64);
+      ctx.fillStyle=(row+col)%2===0?'#ffffff14':'#03080a15';
+      ctx.fillRect(col*64+5,row*64+5,54,54);
+      ctx.strokeStyle='#977f69b0';ctx.lineWidth=2;
+      ctx.strokeRect(col*64+.5,row*64+.5,63,63);
+    }
+    return canvasTexture(canvas);
+  }
+
   function build(){
     if(rebuilding)return false;
     rebuilding=true;
