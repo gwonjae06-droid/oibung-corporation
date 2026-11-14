@@ -1,0 +1,38 @@
+name: Gallery scene smoke tests
+on:
+  push:
+    branches: ["feat/hybrid-scene-museum-v1"]
+    paths:
+      - "gallery-scenes.js"
+      - "gallery-scenes.css"
+      - "tests/museum.smoke.cjs"
+      - ".github/workflows/museum-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Playwright and Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Run gallery interactions at three viewport sizes
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 > /tmp/oibung-gallery-smoke.log 2>&1 &
+          sleep 2
+          node tests/museum.smoke.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gallery-screenshots-${{ github.run_number }}
+          path: artifacts/*.png
+          retention-days: 14

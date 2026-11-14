@@ -1,0 +1,124 @@
+name: Render museum scenes
+on:
+  push:
+    branches: ["feat/hybrid-scene-museum-v1"]
+    paths: ["tools/render_museum.py", ".github/workflows/render-museum.yml"]
+  workflow_dispatch:
+    inputs:
+      quality:
+        description: Preview or final render
+        required: true
+        default: final
+        type: choice
+        options: [preview, final]
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 65
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
+      - name: Reuse verified images from the previous successful render
+        id: restore
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p assets/museum
+          if gh run download 43570476998 --name oibung-museum-1 --dir assets/museum; then
+            echo "restored=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "restored=no" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install Blender and image encoder
+        if: steps.restore.outputs.restored != 'yes'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender xvfb ffmpeg libgl1-mesa-dri
+          blender --version | head -3
+      - name: Render 24 camera-locked architectural backgrounds
+        if: steps.restore.outputs.restored != 'yes'
+        env:
+          QUALITY: ${{ github.event.inputs.quality || 'final' }}
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          mkdir -p build/museum
+          if ! xvfb-run -a -s "-screen 0 1920x1080x24" blender -b -t 4 --python tools/render_museum.py -- --out build/museum --quality "$QUALITY" --engine eevee; then
+            echo "Headless Eevee unavailable; falling back to CPU Cycles."
+            blender -b -t 4 --python tools/render_museum.py -- --out build/museum --quality "$QUALITY" --engine cycles
+          fi
+          test "$(find build/museum -maxdepth 1 -name '*.png' | wc -l)" -eq 24
+      - name: Encode AVIF
+        if: steps.restore.outputs.restored != 'yes'
+        run: |
+          mkdir -p assets/museum
+          for png in build/museum/*.png; do
+            name="$(basename "$png" .png)"
+            ffmpeg -hide_banner -loglevel error -y -i "$png" -frames:v 1 -c:v libaom-av1 -still-picture 1 -crf 28 -cpu-used 6 "assets/museum/$name.avif"
+          done
+          test "$(find assets/museum -maxdepth 1 -name '*.avif' | wc -l)" -eq 24
+      - name: Register rendered scenes (only after successful rendering)
+        run: |
+          cat > gallery-scene-assets.js <<'EOF'
+          /* Auto-generated when the 24 Blender assets are available. */
+          window.OIBUNG_SCENE_ASSETS = Object.freeze({
+            entrance: {
+              light:{desktop:'assets/museum/entrance-light.avif',mobile:'assets/museum/entrance-light-mobile.avif'},
+              dark:{desktop:'assets/museum/entrance-dark.avif',mobile:'assets/museum/entrance-dark-mobile.avif'}
+            },
+            lobby: {
+              light:{desktop:'assets/museum/lobby-light.avif',mobile:'assets/museum/lobby-light-mobile.avif'},
+              dark:{desktop:'assets/museum/lobby-dark.avif',mobile:'assets/museum/lobby-dark-mobile.avif'}
+            },
+            left: {
+              light:{desktop:'assets/museum/left-light.avif',mobile:'assets/museum/left-light-mobile.avif'},
+              dark:{desktop:'assets/museum/left-dark.avif',mobile:'assets/museum/left-dark-mobile.avif'}
+            },
+            right: {
+              light:{desktop:'assets/museum/right-light.avif',mobile:'assets/museum/right-light-mobile.avif'},
+              dark:{desktop:'assets/museum/right-dark.avif',mobile:'assets/museum/right-dark-mobile.avif'}
+            },
+            focus: {
+              light:{desktop:'assets/museum/focus-light.avif',mobile:'assets/museum/focus-light-mobile.avif'},
+              dark:{desktop:'assets/museum/focus-dark.avif',mobile:'assets/museum/focus-dark-mobile.avif'}
+            },
+            special: {
+              light:{desktop:'assets/museum/special-light.avif',mobile:'assets/museum/special-light-mobile.avif'},
+              dark:{desktop:'assets/museum/special-dark.avif',mobile:'assets/museum/special-dark-mobile.avif'}
+            }
+          });
+          EOF
+      - name: Verify generated image assets
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          files = list(Path("assets/museum").glob("*.avif"))
+          assert len(files) == 24, len(files)
+          for path in files:
+              assert 1000 < path.stat().st_size < 4_000_000, path
+          print("Validated", len(files), "AVIF scenes")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oibung-museum-${{ github.run_number }}
+          path: assets/museum/*.avif
+          retention-days: 14
+      - name: Commit rendered files back to the feature branch
+        if: github.ref_name == 'feat/hybrid-scene-museum-v1'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/museum gallery-scene-assets.js
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: pre-render museum backgrounds [skip ci]"
+            # The contributor branch may have changed while rendering.
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME"
+            git push origin HEAD:"$GITHUB_REF_NAME"
+          fi
