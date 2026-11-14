@@ -173,22 +173,22 @@
     }
     // Large readable eyes and a single little smile; the character faces -Z.
     for(const side of [-1,1]){
-      sphere(bodyPivot,side*.196,1.237,-.427,.071,.109,.035,dark);
-      sphere(bodyPivot,side*.210,1.276,-.462,.023,.033,.008,light);
+      sphere(bodyPivot,side*.196,1.237,-.494,.071,.109,.040,dark);
+      sphere(bodyPivot,side*.210,1.276,-.534,.023,.033,.012,light);
       sphere(bodyPivot,side*.325,1.073,-.385,.081,.046,.021,blush);
     }
     const smile=new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-.10,.952,-.481),
-      new THREE.Vector3(0,.927,-.509),
-      new THREE.Vector3(.10,.952,-.481)]);
+      new THREE.Vector3(-.10,.952,-.520),
+      new THREE.Vector3(0,.927,-.535),
+      new THREE.Vector3(.10,.952,-.520)]);
     bodyPivot.add(new THREE.Mesh(
       new THREE.TubeGeometry(smile,12,.013,6,false),dark));
     // Neck scarf and glowing leaf crest distinguish this from any existing
     // platform-game protagonist.
-    const scarf=new THREE.Mesh(new THREE.TorusGeometry(.385,.075,9,mobile?16:26),gold);
-    scarf.rotation.x=Math.PI/2;scarf.position.y=.93;
+    const scarf=new THREE.Mesh(new THREE.TorusGeometry(.494,.066,9,mobile?16:26),gold);
+    scarf.rotation.x=Math.PI/2;scarf.position.y=.90;
     bodyPivot.add(scarf);
-    sphere(bodyPivot,0,.83,-.497,.12,.18,.065,gold);
+    sphere(bodyPivot,0,.83,-.528,.12,.18,.065,gold);
     const cap=sphere(bodyPivot,0,1.62,.0,.31,.13,.31,pale);
     sphere(bodyPivot,.04,1.79,0,.11,.20,.09,gold).rotation.z=-.45;
     const leaf=sphere(bodyPivot,-.13,1.87,-.04,.22,.071,.13,mint);
