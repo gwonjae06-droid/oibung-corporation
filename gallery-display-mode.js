@@ -26,7 +26,7 @@
       button.setAttribute('aria-pressed', String(chosen));
     }
     const color = document.querySelector('meta[name="theme-color"]');
-    if (color) color.setAttribute('content', mode === 'dark' ? '#202830' : '#c6c0b8');
+    if (color) color.setAttribute('content', mode === 'dark' ? '#050607' : '#c6c0b8');
     if (persist) {
       try { window.localStorage.setItem(key, mode); }
       catch { /* Mode remains usable in private browsing. */ }
