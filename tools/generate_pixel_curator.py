@@ -41,7 +41,7 @@ def haunted(base, intensity):
     """A deformed version of the SAME black-haired, vested, burgundy-tied curator."""
     w,h=base.size
     pad=22
-    result=Image.new("RGBA",(w+2*pad,h+14))
+    result=Image.new("RGBA",(w+2*pad,h+42))
     # Keep clothing/hair identity and recolor to desaturated moonlight.
     original=base.copy()
     pixels=original.load()
