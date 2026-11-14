@@ -5,7 +5,13 @@ const host=document.getElementById('gallery-3d'),grid=document.getElementById('g
 const root=document.documentElement,S={index:0,phase:'tour',moves:0,power:0,threat:-1,torch:true,hidden:false,sound:false},human='assets/pixel/curator-neutral.png';let games=[],focus=null,pending=false,audio=null,gain=null,swipe=null;
 host.innerHTML=`<section class="bk-stage" data-curator-art="loading" aria-label="전시관"><header class="bk-top"><span>OIBUNG GALLERY</span><div><button data-act="list">작품 목록</button><button data-act="night">소등 체험</button><button data-act="exit" hidden>일반 관람 복귀</button><button data-act="sound" aria-pressed="false">환경음 꺼짐</button></div></header><div class="bk-room"><div class="bk-light" aria-hidden="true"></div><button class="bk-frame" data-act="detail"><img alt=""><span class="bk-fallback">OTHER WORLDS</span><span class="bk-plaque"></span></button><img class="bk-human" alt="안내 비서" src="${human}"><div class="bk-monster" aria-hidden="true"><img class="bk-monster-sprite" alt="" src="assets/pixel/curator-monster-1.png"></div></div><nav class="bk-nav" aria-label="회랑 이동"><button data-act="prev" aria-label="이전 회랑">←</button><button data-act="next" aria-label="다음 회랑">→</button></nav><footer class="bk-caption"><span class="bk-count"></span><p role="status"></p><button data-act="talk">비서에게 묻기</button><button data-act="hide" hidden>액자 뒤에 숨기</button><button data-act="power" hidden>비상전원 복구</button><button data-act="torch" hidden>손전등 끄기</button></footer><dialog class="bk-dialog" aria-labelledby="bk-warning"><h2 id="bk-warning">소등 후 관람 안내</h2><p>비서가 달라진 모습을 보이며 어둠 속에서 위협으로 등장합니다. 길을 막는 실루엣이 보이면 숨거나 다른 방향으로 이동하세요. 비상전원을 찾으면 복구할 수 있습니다. 언제든 일반 관람으로 돌아올 수 있습니다. 환경음은 기본 꺼짐이며 번쩍임은 없습니다.</p><button data-act="start">소등 시작</button><button data-act="cancel">취소</button></dialog><dialog class="bk-list" aria-labelledby="bk-list-title"><h2 id="bk-list-title">작품 목록</h2><div></div><button data-act="close-list">닫기</button></dialog></section>`;
 const $=s=>host.querySelector(s),stage=$('.bk-stage'),room=$('.bk-room'),frame=$('.bk-frame'),img=$('.bk-frame img'),plaque=$('.bk-plaque'),caption=$('.bk-caption p'),notice=$('.bk-dialog'),list=$('.bk-list'),actor=$('.bk-human'),monster=$('.bk-monster'),creature=$('.bk-monster-sprite');
-const PIXEL_BASE='assets/pixel/';let curatorPose='neutral',blackoutTimer=null,distortionTimer=null;
+const PIXEL_BASE='assets/pixel/';const RULES=window.OIBUNG_BLACKOUT_RULES;
+if(!RULES)throw Error('OIBUNG_BLACKOUT_RULES missing: load gallery-blackout-rules.js first');
+let curatorPose='neutral',blackoutTimer=null,distortionTimer=null,blackoutGame=null,patrolTimer=null;
+function synchronizeBlackout(){if(!blackoutGame)return;S.index=blackoutGame.room;S.phase=blackoutGame.phase;S.moves=blackoutGame.turns;S.power=blackoutGame.powerRoom;S.torch=blackoutGame.torch;S.hidden=blackoutGame.hidden;S.threat=blackoutGame.monster;}
+function stopPatrol(){if(patrolTimer!==null){clearInterval(patrolTimer);patrolTimer=null;}}
+function beginPatrol(){stopPatrol();patrolTimer=setInterval(()=>{if(!blackoutGame||document.hidden||document.querySelector('dialog[open]'))return;RULES.tick(blackoutGame);synchronizeBlackout();render();},2400);}
+function blackoutAction(result){if(!result)return;const message=result.message||'';if(result.type==='restored'){restore();return;}synchronizeBlackout();render(message);}
 /* Artist-made atlas v3: four original full-body guide poses and four linked
    monster poses. Fallback stays intact until both real images are available. */
 const CURATOR_V3_BASE='assets/curator-v3/';
@@ -25,11 +31,22 @@ function splitCharacterAtlas(image){
  return sprites;
 }
 function loadCuratorV3(){
- const load=name=>new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error('Curator v3 not installed'));image.src=CURATOR_V3_BASE+name+'-atlas.webp';});
- Promise.all([load('guide'),load('monster')]).then(([human,monster])=>{
-  const humanFrames=splitCharacterAtlas(human),monsterFrames=splitCharacterAtlas(monster);
-  curatorV3={humanFrames,monsterFrames};stage.dataset.curatorArt='v3';render();
- }).catch(()=>{stage.dataset.curatorArt='legacy'; /* Only reveal fallback if the new art is genuinely missing. */ });
+ const v4='assets/curator-v4/';
+ const guide=['neutral','present','explain','alert'].map(x=>v4+'guide-'+x+'.webp');
+ const monster=['disturbed','approach','lunge','watch'].map(x=>v4+'monster-'+x+'.webp');
+ const morph=Array.from({length:10},(_,i)=>v4+'morph-'+String(i).padStart(2,'0')+'.webp');
+ const read=src=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>{if(i.naturalHeight===512&&i.naturalWidth===288)resolve(i);else reject(Error('wrong v4 dimensions'));};i.onerror=reject;i.src=src;});
+ // A full preload prevents blank or half-loaded monster frames during pursuit.
+ Promise.all([...guide,...monster,...morph].map(read)).then(()=>{
+  curatorV3={humanFrames:guide,monsterFrames:monster,morphFrames:morph,quality:'v4'};
+  stage.dataset.curatorArt='v4';render();
+ }).catch(()=>{
+  const readOld=name=>new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=CURATOR_V3_BASE+name+'-atlas.webp';});
+  Promise.all([readOld('guide'),readOld('monster')]).then(([h,m])=>{
+   curatorV3={humanFrames:splitCharacterAtlas(h),monsterFrames:splitCharacterAtlas(m),morphFrames:null,quality:'v3'};
+   stage.dataset.curatorArt='v3';render();
+  }).catch(()=>{stage.dataset.curatorArt='legacy';});
+ });
 }
 
 const monsterCache=new Map([1,2].map(n=>{const src=PIXEL_BASE+'curator-monster-'+n+'.png';const img=new Image();img.src=src;img.addEventListener('load',()=>{if(creature.dataset.desired===src)creature.src=src;});return [src,img];}));
@@ -39,15 +56,46 @@ const btn=a=>$(`[data-act="${a}"]`),dark=()=>S.phase!=='tour';
 function mode(value){if(root.dataset.galleryMode!==value)root.dataset.galleryMode=value;document.querySelectorAll('[data-gallery-mode-choice]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.galleryModeChoice===value)));}
 function volume(){if(gain)gain.gain.setTargetAtTime(S.sound&&dark()&&!document.hidden?.valueOf()&&!document.querySelector('dialog[open]')?.open?.valueOf()?0.018:0,audio.currentTime,.3);}
 async function sound(){try{if(!audio){const A=window.AudioContext||window.webkitAudioContext;if(!A)throw Error('unsupported');audio=new A();gain=audio.createGain();gain.gain.value=0;gain.connect(audio.destination);for(const hz of[53,79]){const o=audio.createOscillator();o.type='sine';o.frequency.value=hz;o.connect(gain);o.start();}}await audio.resume();S.sound=!S.sound;btn('sound').textContent=S.sound?'환경음 켜짐':'환경음 꺼짐';btn('sound').setAttribute('aria-pressed',String(S.sound));volume();}catch{S.sound=false;caption.textContent='이 브라우저에서는 환경음을 켤 수 없습니다. 소리 없이 관람할 수 있습니다.';}}
-function restore(){cancelBlackout();curatorPose='neutral';Object.assign(S,{phase:'tour',moves:0,threat:-1,torch:true,hidden:false});mode('light');render('조명이 돌아왔습니다. 놀라셨나요? 저는 여기 있었습니다.');}
-function enterDark(){Object.assign(S,{phase:'search',moves:0,threat:-1,torch:true,hidden:false,power:games.length>1?(S.index+Math.ceil(games.length/2))%games.length:0});mode('dark');render('옆에 있던 비서가 사라졌습니다. 비상전원을 찾으세요.');}
+function restore(){
+ cancelBlackout();stopPatrol();blackoutGame=null;curatorPose='neutral';
+ Object.assign(S,{phase:'tour',moves:0,threat:-1,torch:true,hidden:false});
+ mode('light');render('조명이 돌아왔습니다. 낮의 갤러리로 돌아왔습니다.');
+}
+function enterDark(){
+ cancelBlackout();
+ blackoutGame=RULES.begin(games.length,S.index);
+ synchronizeBlackout();mode('dark');
+ render('옆에 있던 비서가 사라졌습니다. 퓨즈를 찾아 비상전원을 복구하세요.');
+ beginPatrol();
+}
 function start(){
- cancelBlackout();if(S.phase!=='tour')return;
+ cancelBlackout();
+ if(S.phase!=='tour'||!games.length)return;
  curatorPose='alert';stage.dataset.blackoutPending='true';
  render('잠깐만요. 방금 복도 끝에서…');
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches||root.classList.contains('motion-off');
- distortionTimer=setTimeout(()=>{distortionTimer=null;if(stage.dataset.blackoutPending!=='true')return;stage.dataset.transformation='true';actor.src=curatorV3?curatorV3.monsterFrames[0]:PIXEL_BASE+'curator-corrupt.png';caption.textContent='비서의 얼굴이 잠깐 낯설게 일그러집니다…';},reduced?0:760);
- blackoutTimer=setTimeout(()=>{blackoutTimer=null;cancelBlackout();enterDark();},reduced?0:1350);
+ if(reduced){enterDark();return;}
+ // Ten separately authored output frames are preloaded before beginning.
+ blackoutTimer=setTimeout(()=>{
+   blackoutTimer=null;
+   if(stage.dataset.blackoutPending!=='true')return;
+   const frames=curatorV3?.morphFrames;
+   stage.dataset.transformation='true';
+   if(!frames?.length){
+     actor.src=curatorV3?curatorV3.monsterFrames[0]:PIXEL_BASE+'curator-corrupt.png';
+     distortionTimer=setTimeout(()=>{distortionTimer=null;if(stage.dataset.blackoutPending==='true')enterDark();},760);
+     return;
+   }
+   let frameIndex=0;
+   function nextFrame(){
+     if(stage.dataset.blackoutPending!=='true')return;
+     actor.src=frames[frameIndex++];
+     if(frameIndex===4)caption.textContent='…비서의 모습이 뒤틀립니다.';
+     if(frameIndex<frames.length){distortionTimer=setTimeout(nextFrame,80);}
+     else{distortionTimer=setTimeout(()=>{distortionTimer=null;if(stage.dataset.blackoutPending==='true')enterDark();},90);}
+   }
+   nextFrame();
+ },320);
 }
 function refresh(){const api=window.OIBUNG_CATALOG;if(!api?.listGames)return;const old=games[S.index]?.id;const visible=new Set([...grid.querySelectorAll('.game-card')].filter(c=>!c.hidden&&c.style.display!=='none').map(c=>c.dataset.gameId));games=(api.listGames()||[]).filter(g=>visible.has(String(g.id)));const i=games.findIndex(g=>g.id===old);S.index=i<0?Math.min(S.index,Math.max(0,games.length-1)):i;S.power=Math.min(S.power,Math.max(0,games.length-1));if(S.threat>=games.length)S.threat=-1;render();}
 const greetings=[g=>`어서 오세요. 「${g.title}」부터 소개하겠습니다.`,g=>`이번 회랑은 「${g.title}」입니다. 편하게 살펴보세요.`,g=>`조금 더 둘러보시겠어요? 「${g.title}」 앞입니다.`,g=>`여기서는 서두르지 않으셔도 됩니다. 「${g.title}」입니다.`];
