@@ -477,3 +477,19 @@ html.motion-off #gallery-3d .museum-stage.museum-flicker .museum-blackout{animat
 
 /* Once original Blender scenery is installed, don't draw surrogate architecture on top. */
 #gallery-3d .museum-view.museum-has-render .museum-architecture{opacity:0}
+
+/* Essential entrance action and text remain readable in blackout mode. */
+#gallery-3d .museum-entry-copy{z-index:16}
+#gallery-3d [data-gallery-mode="dark"] .museum-curator img{
+  filter:brightness(.63) contrast(1.08) drop-shadow(0 15px 20px #000e);
+}
+#gallery-3d [data-gallery-mode="dark"] .museum-emergency-light{
+  animation:museum-emergency-pulse 6s ease-in-out infinite;
+}
+@keyframes museum-emergency-pulse{
+  0%,100%{opacity:.38}50%{opacity:.85}
+}
+@media(prefers-reduced-motion:reduce){
+  #gallery-3d [data-gallery-mode="dark"] .museum-emergency-light{animation:none}
+}
+html.motion-off #gallery-3d [data-gallery-mode="dark"] .museum-emergency-light{animation:none}
