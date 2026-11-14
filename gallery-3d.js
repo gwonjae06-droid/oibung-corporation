@@ -158,14 +158,80 @@
     const bg=ctx.createLinearGradient(0,0,1024,640);
     bg.addColorStop(0,palette[0]);bg.addColorStop(1,palette[1]);
     ctx.fillStyle=bg;ctx.fillRect(0,0,1024,640);
-    ctx.save();ctx.globalAlpha=.35;ctx.strokeStyle=palette[2];ctx.lineWidth=4;
-    for(let i=0;i<12;i++){ctx.beginPath();ctx.ellipse(512,330,120+i*48,58+i*25,i*.14,0,Math.PI*2);ctx.stroke();}
+    // An original, high-resolution exhibit poster for titles without a
+    // supplied thumbnail. Distinct motifs evoke each game without fake screenshots.
+    const identity=[game.id,name,game.english,game.genre].join(' ').toLowerCase();
+    ctx.save();
+    ctx.translate(512,224);
+    if(/오든|oden|elden|소울/.test(identity)){
+      const halo=ctx.createRadialGradient(0,0,25,0,0,230);
+      halo.addColorStop(0,'#070b11');halo.addColorStop(.59,'#090f19');
+      halo.addColorStop(.64,'#ffe1a0');halo.addColorStop(.73,'#8f4629');
+      halo.addColorStop(1,'#00000000');
+      ctx.fillStyle=halo;ctx.beginPath();ctx.arc(0,0,230,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#13161e';ctx.beginPath();
+      ctx.moveTo(-260,197);ctx.lineTo(-225,-30);ctx.lineTo(-170,-48);ctx.lineTo(-130,185);
+      ctx.lineTo(-78,55);ctx.lineTo(-20,195);ctx.lineTo(55,9);ctx.lineTo(100,198);
+      ctx.lineTo(160,-45);ctx.lineTo(215,-24);ctx.lineTo(264,197);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#ecd7aa';ctx.fillRect(-6,-144,12,296);
+      ctx.beginPath();ctx.moveTo(-35,-137);ctx.lineTo(35,-137);ctx.lineTo(0,-201);ctx.closePath();ctx.fill();
+      ctx.fillRect(-66,37,132,10);
+    }else if(/아레나|arena|ballfight|핀볼/.test(identity)){
+      ctx.strokeStyle='#98f3de';ctx.lineWidth=12;
+      for(let i=0;i<9;i++){ctx.beginPath();ctx.moveTo(-400,-220+i*46);ctx.quadraticCurveTo(-40,0,400,218-i*47);ctx.stroke();}
+      [[-160,-25,116,'#ffbb62'],[160,38,143,'#73e2f0'],[15,-146,49,'#ff71c4']].forEach(entry=>{
+        const [x,y,r,color]=entry;
+        const shine=ctx.createRadialGradient(x-r*.3,y-r*.4,4,x,y,r);
+        shine.addColorStop(0,'#ffffff');shine.addColorStop(.25,color);
+        shine.addColorStop(1,'#16252a');
+        ctx.fillStyle=shine;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+      });
+    }else if(/퍼리|furry|furi|메이드|cat/.test(identity)){
+      ctx.fillStyle='#e8c8ed';ctx.beginPath();
+      ctx.moveTo(-135,27);ctx.lineTo(-160,-182);ctx.lineTo(-43,-108);
+      ctx.quadraticCurveTo(0,-143,43,-108);
+      ctx.lineTo(160,-182);ctx.lineTo(135,27);
+      ctx.bezierCurveTo(181,193,-180,193,-135,27);ctx.fill();
+      ctx.fillStyle='#614061';ctx.beginPath();ctx.ellipse(-51,14,20,36,0,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.ellipse(51,14,20,36,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#f7e7f7';ctx.beginPath();ctx.ellipse(0,82,55,34,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#b86789';ctx.beginPath();ctx.moveTo(-13,68);ctx.lineTo(13,68);ctx.lineTo(0,86);ctx.closePath();ctx.fill();
+    }else if(/오이챔스|ochams|duel|대전/.test(identity)){
+      [-1,1].forEach(side=>{
+        ctx.save();ctx.rotate(side*.53);
+        ctx.fillStyle=side<0?'#b7d8ef':'#f4b3a2';
+        ctx.fillRect(side*72-8,-175,16,310);ctx.fillRect(side*72-87,40,175,17);
+        ctx.beginPath();ctx.moveTo(side*72-25,-170);ctx.lineTo(side*72+25,-170);ctx.lineTo(side*72,-236);ctx.closePath();ctx.fill();
+        ctx.restore();
+      });
+      ctx.fillStyle='#e1e7f1';ctx.font='800 106px Georgia,serif';ctx.textAlign='center';ctx.fillText('VS',0,90);
+    }else if(/대학전선|campus|frontier|전략|strategy/.test(identity)){
+      ctx.strokeStyle='#ddc897';ctx.lineWidth=5;
+      for(let k=-6;k<=6;k++){
+        ctx.beginPath();ctx.moveTo(k*65,-180);ctx.lineTo(k*65+240,196);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(-400,k*47);ctx.lineTo(410,k*47);ctx.stroke();
+      }
+      ctx.fillStyle='#ead4a6';
+      [[-150,-52,98],[22,-92,155],[178,-18,77]].forEach(t=>{
+        ctx.fillRect(t[0],75-t[2],t[2]*.7,t[2]);
+        ctx.fillRect(t[0]-7,73-t[2],t[2]*.7+14,9);
+      });
+    }else{
+      ctx.globalAlpha=.55;ctx.strokeStyle=palette[2];ctx.lineWidth=5;
+      for(let i=0;i<12;i++){
+        ctx.beginPath();ctx.ellipse(0,0,90+i*32,45+i*17,i*.14,0,Math.PI*2);ctx.stroke();
+      }
+    }
     ctx.restore();
+    const cardShade=ctx.createLinearGradient(0,428,0,640);
+    cardShade.addColorStop(0,'#111417c0');cardShade.addColorStop(1,'#080b0dfb');
+    ctx.fillStyle=cardShade;ctx.fillRect(0,428,1024,212);
     ctx.fillStyle='#fdf4e5';ctx.textAlign='center';
-    ctx.font='700 79px "Noto Serif KR",serif';
-    textLines(ctx,name,920,2).forEach((line,i)=>ctx.fillText(line,512,310+i*90));
-    ctx.font='500 29px "Noto Sans KR",sans-serif';
-    ctx.fillText('OIBUNG GALLERY · '+String(index+1).padStart(2,'0'),512,550);
+    ctx.font='700 68px "Noto Serif KR",serif';
+    textLines(ctx,name,920,2).forEach((line,i)=>ctx.fillText(line,512,512+i*70));
+    ctx.font='500 22px "Noto Sans KR",sans-serif';
+    ctx.fillStyle='#dfc59b';
+    ctx.fillText('OIBUNG GALLERY  /  EXHIBIT '+String(index+1).padStart(2,'0'),512,621);
     const tex=canvasTexture(c);
     const src=String(game.thumbnailUrl || '');
     if(/^https:\/\//i.test(src) || /^assets\//.test(src)) {
