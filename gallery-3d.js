@@ -22,8 +22,8 @@
 
   let THREE;
   for (const url of [
-    'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js',
-    'https://unpkg.com/three@0.170.0/build/three.module.js'
+    'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js',
+    'https://unpkg.com/three@0.180.0/build/three.module.js'
   ]) {
     try { THREE = await import(url); break; }
     catch (error) { console.warn('[3D Gallery] Module source unavailable:', url, error); }
@@ -32,11 +32,14 @@
     console.warn('[3D Gallery] Three.js could not load. Using the original exhibition.');
     return;
   }
+  // The old primitive character is retired. Once the CC0 VRoid loads, use
+  // the smooth skinned mesh and textured face for every gallery exhibit.
   let createAnimeCurator = null;
+  let vrmCuratorModule;
   try {
-    ({ createAnimeCurator } = await import('./gallery-anime-curator.js?v=anime-mesh-1'));
+    vrmCuratorModule = await import('./gallery-vrm-curator.js?v=vrm-sculpt-1');
   } catch (error) {
-    console.warn('[3D Gallery] Detailed 3D curator unavailable; retaining 2D fallback.', error);
+    console.warn('[3D Gallery] Licensed VRoid loader unavailable; retaining illustrated fallback.',error);
   }
   let renderer;
   try {
@@ -428,7 +431,7 @@
         const model=rig.group;
         model.position.set(side*3.67,0,z-2.42);
         model.rotation.y=side>0?-Math.PI/2+.17:Math.PI/2-.17;
-        model.scale.setScalar(1.055);
+        model.scale.setScalar(.97);
         world.add(model);
         avatarSprites.push({sprite:model,rig,costume,phase:i*1.17,y:0});
         const characterSpot=new THREE.SpotLight(0xffead0,0,6.7,Math.PI/6.8,.68,1.8);
@@ -611,7 +614,7 @@
       const allowGuide = !document.getElementById('gallery-guide')?.hidden;
       sprite.visible=close && allowGuide;
       if(!sprite.visible || reduced())return;
-      if(rig)rig.animate(time,phase,darkness);
+      if(rig)rig.animate(time,phase);
       else sprite.position.y=y+Math.sin(time*.0015+phase)*.028;
     });
     renderer.render(scene,camera);
@@ -751,6 +754,15 @@
     }).observe(guidePreference,{attributes:true,attributeFilter:['hidden']});
   }
   new MutationObserver(()=>build()).observe(grid,{childList:true});
+  // Load the model once asynchronously, then re-stage the display actors.
+  if(vrmCuratorModule?.getVRMCuratorFactory){
+    vrmCuratorModule.getVRMCuratorFactory().then(factory=>{
+      createAnimeCurator=(_THREE,opts)=>factory(opts);
+      build();
+    }).catch(error=>{
+      console.warn('[3D Gallery] VRoid model unavailable: keeping illustrated curators.',error);
+    });
+  }
   new MutationObserver(()=>applyLighting()).observe(document.documentElement,{
     attributes:true,attributeFilter:['data-gallery-mode']
   });
