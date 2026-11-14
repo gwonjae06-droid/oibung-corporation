@@ -978,87 +978,165 @@
     }
     surface.classList.remove('gallery-3d-empty');
     const total=next.length;
-    roomEnd=-9.4*total-12;
-    const length=7-roomEnd;
-    world=new THREE.Group();scene.add(world);
-    const mid=(7+roomEnd)*.5;
-    const wallTexture=stoneFloorTexture();
-    wallTexture.wrapS=wallTexture.wrapT=THREE.RepeatWrapping;
-    wallTexture.repeat.set(5,Math.max(2,total*3));
-    const floorMat=new THREE.MeshStandardMaterial({map:wallTexture,roughness:.86,color:0xddd1c1});
-    elBox(world,0,-.20,mid,11,.4,length,floorMat);
-    elBox(world,0,5.50,mid,11,.25,length,materials.plaster);
-    elBox(world,-5.50,2.7,mid,.34,5.4,length,materials.ivory);
-    elBox(world,5.50,2.7,mid,.34,5.4,length,materials.ivory);
-    elBox(world,0,2.7,roomEnd,.30,5.5,.3,materials.ivory);
-    elBox(world,0,2.7,7,.30,5.5,.3,materials.ivory);
-    elBox(world,-5.28,.38,mid,.20,.76,length,materials.oak);
-    elBox(world,5.28,.38,mid,.20,.76,length,materials.oak);
-    elBox(world,-5.35,4.92,mid,.19,.18,length,materials.gold);
-    elBox(world,5.35,4.92,mid,.19,.18,length,materials.gold);
-    elBox(world,0,5.38,mid,3.5,.08,length,materials.trim);
+    const rows=Math.max(0,Math.ceil((total-6)/2));
+    roomEnd=Math.min(-22.5,-16.2-(rows+1)*7.1);
+    world=new THREE.Group();world.name='오이붕 갤러리 · 성형 허브';
+    scene.add(world);
+    walls.length=0;cameraWalls.length=0;exhibitPlacements.length=0;
 
-    const signText=plaqueTexture('오이붕 갤러리','OIBUNG GALLERY');
-    const entrance=new THREE.Mesh(new THREE.PlaneGeometry(3.4,1.0),
-      new THREE.MeshStandardMaterial({map:signText,roughness:.75,emissive:0x5b4430,emissiveIntensity:.13}));
-    entrance.position.set(0,3.45,roomEnd+.22);
-    world.add(entrance);
-
-    for(let i=0;i<=total;i++){
-      const z=3-i*9.4;
-      [-1,1].forEach(side=>{
-        elCylinder(world,side*4.95,2.8,z,.24,.27,4.9,materials.ivory,10);
-        elBox(world,side*4.95,5.1,z,.85,.43,.85,materials.trim);
-        elBox(world,side*4.95,.33,z,.72,.65,.72,materials.plaster);
-      });
-      elBox(world,0,5.31,z,10.2,.15,.20,materials.trim);
-      elBox(world,0,5.25,z,1.5,.16,.64,materials.gold);
-      const lamp=elBox(world,0,5.11,z,1.1,.10,.35,
-        new THREE.MeshStandardMaterial({color:0xffd9a1,emissive:0xffca7a,emissiveIntensity:1.25}));
-      glowingFixtures.push(lamp.material);
-      const light=new THREE.PointLight(0xffe0af,0,10,2);
-      light.position.set(0,4.55,z);world.add(light);exhibitionLights.push(light);
-      if(i%3===0){
-        const exitCanvas=makeCanvas(512,170), ctx=exitCanvas.getContext('2d');
-        ctx.fillStyle='#150d0c';ctx.fillRect(0,0,512,170);
-        ctx.strokeStyle='#8c332d';ctx.lineWidth=10;ctx.strokeRect(8,8,496,154);
-        ctx.fillStyle='#f0b8aa';ctx.font='700 84px sans-serif';
-        ctx.textAlign='center';ctx.fillText('EXIT',256,119);
-        const exit=new THREE.Mesh(new THREE.PlaneGeometry(1.3,.43),
-          new THREE.MeshBasicMaterial({map:canvasTexture(exitCanvas),transparent:false,color:0xffffff}));
-        exit.position.set(0,4.85,z-.35);world.add(exit);
-        const lightR=new THREE.PointLight(0xc9302b,0,4.2,2);
-        lightR.position.set(0,4.3,z);world.add(lightR);emergencyLights.push(lightR);
+    // Main atrium: an original low-poly museum castle, not Nintendo geometry.
+    const checkered=tiledHubFloor();
+    checkered.wrapS=checkered.wrapT=THREE.RepeatWrapping;
+    checkered.repeat.set(2.5,2.5);
+    const floor=new THREE.MeshStandardMaterial({
+      map:checkered,color:0xf3ede2,roughness:.78,metalness:.04
+    });
+    const carpet=material(0x883d49,.05,.86);
+    const velvet=material(0x493f69,.02,.82);
+    const column=materials.ivory,stone=materials.plaster,accent=materials.gold;
+    const hallLength=19.3;
+    elBox(world,0,-.21,0,19.3,.42,19.3,floor);
+    elBox(world,0,7.48,0,19.3,.36,19.3,stone);
+    stageWall(world,-9.65,3.73,0,.30,7.45,hallLength,column);
+    stageWall(world,9.65,3.73,0,.30,7.45,hallLength,column);
+    stageWall(world,0,3.73,9.65,hallLength,7.45,.30,column);
+    // The back wall has an actual walkable arched opening.
+    stageWall(world,-6.55,3.73,-9.65,6.18,7.45,.30,column);
+    stageWall(world,6.55,3.73,-9.65,6.18,7.45,.30,column);
+    stageWall(world,0,6.69,-9.65,6.95,1.57,.35,column);
+    for(const side of [-1,1]){
+      elBox(world,side*9.28,.62,0,.19,1.18,19.0,materials.oak);
+      elBox(world,side*9.38,6.85,0,.15,.18,19.0,accent);
+      for(const z of [-7.85,7.85]){
+        elCylinder(world,side*8.38,3.45,z,.38,.47,6.83,column,mobile?10:16);
+        elBox(world,side*8.38,.33,z,1.15,.66,1.15,stone);
+        elBox(world,side*8.38,6.95,z,1.23,.48,1.23,accent);
       }
     }
+    // Ring relief, warm chandeliers and a carpeted circular museum seal.
+    const foyerSeal=new THREE.Mesh(new THREE.CylinderGeometry(2.48,2.48,.05,36),
+      material(0x293f46,.26,.65));
+    foyerSeal.position.set(0,.042,2.30);world.add(foyerSeal);
+    const sealRing=new THREE.Mesh(new THREE.TorusGeometry(2.38,.12,8,50),accent);
+    sealRing.rotation.x=Math.PI/2;sealRing.position.set(0,.082,2.30);
+    world.add(sealRing);
+    elBox(world,0,.043,-4.13,3.0,.045,7.5,carpet);
+    for(const z of [4.9,-4.4]){
+      const chandelier=new THREE.Group();chandelier.position.set(0,6.60,z);
+      world.add(chandelier);
+      const hoop=new THREE.Mesh(new THREE.TorusGeometry(1.18,.105,8,24),accent);
+      hoop.rotation.x=Math.PI/2;chandelier.add(hoop);
+      elCylinder(chandelier,0,.52,0,.045,.055,1.05,accent,8);
+      for(let j=0;j<8;j++){
+        const a=j*Math.PI/4;
+        const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.17,0),
+          new THREE.MeshStandardMaterial({color:0xfff1c9,emissive:0xffc481,
+            emissiveIntensity:darkness?0:1.25,roughness:.23}));
+        crystal.position.set(Math.cos(a)*1.15,-.15,Math.sin(a)*1.15);
+        chandelier.add(crystal);glowingFixtures.push(crystal.material);
+      }
+      const glow=new THREE.PointLight(0xffd8a7,0,15,1.65);
+      glow.position.set(0,5.85,z);world.add(glow);exhibitionLights.push(glow);
+    }
+    // The back arch leads to additional artwork halls when the catalog grows.
+    const arch=new THREE.Mesh(new THREE.TorusGeometry(3.03,.22,10,42,Math.PI),accent);
+    arch.position.set(0,4.30,-9.36);world.add(arch);
+    for(const side of [-1,1]){
+      elCylinder(world,side*3.06,2.35,-9.37,.30,.34,4.70,accent,12);
+    }
+    const titleTex=plaqueTexture('오이붕 갤러리','그림 속으로 뛰어드는 전시관');
+    const entranceSign=new THREE.Mesh(new THREE.PlaneGeometry(4.7,1.2),
+      new THREE.MeshStandardMaterial({map:titleTex,emissive:0x382719,
+        emissiveIntensity:.12,roughness:.70}));
+    entranceSign.position.set(0,5.92,9.34);
+    entranceSign.rotation.y=Math.PI;
+    world.add(entranceSign);
+
+    // The real staircase is walkable. Its upper landing holds artworks 5/6.
+    // Each step has a matching collision-support height in floorHeightAt.
+    for(let i=0;i<10;i++){
+      const top=(i+1)*.16;
+      const z=6.38-(i+.5)*.45;
+      elBox(world,7.45,top*.5,z,3.83,top,.455,column);
+      elBox(world,7.45,top+.025,z,3.74,.05,.43,carpet);
+    }
+    elBox(world,7.42,1.53,-2.42,3.84,.14,8.88,column);
+    elBox(world,7.42,1.625,-2.40,3.42,.05,8.80,velvet);
+    // Decorative railing protects the upper edge; ground-floor visitors
+    // cannot magically phase upwards through the platform.
+    for(const z of [-6.30,-4.7,-3.1,-1.5,.2,1.55]){
+      elCylinder(world,5.48,2.25,z,.065,.075,.92,accent,9);
+    }
+    stageWall(world,5.47,2.64,-2.38,.13,.22,8.58,accent);
+    for(const z of [2.0,4.3]){
+      elCylinder(world,5.50,.66,z,.17,.19,1.32,accent,9);
+    }
+
+    // Longer side galleries unfold from the rear arch, not by teleporting
+    // between disconnected art slides.
+    const rearLength=-9.44-roomEnd;
+    const rearMid=(-9.44+roomEnd)*.5;
+    const corridorTiles=stoneFloorTexture();
+    corridorTiles.wrapS=corridorTiles.wrapT=THREE.RepeatWrapping;
+    corridorTiles.repeat.set(3,Math.max(2,rearLength/6));
+    const corridorFloor=new THREE.MeshStandardMaterial({
+      map:corridorTiles,color:0xe5d6c2,roughness:.86
+    });
+    elBox(world,0,-.205,rearMid,15.8,.41,rearLength,corridorFloor);
+    elBox(world,0,7.34,rearMid,15.8,.27,rearLength,stone);
+    stageWall(world,-7.87,3.6,rearMid,.35,7.2,rearLength,column);
+    stageWall(world,7.87,3.6,rearMid,.35,7.2,rearLength,column);
+    stageWall(world,0,3.5,roomEnd,15.9,7.1,.34,column);
+    const beams=Math.max(1,Math.ceil(rearLength/7));
+    for(let j=0;j<beams;j++){
+      const z=-12.0-j*7.0;
+      if(z<roomEnd+1)break;
+      for(const side of [-1,1]){
+        elCylinder(world,side*7.25,3.14,z,.22,.28,6.20,column,10);
+        elBox(world,side*7.25,.36,z,.82,.72,.83,accent);
+        elBox(world,side*7.25,6.33,z,.87,.27,.9,accent);
+      }
+      elBox(world,0,7.02,z,15.1,.22,.31,accent);
+      const lamp=new THREE.PointLight(0xffd7a1,0,11,1.6);
+      lamp.position.set(0,5.85,z);world.add(lamp);exhibitionLights.push(lamp);
+      if(j%3===1){
+        const emergency=new THREE.PointLight(0xc83f37,0,4.3,2);
+        emergency.position.set(0,4.7,z);world.add(emergency);
+        emergencyLights.push(emergency);
+      }
+    }
+
     next.forEach((game,i)=>{
-      const side=i%2===0?1:-1;
-      const z=-4.3-i*9.4;
+      const loc=paintingLocation(i);
+      exhibitPlacements[i]=loc;
       const group=new THREE.Group();
-      group.position.set(side*5.28,2.83,z);
-      group.rotation.y=side>0 ? -Math.PI/2 : Math.PI/2;
+      group.position.set(loc.x,loc.y,loc.z);
+      group.rotation.y=loc.angle;
       world.add(group);
-      elBox(group,0,0,-.02,4.26,2.77,.13,materials.black);
+      // A framed painting sits flush against a real wall. No 2D assistant.
+      elBox(group,0,0,-.04,4.29,2.77,.14,materials.black);
       const painting=portalPainting(artworkTexture(game,i),i);
+      painting.userData.galleryIndex=i;
       paintings.push(painting);group.add(painting);
-      const frameMat=materials.gold;
-      elBox(group,0,1.27,.11,4.32,.20,.22,frameMat);
-      elBox(group,0,-1.27,.11,4.32,.20,.22,frameMat);
-      elBox(group,-2.02,0,.11,.22,2.72,.22,frameMat);
-      elBox(group,2.02,0,.11,.22,2.72,.22,frameMat);
-      const plaque=new THREE.Mesh(new THREE.PlaneGeometry(2.42,.72),
-        new THREE.MeshStandardMaterial({map:plaqueTexture(game.title,game.developer || game.genre || '작품 감상'),
-          roughness:.76,metalness:.04}));
-      plaque.position.set(0,-1.89,.09);plaque.userData.galleryIndex=i;
-      paintings.push(plaque);group.add(plaque);
-      const spot=new THREE.SpotLight(0xffe8b9,0,9,Math.PI/5,.72,1.7);
-      spot.position.set(side*4.1,4.9,z);
-      spot.target.position.set(side*5.0,2.7,z);
-      world.add(spot,spot.target);exhibitionLights.push(spot);
-      // The painting itself is the portal: no floating guide or NPC.
-      const lightArt=new THREE.PointLight(0xffc486,0,6,2);
-      lightArt.position.set(side*3.9,3.7,z);
-      world.add(lightArt);exhibitionLights.push(lightArt);
+      for(const side of [-1,1]){
+        elBox(group,side*2.06,0,.125,.21,2.73,.22,accent);
+      }
+      elBox(group,0,1.30,.125,4.31,.20,.22,accent);
+      elBox(group,0,-1.30,.125,4.31,.20,.22,accent);
+      const plaque=new THREE.Mesh(new THREE.PlaneGeometry(2.64,.67),
+        new THREE.MeshStandardMaterial({
+          map:plaqueTexture(game.title,game.developer||game.genre||'작품 감상'),
+          roughness:.77,metalness:.04,side:THREE.DoubleSide}));
+      plaque.position.set(0,-1.80,.125);
+      plaque.userData.galleryIndex=i;group.add(plaque);
+      // The framed works receive individually focused spotlights.
+      const lamp=new THREE.SpotLight(0xffe0ae,0,9.4,Math.PI/5,.68,1.75);
+      lamp.position.set(loc.x+loc.nx*1.7,loc.y+2.38,loc.z+loc.nz*1.7);
+      lamp.target.position.set(loc.x+loc.nx*.05,loc.y,loc.z+loc.nz*.05);
+      world.add(lamp,lamp.target);exhibitionLights.push(lamp);
+      const wash=new THREE.PointLight(0xffc68b,0,6,2);
+      wash.position.set(loc.x+loc.nx*1.4,loc.y+1.0,loc.z+loc.nz*1.4);
+      world.add(wash);exhibitionLights.push(wash);
     });
     const keep=next.findIndex(g=>g.id===previous);
     const roomIndex=previousRoomId
