@@ -74,6 +74,11 @@
   torch.position.set(0, -.10, .05);
   torch.target.position.set(0, -.13, -9);
   camera.add(torch, torch.target);
+  // Soft visitor-side fill reveals detailed facial topology/eyes when close.
+  // This is a museum bounce light, and turns completely off in blackout mode.
+  const portraitFill=new THREE.PointLight(0xffe3ca,2.1,6.5,2);
+  portraitFill.position.set(0,.24,-.4);
+  camera.add(portraitFill);
 
   const raycaster = new THREE.Raycaster();
   raycaster.far = 4.4;
@@ -464,7 +469,7 @@
           world.add(sprite);
           avatarSprites.push({sprite,costume,y:sprite.position.y,phase:i*1.17});
         }
-        const characterSpot=new THREE.SpotLight(0xffead0,0,6.7,Math.PI/6.8,.68,1.8);
+        const characterSpot=new THREE.SpotLight(0xffead0,0,7.5,Math.PI/6.2,.71,1.75);
         characterSpot.position.set(side*2.82,4.55,z-1.05);
         characterSpot.target.position.set(side*3.62,1.48,z-1.73);
         world.add(characterSpot,characterSpot.target);
@@ -528,6 +533,7 @@
     ambient.intensity=darkness?.008:.7;
     hemisphere.intensity=darkness?.018:1.45;
     sun.intensity=darkness?0:.95;
+    portraitFill.intensity=darkness?0:2.1;
     torch.intensity=darkness&&flashlightOn?17:0;
     renderer.toneMappingExposure=darkness?.80:1.12;
     exhibitionLights.forEach(light=>light.intensity=0);
