@@ -589,6 +589,7 @@
     portalOverlay.hidden=true;
     jumpHeight=0;jumpVelocity=0;queuedJump=null;
     camera.position.y=1.68;
+    reflectRoomUI();
     lastTime=performance.now();
   }
   function startPortal(kind,index){
@@ -600,6 +601,8 @@
     }
     keys.clear();joyX=joyY=0;joystickKnob.style.transform='';
     queuedJump=null;
+    const mapDock=document.querySelector('.gallery-room-map');
+    if(mapDock)mapDock.hidden=true;
     const startPosition=camera.position.clone();
     let endPosition=startPosition.clone();
     if(kind==='enter'){
@@ -636,7 +639,17 @@
     }
     if(!tr.swapped && elapsed>=410){
       tr.swapped=true;
-      const ok=performPortalSwap(tr.kind,tr.index);
+      let ok=false;
+      try{ok=performPortalSwap(tr.kind,tr.index);}
+      catch(error){
+        console.error('[3D Gallery] Portal swap failed; restoring the hall:',error);
+        if(pocketWorld)disposePocket();
+        sceneMode='hall';activeExhibit=-1;
+        if(world)world.visible=true;
+        savedHallPose=null;
+        camera.position.set(.18,1.68,-.95);yaw=-.55;pitch=0;
+        setOrientation();applyLighting();
+      }
       if(!ok){finishPortalTransition();return false;}
     }
     if(tr.swapped && tr.kind==='enter'){
@@ -721,8 +734,13 @@
     clearWorld();
     exhibits=next;
     if (!next.length){
+      sceneMode='hall';activeExhibit=-1;savedHallPose=null;
+      jumpHeight=0;jumpVelocity=0;queuedJump=null;
       surface.classList.add('gallery-3d-empty');
       focusLabel.textContent='전시 중인 작품이 없습니다';
+      roomCard.hidden=true;backButton.hidden=true;action.hidden=true;
+      const mapDock=document.querySelector('.gallery-room-map');
+      if(mapDock)mapDock.hidden=false;
       return true;
     }
     surface.classList.remove('gallery-3d-empty');
