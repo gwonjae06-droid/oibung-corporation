@@ -58,6 +58,16 @@ const fs=require('node:fs/promises');
      const danger=await page.locator('.bk-stage').getAttribute('data-danger');
      if(danger==='true'){
        assert.equal(await page.locator('.bk-monster').isVisible(),true);
+       const creatureDebug=await monster.evaluate(img=>{
+         const cs=getComputedStyle(img),host=getComputedStyle(img.parentElement);
+         const r=img.getBoundingClientRect(),p=img.parentElement.getBoundingClientRect();
+         return {src:img.src,naturalWidth:img.naturalWidth,naturalHeight:img.naturalHeight,
+           display:cs.display,visibility:cs.visibility,opacity:cs.opacity,
+           rect:{x:r.x,y:r.y,w:r.width,h:r.height},
+           parent:{x:p.x,y:p.y,w:p.width,h:p.height,display:host.display,opacity:host.opacity,zIndex:host.zIndex}};
+       });
+       console.log('CREATURE DEBUG '+label,JSON.stringify(creatureDebug));
+       assert.ok(creatureDebug.rect.w>20&&creatureDebug.rect.h>100,'Monster sprite must occupy visible screen');
        assert.match(await monster.getAttribute('src'),/curator-monster-[12]\.png$/);
        await page.screenshot({path:'artifacts/'+label+'-encounter.png',animations:'disabled'});
      }
