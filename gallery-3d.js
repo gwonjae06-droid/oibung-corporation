@@ -1339,6 +1339,10 @@
     surface.classList.toggle('gallery-3d-dark',darkness);
   }
   function updateNearbyLights(time){
+    if(darkness)torch.intensity=flashlightOn
+      ?16.5+.42*Math.sin(time*.0038):0;
+    if(time-lastLightCheck<130)return;
+    lastLightCheck=time;
     if(sceneMode==='inside'){
       exhibitionLights.forEach(light=>{light.intensity=0;light.visible=false});
       emergencyLights.forEach(light=>{light.intensity=0;light.visible=false});
@@ -1354,22 +1358,32 @@
     }
     if(darkness) {
       exhibitionLights.forEach(light=>{light.intensity=0;light.visible=false});
+      let emergencyCount=0;
       emergencyLights.forEach(light=>{
-        const near=Math.hypot(light.position.x-camera.position.x,
-          light.position.z-camera.position.z)<13;
+        const near=emergencyCount<(mobile?1:2) && Math.hypot(
+          light.position.x-camera.position.x,
+          light.position.z-camera.position.z)<10;
         light.visible=near;
-        light.intensity=near?(.42 + Math.sin(time*.0017+light.position.z)*.06):0;
+        light.intensity=near?(.35 + Math.sin(time*.0017+light.position.z)*.05):0;
+        if(near)emergencyCount++;
       });
       torch.intensity=flashlightOn?(16.5 + .45*Math.sin(time*.0038) + .12*Math.sin(time*.041)):0;
       portalSurfaces.forEach(({uniforms})=>{
         uniforms.uDim.value=flashlightOn?.48:.13;
       });
     } else {
+      const limit=mobile?3:5;
+      const lights=exhibitionLights.map(light=>({
+        light,distance:Math.hypot(light.position.x-camera.position.x,
+          light.position.z-camera.position.z)
+      })).filter(item=>item.distance<12.5);
+      lights.sort((a,b)=>a.distance-b.distance);
+      const selected=new Set(lights.slice(0,limit).map(item=>item.light));
       exhibitionLights.forEach(light=>{
-        const near=Math.hypot(light.position.x-camera.position.x,
-          light.position.z-camera.position.z)<12.5;
-        light.visible=near;
-        light.intensity=near?(light.isSpotLight?8.7:light.distance<=6?4.2:12.5):0;
+        const visible=selected.has(light);
+        light.visible=visible;
+        light.intensity=visible?(light.isSpotLight?7.0:
+          light.distance<=6?3.5:9.5):0;
       });
       emergencyLights.forEach(light=>{light.intensity=0;light.visible=false});
       portalSurfaces.forEach(({uniforms})=>{uniforms.uDim.value=1;});
