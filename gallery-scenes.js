@@ -30,7 +30,29 @@ function splitCharacterAtlas(image){
  }
  return sprites;
 }
-function loadCuratorV3(){
+async function loadCuratorV3(){
+ // New drawings: each pose is individually cropped from a 384×512 source
+ // pixel-cell, NOT an upscaled 228×408 v3 image.
+ const v5base='assets/curator-v5/';
+ const humanNames=['neutral','present','explain','alert'];
+ const monsterNames=['disturbed','approach','lunge','watch'];
+ const v5guides=humanNames.map(n=>v5base+'guide-'+n+'.webp');
+ const v5monsters=monsterNames.map(n=>v5base+'monster-'+n+'.webp');
+ const v5morph=Array.from({length:12},(_,i)=>v5base+'morph-'+String(i).padStart(2,'0')+'.webp');
+ const preflight=(src)=>new Promise((resolve,reject)=>{
+   const art=new Image();
+   art.onload=()=>art.naturalHeight===512&&art.naturalWidth>=80&&art.naturalWidth<=384?
+     resolve(art):reject(Error('Unexpected v5 sprite dimensions'));
+   art.onerror=()=>reject(Error('Missing v5 sprite'));
+   art.src=src;
+ });
+ try{
+   await Promise.all([...v5guides,...v5monsters,...v5morph].map(preflight));
+   curatorV3={humanFrames:v5guides,monsterFrames:v5monsters,morphFrames:v5morph,quality:'v5'};
+   stage.dataset.curatorArt='v5';render();return;
+ }catch(err){
+   // Retain the previous verified v4 art if v5 fails to load.
+ }
  const v4='assets/curator-v4/';
  const guide=['neutral','present','explain','alert'].map(x=>v4+'guide-'+x+'.webp');
  const monster=['disturbed','approach','lunge','watch'].map(x=>v4+'monster-'+x+'.webp');
@@ -91,7 +113,7 @@ function start(){
      if(stage.dataset.blackoutPending!=='true')return;
      actor.src=frames[frameIndex++];
      if(frameIndex===4)caption.textContent='…비서의 모습이 뒤틀립니다.';
-     if(frameIndex<frames.length){distortionTimer=setTimeout(nextFrame,80);}
+     if(frameIndex<frames.length){distortionTimer=setTimeout(nextFrame,curatorV3?.quality==='v5'?75:80);}
      else{distortionTimer=setTimeout(()=>{distortionTimer=null;if(stage.dataset.blackoutPending==='true')enterDark();},90);}
    }
    nextFrame();
@@ -131,7 +153,9 @@ function render(message){
  if(stage.dataset.transformation!=='true'&&actor.getAttribute('src')!==poseSrc)actor.src=poseSrc;
  actor.style.height=(small?[74,80,70,77]:[91,88,96,91])[variant]+'%';
  actor.style.bottom=(small?-4:-6)+'%';
- actor.style.transform=(S.index%2?'scaleX(-1) ':'')+'rotate('+[0,-1,1,0][variant]+'deg)';
+ actor.style.transform=curatorV3?.quality==='v5'?
+   (S.index%2?'scaleX(-1)':'none'):
+   ((S.index%2?'scaleX(-1) ':'')+'rotate('+[0,-1,1,0][variant]+'deg)');
  monster.style.left=S.index%2?'62%':'17%';
  monster.style.height=S.hidden?'38%':'72%';
  const which=encounter?2:Math.abs(S.moves)%4;
