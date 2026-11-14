@@ -74,7 +74,7 @@
           '</div>',
         '</div>',
         '<nav class="museum-movement" aria-label="전시관 탐험">',
-          '<button type="button" id="museum-back" aria-label="뒤로 이동">↓<span>돌아가기</span></button>',
+          '<button type="button" id="museum-back" aria-label="뒤로 이동">↓<span>뒤로</span></button>',
           '<button type="button" id="museum-left" aria-label="왼쪽으로 이동">←<span>이전</span></button>',
           '<button type="button" id="museum-forward" aria-label="앞으로 이동">↑<span>접근</span></button>',
           '<button type="button" id="museum-right" aria-label="오른쪽으로 이동">→<span>다음</span></button>',
