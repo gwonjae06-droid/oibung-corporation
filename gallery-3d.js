@@ -21,10 +21,15 @@
   if (!surface || !mount || !grid || !action) return;
 
   let THREE;
-  try {
-    THREE = await import('https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js');
-  } catch (error) {
-    console.warn('[3D Gallery] Three.js unavailable; keeping the accessible 2D exhibition.', error);
+  for (const url of [
+    'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js',
+    'https://unpkg.com/three@0.170.0/build/three.module.js'
+  ]) {
+    try { THREE = await import(url); break; }
+    catch (error) { console.warn('[3D Gallery] Module source unavailable:', url, error); }
+  }
+  if (!THREE) {
+    console.warn('[3D Gallery] Three.js could not load. Using the original exhibition.');
     return;
   }
   let renderer;
@@ -36,6 +41,7 @@
   }
   const mobile = matchMedia('(pointer:coarse)').matches;
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const reduced = () => reduceMotion.matches || document.documentElement.classList.contains('motion-off');
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.35 : 1.8));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -389,7 +395,7 @@
         const near=Math.abs(light.position.z-camera.position.z)<13;
         light.intensity=near?(.42 + Math.sin(time*.0017+light.position.z)*.06):0;
       });
-      torch.intensity=flashlightOn?17:0;
+      torch.intensity=flashlightOn?(16.5 + .45*Math.sin(time*.0038) + .12*Math.sin(time*.041)):0;
     } else {
       exhibitionLights.forEach(light=>{
         const dz=Math.abs(light.position.z-camera.position.z);
@@ -426,7 +432,7 @@
       stride+=dt*speed;
       lastMove=performance.now();
     }
-    camera.position.y=1.68+(reduceMotion.matches?0:Math.sin(stride*8)*.012*velocity);
+    camera.position.y=1.68+(reduced()?0:Math.sin(stride*8)*.012*velocity);
   }
   function targetedArt(){
     raycaster.setFromCamera(center,camera);
@@ -497,7 +503,7 @@
     if(hasEntered && time-lastCount>90){
       updateFocus();lastCount=time;
     }
-    if(!reduceMotion.matches){
+    if(!reduced()){
       avatarSprites.forEach(({sprite,y,phase})=>{sprite.position.y=y+Math.sin(time*.0015+phase)*.028;});
     }
     renderer.render(scene,camera);
@@ -505,13 +511,17 @@
   function isUserTyping(event){
     return !!event.target.closest?.('input,textarea,select,[contenteditable="true"],dialog,[role="dialog"],.gallery-room-map,#mobile-nav,.gallery-3d-hud,.page-switcher');
   }
+  function tryPointerLock(){
+    if(mobile || !renderer.domElement.requestPointerLock)return;
+    try{Promise.resolve(renderer.domElement.requestPointerLock()).catch(()=>{});}
+    catch(error){console.warn('[3D Gallery] Pointer lock unavailable; use drag-look.',error);}
+  }
   function start(){
     hasEntered=true;surface.classList.add('gallery-3d-entered');
     enter.blur();
     welcome.hidden=true;
     hint.textContent='WASD 이동 · 마우스로 둘러보기 · E 감상';
-    if(!mobile && renderer.domElement.requestPointerLock)
-      Promise.resolve(renderer.domElement.requestPointerLock()).catch(()=>{});
+    tryPointerLock();
   }
   enter.addEventListener('click',start);
   action.addEventListener('click',()=>openArtwork(Number(action.dataset.index)));
@@ -538,10 +548,26 @@
   document.addEventListener('pointerlockchange',()=>{
     surface.classList.toggle('gallery-3d-locked',document.pointerLockElement===renderer.domElement);
   });
+  let mouseDrag = null;
+  renderer.domElement.addEventListener('pointerdown',event=>{
+    if(mobile || event.button!==0 || document.pointerLockElement===renderer.domElement)return;
+    mouseDrag={x:event.clientX,y:event.clientY,moved:false};
+  });
+  document.addEventListener('pointerup',()=>{mouseDrag=null;});
   document.addEventListener('mousemove',event=>{
-    if(document.pointerLockElement!==renderer.domElement || paused())return;
-    yaw-=event.movementX*.0021;
-    pitch=THREE.MathUtils.clamp(pitch-event.movementY*.0018,-1.22,1.22);
+    if(paused())return;
+    if(document.pointerLockElement===renderer.domElement){
+      yaw-=event.movementX*.0021;
+      pitch=THREE.MathUtils.clamp(pitch-event.movementY*.0018,-1.22,1.22);
+      return;
+    }
+    if(mouseDrag && hasEntered){
+      const dx=event.clientX-mouseDrag.x,dy=event.clientY-mouseDrag.y;
+      if(Math.abs(dx)+Math.abs(dy)>4)mouseDrag.moved=true;
+      yaw-=dx*.003;
+      pitch=THREE.MathUtils.clamp(pitch-dy*.0027,-1.22,1.22);
+      mouseDrag.x=event.clientX;mouseDrag.y=event.clientY;
+    }
   });
   renderer.domElement.addEventListener('click',event=>{
     if(!hasEntered){start();return;}
@@ -551,8 +577,9 @@
     raycaster.setFromCamera(document.pointerLockElement===renderer.domElement?center:pointerRay,camera);
     const hits=raycaster.intersectObjects(paintings,false);
     if(hits.length){openArtwork(hits[0].object.userData.galleryIndex);return;}
-    if(document.pointerLockElement!==renderer.domElement)
-      Promise.resolve(renderer.domElement.requestPointerLock?.()).catch(()=>{});
+    if(document.pointerLockElement!==renderer.domElement && !mouseDrag?.moved)
+      tryPointerLock();
+    mouseDrag=null;
   });
 
   function joyUpdate(event){
