@@ -1,0 +1,47 @@
+name: Oibung World pixel side-scroll QA
+on:
+  push:
+    branches: ["feat/oibung-world-pixel-side-scroll"]
+    paths:
+      - "oibung-world.js"
+      - "oibung-world.css"
+      - "index.html"
+      - "app.js"
+      - "tests/oibung-world.cjs"
+      - ".github/workflows/oibung-world.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  world-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify pixel world source parses
+        run: |
+          node --check app.js
+          node --check oibung-world.js
+          node --check tests/oibung-world.cjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Test PC and mobile side-scroller
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/world-qa.log 2>&1 &
+          sleep 2
+          node tests/oibung-world.cjs
+      - name: Save visual screenshots
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: world-screenshots-${{ github.run_number }}
+          path: artifacts/*.png
+          retention-days: 14
+          if-no-files-found: warn
