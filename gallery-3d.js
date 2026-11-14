@@ -919,7 +919,7 @@
     if(x>=5.55 && x<=9.30){
       if(z>=-6.65 && z<=1.88)return 1.60;
       if(z>1.88 && z<=6.38){
-        const step=Math.floor((6.38-z)/.45)+1;
+        const step=Math.floor((6.38-z+.00001)/.45)+1;
         return Math.max(0,Math.min(1.60,step*.16));
       }
     }
