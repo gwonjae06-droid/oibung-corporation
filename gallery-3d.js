@@ -532,6 +532,143 @@
     return true;
   }
 
+
+  function reflectRoomUI(){
+    const inRoom=sceneMode==='inside' && exhibits[activeExhibit];
+    surface.classList.toggle('gallery-portal-inside',Boolean(inRoom));
+    backButton.hidden=!inRoom;
+    roomCard.hidden=!inRoom;
+    if(inRoom){
+      const game=exhibits[activeExhibit];
+      const theme=roomTheme(game);
+      roomTitle.textContent=game.title;
+      roomDescription.textContent=theme.name+' · '+theme.description;
+      focusLabel.textContent=game.title;
+      hint.textContent='작품 속 전시실 · E 작품 정보 · R 전시관 귀환';
+      action.hidden=false;
+      action.dataset.index=String(activeExhibit);
+      action.textContent='작품 정보 보기 · E';
+    }else{
+      action.textContent='작품 정보 보기 · E';
+      backButton.hidden=true;
+    }
+  }
+  function performPortalSwap(kind,index){
+    jumpHeight=0;jumpVelocity=0;queuedJump=null;
+    if(kind==='enter'){
+      if(!exhibits[index])return false;
+      savedHallPose={
+        x:camera.position.x,z:camera.position.z,yaw,pitch
+      };
+      if(!buildPocket(index))return false;
+      sceneMode='inside';activeExhibit=index;
+      world.visible=false;pocketWorld.visible=true;
+      camera.position.set(0,1.68,3.2);
+      yaw=0;pitch=0;
+    }else{
+      if(sceneMode!=='inside')return false;
+      sceneMode='hall';activeExhibit=-1;
+      world.visible=true;disposePocket();
+      const restore=savedHallPose||{x:0,z:-.95,yaw:-.55,pitch:0};
+      camera.position.set(restore.x,1.68,restore.z);
+      yaw=restore.yaw;pitch=restore.pitch;
+      savedHallPose=null;
+    }
+    reflectRoomUI();
+    setOrientation();
+    applyLighting();
+    updateFocus();
+    return true;
+  }
+  function finishPortalTransition(){
+    portalTransition=null;
+    surface.classList.remove('gallery-portal-busy');
+    portalOverlay.classList.remove('portal-return');
+    portalOverlay.hidden=true;
+    jumpHeight=0;jumpVelocity=0;queuedJump=null;
+    lastTime=performance.now();
+  }
+  function startPortal(kind,index){
+    if(!hasEntered||portalTransition||paused())return false;
+    if(kind==='enter' && (sceneMode!=='hall'||!exhibits[index]))return false;
+    if(kind==='exit' && sceneMode!=='inside')return false;
+    if(document.pointerLockElement===renderer.domElement){
+      document.exitPointerLock?.();
+    }
+    keys.clear();joyX=joyY=0;joystickKnob.style.transform='';
+    queuedJump=null;
+    portalTransition={kind,index,start:performance.now(),swapped:false};
+    portalCaption.textContent=kind==='enter'
+      ?exhibits[index].title:'오이붕 갤러리로 돌아갑니다';
+    portalOverlay.hidden=false;
+    portalOverlay.classList.toggle('portal-return',kind==='exit');
+    surface.classList.add('gallery-portal-busy');
+    if(reduced()){
+      performPortalSwap(kind,index);
+      finishPortalTransition();
+    }
+    return true;
+  }
+  function advancePortalTransition(time){
+    if(!portalTransition)return false;
+    const tr=portalTransition;
+    const elapsed=time-tr.start;
+    if(!tr.swapped && elapsed>=410){
+      tr.swapped=true;
+      const ok=performPortalSwap(tr.kind,tr.index);
+      if(!ok){finishPortalTransition();return false;}
+    }
+    if(elapsed>=1070){
+      finishPortalTransition();
+      return false;
+    }
+    return true;
+  }
+  function isNearEntry(index){
+    if(!Number.isInteger(index)||index<0||index>=exhibits.length)return false;
+    const side=index%2===0?1:-1;
+    const artZ=-4.3-index*9.4;
+    const dx=camera.position.x-side*5.15;
+    const dz=camera.position.z-artZ;
+    return Math.hypot(dx,dz)<3.55 && Math.abs(dz)<2.20;
+  }
+  function exitInReach(){
+    return sceneMode==='inside'
+      && Math.abs(camera.position.x)<2.2
+      && camera.position.z>5.0;
+  }
+  function doJump(hintIndex=null){
+    if(!hasEntered||portalTransition||paused())return;
+    if(jumpHeight>.025||jumpVelocity>0)return;
+    jumpVelocity=5.25;
+    jumpHeight=.025;
+    const candidate=Number.isInteger(hintIndex)?hintIndex:targetedArt();
+    if(sceneMode==='hall' && candidate>=0 && isNearEntry(candidate)){
+      queuedJump={kind:'enter',index:candidate,start:performance.now()};
+    }else if(exitInReach()){
+      queuedJump={kind:'exit',index:activeExhibit,start:performance.now()};
+    }
+  }
+  function checkAirbornePortal(time){
+    if(portalTransition||jumpHeight<.15)return;
+    if(queuedJump){
+      if(time-queuedJump.start>115){
+        const queued=queuedJump;
+        queuedJump=null;
+        startPortal(queued.kind,queued.index);
+      }
+      return;
+    }
+    // Jumping forwards can trigger the frame on contact, not only when
+    // already standing still in front of it.
+    if(sceneMode==='hall'){
+      const idx=targetedArt();
+      if(idx>=0&&isNearEntry(idx))startPortal('enter',idx);
+    }else if(exitInReach()){
+      startPortal('exit',activeExhibit);
+    }
+  }
+
   function build(){
     if(rebuilding)return false;
     rebuilding=true;
