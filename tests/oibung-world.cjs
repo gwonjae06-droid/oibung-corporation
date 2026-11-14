@@ -52,6 +52,9 @@ const fs=require('node:fs/promises');
    await page.locator('#world-enter').click();
    assert.equal(await page.locator('#game-dialog').evaluate(d=>d.open),true);
    assert.match(await page.locator('#detail-title').textContent(),/오든링/);
+   assert.equal(await page.locator('#game-dialog').getAttribute('data-world-theme'),'castle');
+   assert.match(await page.locator('#world-interior-name').textContent(),/오든링/);
+   assert.equal(await page.locator('.world-interior-banner').isVisible(),true);
    await page.locator('#close-detail').click();
    await jump.selectOption('oibung-arena');
    await page.waitForTimeout(50);
@@ -59,6 +62,7 @@ const fs=require('node:fs/promises');
    await stage.focus();await page.keyboard.press('KeyE');
    assert.equal(await page.locator('#game-dialog').evaluate(d=>d.open),true);
    assert.match(await page.locator('#detail-title').textContent(),/아레나/);
+   assert.equal(await page.locator('#game-dialog').getAttribute('data-world-theme'),'arena');
    await page.locator('#close-detail').click();
 
    await page.locator('#world-list-toggle').click();
