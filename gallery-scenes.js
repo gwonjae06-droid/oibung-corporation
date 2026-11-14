@@ -97,7 +97,7 @@ function start(){
    nextFrame();
  },320);
 }
-function refresh(){const api=window.OIBUNG_CATALOG;if(!api?.listGames)return;const old=games[S.index]?.id;const visible=new Set([...grid.querySelectorAll('.game-card')].filter(c=>!c.hidden&&c.style.display!=='none').map(c=>c.dataset.gameId));games=(api.listGames()||[]).filter(g=>visible.has(String(g.id)));const i=games.findIndex(g=>g.id===old);S.index=i<0?Math.min(S.index,Math.max(0,games.length-1)):i;S.power=Math.min(S.power,Math.max(0,games.length-1));if(S.threat>=games.length)S.threat=-1;render();}
+function refresh(){const api=window.OIBUNG_CATALOG;if(!api?.listGames)return;const old=games[S.index]?.id;const visible=new Set([...grid.querySelectorAll('.game-card')].filter(c=>!c.hidden&&c.style.display!=='none').map(c=>c.dataset.gameId));games=(api.listGames()||[]).filter(g=>visible.has(String(g.id)));if(blackoutGame&&blackoutGame.count!==games.length){restore();return;}const i=games.findIndex(g=>g.id===old);S.index=i<0?Math.min(S.index,Math.max(0,games.length-1)):i;S.power=Math.min(S.power,Math.max(0,games.length-1));if(S.threat>=games.length)S.threat=-1;render();}
 const greetings=[g=>`어서 오세요. 「${g.title}」부터 소개하겠습니다.`,g=>`이번 회랑은 「${g.title}」입니다. 편하게 살펴보세요.`,g=>`조금 더 둘러보시겠어요? 「${g.title}」 앞입니다.`,g=>`여기서는 서두르지 않으셔도 됩니다. 「${g.title}」입니다.`];
 function render(message){
  const g=games[S.index],night=dark(),encounter=night&&S.phase==='warning',caught=night&&S.phase==='caught',mission=blackoutGame;
@@ -133,6 +133,7 @@ function render(message){
    if(creature.getAttribute('src')!==frameUrl)creature.src=frameUrl;
  }else setMonsterFrame(PIXEL_BASE+'curator-monster-'+(S.moves%2+1)+'.png');
  btn('night').hidden=night;
+ btn('list').hidden=night;
  btn('exit').hidden=!night;
  btn('torch').hidden=!night||caught;
  btn('talk').hidden=night||!g;
@@ -180,11 +181,51 @@ function render(message){
 }
 
 img.onload=()=>{img.hidden=!img.naturalWidth;};img.onerror=()=>{img.hidden=true;};
-function travel(target){cancelBlackout();curatorPose=target%2?'present':'neutral';if(target<0||target>=games.length)return;if(dark()&&S.phase==='warning'&&target===S.threat){render('그쪽으로는 갈 수 없습니다. 숨은 뒤 기다리거나 반대 방향을 선택하세요.');return;}S.index=target;S.hidden=false;if(dark()){S.moves++;const warning=games.length>2&&S.moves%2===1&&S.index!==S.power;S.phase=warning?'warning':'search';S.threat=warning?(S.index+1)%games.length:-1;if(S.threat===S.power)S.threat=(S.index-1+games.length)%games.length;}render();}
+function travel(target){
+ cancelBlackout();
+ if(!games.length)return;
+ const next=(target%games.length+games.length)%games.length;
+ if(!dark()){S.index=next;curatorPose=next%2?'present':'neutral';render();return;}
+ if(!blackoutGame)return;
+ blackoutAction(RULES.move(blackoutGame,next));
+}
 function open(d){focus=document.activeElement;d.showModal();volume();}for(const d of[notice,list])d.addEventListener('close',()=>{focus?.focus?.();volume();});
-host.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.room!==undefined){const target=Number(b.dataset.room);list.close();travel(target);return;}switch(b.dataset.act){case'prev':if(games.length>1)travel((S.index-1+games.length)%games.length);break;case'next':if(games.length>1)travel((S.index+1)%games.length);break;case'detail':if(games[S.index])window.OIBUNG_CATALOG?.openDetail?.(games[S.index].id);volume();break;case'list':open(list);break;case'close-list':list.close();break;case'night':cancelBlackout();open(notice);break;case'start':notice.close();start();break;case'cancel':notice.close();break;case'exit':restore();break;case'power':if(dark()&&S.index===S.power)restore();break;case'torch':S.torch=!S.torch;render();break;case'sound':sound();break;case'hide':if(!S.hidden){S.hidden=true;S.torch=false;render('息を潜めます。もう一度「待つ」を選ぶと安全を確認します。'.replace('息を潜めます。もう一度「待つ」を選ぶと安全を確認します。','息を殺して待つ代わりに、もう一度ボタンを押してください。'));caption.textContent='숨을 죽였습니다. 제자리에서 기다리기를 누르면 안내원이 지나갑니다.';}else{S.hidden=false;S.phase='search';S.threat=-1;render('발소리가 멀어졌습니다. 다시 이동할 수 있습니다.');}break;case'talk':{cancelBlackout();curatorPose='explain';const g=games[S.index];if(g)render(`${g.developer?g.developer+'님이 만든 작품입니다. ':''}${String(g.description||g.tagline||'액자를 누르면 작품 소개와 플레이 링크를 볼 수 있습니다.').slice(0,230)}`);break;}}});
+host.addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ if(b.dataset.room!==undefined){
+   if(dark())return;
+   const target=Number(b.dataset.room);
+   list.close();travel(target);return;
+ }
+ switch(b.dataset.act){
+  case 'prev':if(games.length>1)travel(S.index-1);break;
+  case 'next':if(games.length>1)travel(S.index+1);break;
+  case 'detail':if(games[S.index])window.OIBUNG_CATALOG?.openDetail?.(games[S.index].id);volume();break;
+  case 'list':if(!dark())open(list);break;
+  case 'close-list':list.close();break;
+  case 'night':cancelBlackout();open(notice);break;
+  case 'start':notice.close();start();break;
+  case 'cancel':notice.close();break;
+  case 'exit':restore();break;
+  case 'restart':stopPatrol();enterDark();break;
+  case 'power':if(blackoutGame)blackoutAction(RULES.power(blackoutGame));break;
+  case 'fuse':if(blackoutGame)blackoutAction(RULES.collect(blackoutGame));break;
+  case 'torch':if(blackoutGame)blackoutAction(RULES.toggleTorch(blackoutGame));break;
+  case 'quiet':if(blackoutGame)blackoutAction(RULES.toggleQuiet(blackoutGame));break;
+  case 'sound':sound();break;
+  case 'hide':if(blackoutGame)blackoutAction(RULES.hide(blackoutGame));break;
+  case 'wait':if(blackoutGame)blackoutAction(RULES.wait(blackoutGame));break;
+  case 'talk':{
+    cancelBlackout();curatorPose='explain';
+    const g=games[S.index];
+    if(g)render((g.developer?g.developer+'님이 만든 작품입니다. ':'')+
+       String(g.description||g.tagline||'액자를 누르면 작품 소개와 플레이 링크를 볼 수 있습니다.').slice(0,230));
+    break;
+  }
+ }
+});
 host.tabIndex=0;host.addEventListener('keydown',e=>{if(e.key==='Escape'&&stage.dataset.blackoutPending==='true'){cancelBlackout();curatorPose='neutral';render('일반 관람을 계속합니다.');return;}if(document.querySelector('dialog[open]')||e.target.closest('button,input,textarea,select'))return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();if(games.length>1)travel((S.index+(e.key==='ArrowLeft'?-1:1)+games.length)%games.length);}if(e.key==='Escape'&&dark())restore();});
 room.addEventListener('pointermove',e=>{const r=room.getBoundingClientRect();room.style.setProperty('--x',`${e.clientX-r.left}px`);room.style.setProperty('--y',`${e.clientY-r.top}px`);});room.addEventListener('pointerdown',e=>{if(!e.target.closest('button'))swipe={x:e.clientX,y:e.clientY,id:e.pointerId};});room.addEventListener('pointerup',e=>{if(!swipe||swipe.id!==e.pointerId)return;const dx=e.clientX-swipe.x,dy=e.clientY-swipe.y;swipe=null;if(Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*1.5&&games.length>1)travel((S.index+(dx<0?1:-1)+games.length)%games.length);});room.addEventListener('pointercancel',()=>{swipe=null;});
 new MutationObserver(()=>{if(pending)return;pending=true;requestAnimationFrame(()=>{pending=false;refresh();});}).observe(grid,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','src']});new MutationObserver(()=>{if(root.dataset.galleryMode==='dark'&&!dark()){mode('light');if(!document.querySelector('dialog[open]'))open(notice);}else if(root.dataset.galleryMode==='light'&&dark())restore();}).observe(root,{attributes:true,attributeFilter:['data-gallery-mode']});
-document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelBlackout();volume();});document.addEventListener('oibung-page-changed',()=>{refresh();if(audio&&window.OIBUNG_CURRENT_VIEW==='reviews')gain.gain.setTargetAtTime(0,audio.currentTime,.2);});window.addEventListener('resize',()=>render());mode('light');host.hidden=false;document.body.classList.add('scene-gallery-ready','blackout-rebuild');refresh();loadCuratorV3();
+document.addEventListener('visibilitychange',()=>{if(document.hidden){const pendingMorph=stage.dataset.blackoutPending==='true';cancelBlackout();if(pendingMorph){curatorPose='neutral';render('관람을 계속할 수 있습니다.');}}volume();});document.addEventListener('oibung-page-changed',()=>{refresh();if(audio&&window.OIBUNG_CURRENT_VIEW==='reviews')gain.gain.setTargetAtTime(0,audio.currentTime,.2);});window.addEventListener('resize',()=>render());mode('light');host.hidden=false;document.body.classList.add('scene-gallery-ready','blackout-rebuild');refresh();loadCuratorV3();
 })();
