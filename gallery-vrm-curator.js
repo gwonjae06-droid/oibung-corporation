@@ -20,6 +20,7 @@ import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
 const SOURCES = [
   'https://gy19a.github.io/jev-stage/static/vrm/anime_girl.vrm',
+  'https://cdn.jsdelivr.net/gh/GY19A/jev-stage@main/static/vrm/anime_girl.vrm',
   'https://raw.githubusercontent.com/GY19A/jev-stage/main/static/vrm/anime_girl.vrm'
 ];
 const MODEL_HEIGHT = 2.60; // The floor-level display height of the curator, metres.
@@ -97,9 +98,9 @@ async function loadBase() {
       const vrm=gltf.userData.vrm;
       if(!vrm?.scene)throw new Error('VRM did not contain a humanoid scene');
       // VRM0 models face the opposite direction to newer VRM1 models.
-      if(String(vrm.meta?.metaVersion ?? vrm.metaVersion)==='0'){
-        VRMUtils.rotateVRM0(vrm);
-      }
+      // This utility itself checks the VRM version. Avoid misdetecting
+      // VRM 0 metadata and accidentally displaying the back of the head.
+      VRMUtils.rotateVRM0(vrm);
       const group=vrm.scene;
       const head=vrm.humanoid?.getNormalizedBoneNode?.('head');
       const neck=vrm.humanoid?.getNormalizedBoneNode?.('neck');
@@ -161,7 +162,7 @@ function nearestNamedBone(root,name){
 }
 function makeClone(base,costume) {
   const model=cloneSkeleton(base.group);
-  model.name='Sculpted VRoid Curator - '+costume;
+  model.name='Skinned VRoid Curator - '+costume;
   const root=new THREE.Group();
   root.add(model);
   const scaled=MODEL_HEIGHT/base.rawHeight;
