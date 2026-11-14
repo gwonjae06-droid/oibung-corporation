@@ -605,16 +605,15 @@
     if(hasEntered && time-lastCount>90){
       updateFocus();lastCount=time;
     }
-    if(true){
-      avatarSprites.forEach(({sprite,y,phase,rig})=>{
-        const close = Math.abs(sprite.position.z-camera.position.z)<23;
-        const allowGuide = !document.getElementById('gallery-guide')?.hidden;
-        sprite.visible=close && allowGuide;
-        if(!sprite.visible)return;
-        if(rig && !reduced())rig.animate(time,phase,darkness);
-        else if(!rig && !reduced())sprite.position.y=y+Math.sin(time*.0015+phase)*.028;
-      });
-    }
+    // Nearby guide meshes animate; distant ones are culled on desktop and mobile.
+    avatarSprites.forEach(({sprite,y,phase,rig})=>{
+      const close = Math.abs(sprite.position.z-camera.position.z)<23;
+      const allowGuide = !document.getElementById('gallery-guide')?.hidden;
+      sprite.visible=close && allowGuide;
+      if(!sprite.visible || reduced())return;
+      if(rig)rig.animate(time,phase,darkness);
+      else sprite.position.y=y+Math.sin(time*.0015+phase)*.028;
+    });
     renderer.render(scene,camera);
   }
   function isUserTyping(event){
