@@ -3,7 +3,7 @@
 (()=>{'use strict';
 const host=document.getElementById('gallery-3d'),grid=document.getElementById('game-grid');if(!host||!grid)return;
 const root=document.documentElement,S={index:0,phase:'tour',moves:0,power:0,threat:-1,torch:true,hidden:false,sound:false},human='assets/pixel/curator-neutral.png';let games=[],focus=null,pending=false,audio=null,gain=null,swipe=null;
-host.innerHTML=`<section class="bk-stage" data-curator-art="loading" aria-label="전시관"><header class="bk-top"><span>OIBUNG GALLERY</span><div><button data-act="list">작품 목록</button><button data-act="night">소등 체험</button><button data-act="exit" hidden>일반 관람 복귀</button><button data-act="sound" aria-pressed="false">환경음 꺼짐</button></div></header><div class="bk-room"><div class="bk-light" aria-hidden="true"></div><button class="bk-frame" data-act="detail"><img alt=""><span class="bk-fallback">OTHER WORLDS</span><span class="bk-plaque"></span></button><img class="bk-human" alt="안내 비서" src="${human}"><div class="bk-monster" aria-hidden="true"><img class="bk-monster-sprite" alt="" src="assets/pixel/curator-monster-1.png"></div></div><nav class="bk-nav" aria-label="회랑 이동"><button data-act="prev" aria-label="이전 회랑">←</button><button data-act="next" aria-label="다음 회랑">→</button></nav><footer class="bk-caption"><span class="bk-count"></span><p role="status"></p><button data-act="talk">비서에게 묻기</button><button data-act="hide" hidden>액자 뒤에 숨기</button><button data-act="power" hidden>비상전원 복구</button><button data-act="torch" hidden>손전등 끄기</button></footer><dialog class="bk-dialog" aria-labelledby="bk-warning"><h2 id="bk-warning">소등 후 관람 안내</h2><p>비서가 달라진 모습을 보이며 어둠 속에서 위협으로 등장합니다. 길을 막는 실루엣이 보이면 숨거나 다른 방향으로 이동하세요. 비상전원을 찾으면 복구할 수 있습니다. 언제든 일반 관람으로 돌아올 수 있습니다. 환경음은 기본 꺼짐이며 번쩍임은 없습니다.</p><button data-act="start">소등 시작</button><button data-act="cancel">취소</button></dialog><dialog class="bk-list" aria-labelledby="bk-list-title"><h2 id="bk-list-title">작품 목록</h2><div></div><button data-act="close-list">닫기</button></dialog></section>`;
+host.innerHTML=`<section class="bk-stage" data-curator-art="loading" aria-label="전시관"><header class="bk-top"><span>OIBUNG GALLERY</span><div><button data-act="list">작품 목록</button><button data-act="night">소등 체험</button><button data-act="exit" hidden>일반 관람 복귀</button><button data-act="sound" aria-pressed="false">환경음 꺼짐</button></div></header><div class="bk-room"><div class="bk-light" aria-hidden="true"></div><button class="bk-frame" data-act="detail"><img alt=""><span class="bk-fallback">OTHER WORLDS</span><span class="bk-plaque"></span></button><img class="bk-human" alt="안내 비서" src="${human}"><div class="bk-monster" aria-hidden="true"><img class="bk-monster-sprite" alt="" src="assets/pixel/curator-monster-1.png"></div></div><nav class="bk-nav" aria-label="회랑 이동"><button data-act="prev" aria-label="이전 회랑">←</button><button data-act="next" aria-label="다음 회랑">→</button></nav><footer class="bk-caption"><span class="bk-count"></span><p role="status"></p><button data-act="talk">비서에게 묻기</button><button data-act="hide" hidden>액자 뒤에 숨기</button><button data-act="power" hidden>비상전원 복구</button><button data-act="torch" hidden>손전등 끄기</button><button data-act="quiet" hidden>조용히 걷기</button><button data-act="fuse" hidden>퓨즈 회수</button><button data-act="wait" hidden>기다리기</button><button data-act="restart" hidden>다시 시도</button><div class="bk-hud" role="status" aria-live="polite" hidden></div></footer><dialog class="bk-dialog" aria-labelledby="bk-warning"><h2 id="bk-warning">소등 후 관람 안내</h2><p>비서가 달라진 모습을 보이며 어둠 속에서 위협으로 등장합니다. 괴물이 회랑을 순찰합니다. 손전등을 켜면 물건을 찾기 쉽지만 발견 위험이 커집니다. 퓨즈를 수집하고 전원실에서 차단기를 올려야 탈출할 수 있습니다. 숨거나 조용히 움직이세요. 언제든 일반 관람으로 돌아올 수 있습니다. 환경음은 기본 꺼짐이며 번쩍임은 없습니다.</p><button data-act="start">소등 시작</button><button data-act="cancel">취소</button></dialog><dialog class="bk-list" aria-labelledby="bk-list-title"><h2 id="bk-list-title">작품 목록</h2><div></div><button data-act="close-list">닫기</button></dialog></section>`;
 const $=s=>host.querySelector(s),stage=$('.bk-stage'),room=$('.bk-room'),frame=$('.bk-frame'),img=$('.bk-frame img'),plaque=$('.bk-plaque'),caption=$('.bk-caption p'),notice=$('.bk-dialog'),list=$('.bk-list'),actor=$('.bk-human'),monster=$('.bk-monster'),creature=$('.bk-monster-sprite');
 const PIXEL_BASE='assets/pixel/';const RULES=window.OIBUNG_BLACKOUT_RULES;
 if(!RULES)throw Error('OIBUNG_BLACKOUT_RULES missing: load gallery-blackout-rules.js first');
@@ -99,14 +99,86 @@ function start(){
 }
 function refresh(){const api=window.OIBUNG_CATALOG;if(!api?.listGames)return;const old=games[S.index]?.id;const visible=new Set([...grid.querySelectorAll('.game-card')].filter(c=>!c.hidden&&c.style.display!=='none').map(c=>c.dataset.gameId));games=(api.listGames()||[]).filter(g=>visible.has(String(g.id)));const i=games.findIndex(g=>g.id===old);S.index=i<0?Math.min(S.index,Math.max(0,games.length-1)):i;S.power=Math.min(S.power,Math.max(0,games.length-1));if(S.threat>=games.length)S.threat=-1;render();}
 const greetings=[g=>`어서 오세요. 「${g.title}」부터 소개하겠습니다.`,g=>`이번 회랑은 「${g.title}」입니다. 편하게 살펴보세요.`,g=>`조금 더 둘러보시겠어요? 「${g.title}」 앞입니다.`,g=>`여기서는 서두르지 않으셔도 됩니다. 「${g.title}」입니다.`];
-function render(message){const g=games[S.index],night=dark(),encounter=night&&S.phase==='warning';stage.dataset.dark=String(night);stage.dataset.side=S.index%2?'right':'left';stage.dataset.danger=String(encounter);stage.dataset.torch=String(S.torch);frame.disabled=!g;$('.bk-count').textContent=games.length?`제 ${S.index+1} 회랑 / ${games.length}`:'전시 준비 중';plaque.textContent=g?`${g.title||'이름 없는 작품'}${g.developer?' · '+g.developer:''}`:'검색 조건을 바꾸거나 작품을 등록해 주세요';frame.setAttribute('aria-label',g?`${g.title} 작품 상세`:'전시 작품 없음');
-const card=[...grid.querySelectorAll('.game-card')].find(c=>c.dataset.gameId===String(g?.id));const src=card?.querySelector('img.game-thumbnail')?.getAttribute('src')||'';if(img.dataset.source!==src){img.dataset.source=src;img.hidden=true;if(src)img.src=src;else img.removeAttribute('src');}
-const area=['lobby','left','right','special'][S.index%4],asset=window.OIBUNG_SCENE_ASSETS?.[area]?.[night?'dark':'light'];const url=typeof asset==='string'?asset:(matchMedia('(max-width:700px)').matches?asset?.mobile:asset?.desktop);room.style.backgroundImage=url?`url("${url}")`:'';
-const small=matchMedia('(max-width:700px)').matches,variant=S.index%4;const poseSrc=curatorV3?curatorV3.humanFrames[CURATOR_V3_GUIDE[curatorPose]??0]:PIXEL_BASE+'curator-'+curatorPose+'.png';if(stage.dataset.transformation!=='true'&&actor.getAttribute('src')!==poseSrc)actor.src=poseSrc;actor.style.height=(small?[74,80,70,77]:[112,100,118,106])[variant]+'%';actor.style.bottom=(small?-10:-14)+'%';actor.style.transform=`${S.index%2?'scaleX(-1) ':''}rotate(${[0,-1,1,0][variant]}deg)`;monster.style.left=S.index%2?'62%':'17%';monster.style.height=S.hidden?'38%':'72%';const monsterSrc=PIXEL_BASE+'curator-monster-'+(S.moves%2+1)+'.png';if(curatorV3){const v3Frame=curatorV3.monsterFrames[S.moves%2+1];if(creature.getAttribute('src')!==v3Frame)creature.src=v3Frame;}else setMonsterFrame(monsterSrc);
-btn('night').hidden=night;btn('exit').hidden=!night;btn('torch').hidden=!night;btn('talk').hidden=night||!g;btn('hide').hidden=!encounter;btn('hide').textContent=S.hidden?'제자리에서 기다리기':'액자 뒤에 숨기';btn('power').hidden=!(night&&S.index===S.power);btn('torch').textContent=S.torch?'손전등 끄기':'손전등 켜기';
-for(const[a,d,arrow]of[['prev',-1,'←'],['next',1,'→']]){const danger=encounter&&(S.index+d+games.length)%games.length===S.threat;btn(a).disabled=games.length<2;btn(a).textContent=arrow+(danger?' 위험':'');btn(a).setAttribute('aria-label',(d<0?'이전':'다음')+' 회랑'+(danger?' · 괴물 경고':''));}
-caption.textContent=message||(night?(encounter?'변해버린 비서가 길을 막습니다. 숨거나 경고가 없는 방향으로 이동하세요.':S.index===S.power?'비상전원 제어함을 찾았습니다. 조명을 복구하세요.':'어둠 속의 안내원을 따라가지 마세요.'):(g?greetings[variant](g):'전시 중인 작품이 없습니다.'));
-const holder=$('.bk-list>div');holder.replaceChildren();games.forEach((g,i)=>{const b=document.createElement('button');b.textContent=`${i+1}. ${g.title}`;b.dataset.room=String(i);holder.append(b);});volume();}
+function render(message){
+ const g=games[S.index],night=dark(),encounter=night&&S.phase==='warning',caught=night&&S.phase==='caught',mission=blackoutGame;
+ stage.dataset.dark=String(night);
+ stage.dataset.side=S.index%2?'right':'left';
+ stage.dataset.danger=String(encounter);
+ stage.dataset.torch=String(S.torch);
+ stage.dataset.caught=String(caught);
+ stage.dataset.nearby=String(!!mission&&RULES.nearby(mission));
+ stage.dataset.silent=String(!!mission?.quiet);
+ frame.disabled=!g||caught;
+ $('.bk-count').textContent=games.length?'제 '+(S.index+1)+' 회랑 / '+games.length:'전시 준비 중';
+ plaque.textContent=g?(g.title||'이름 없는 작품')+(g.developer?' · '+g.developer:''):'검색 조건을 바꾸거나 작품을 등록해 주세요';
+ frame.setAttribute('aria-label',g?g.title+' 작품 상세':'전시 작품 없음');
+ const card=[...grid.querySelectorAll('.game-card')].find(c=>c.dataset.gameId===String(g?.id));
+ const src=card?.querySelector('img.game-thumbnail')?.getAttribute('src')||'';
+ if(img.dataset.source!==src){img.dataset.source=src;img.hidden=true;if(src)img.src=src;else img.removeAttribute('src');}
+ const area=['lobby','left','right','special'][S.index%4];
+ const asset=window.OIBUNG_SCENE_ASSETS?.[area]?.[night?'dark':'light'];
+ const url=typeof asset==='string'?asset:(matchMedia('(max-width:700px)').matches?asset?.mobile:asset?.desktop);
+ room.style.backgroundImage=url?'url("'+url+'")':'';
+ const small=matchMedia('(max-width:700px)').matches,variant=S.index%4;
+ const poseSrc=curatorV3?curatorV3.humanFrames[CURATOR_V3_GUIDE[curatorPose]??0]:PIXEL_BASE+'curator-'+curatorPose+'.png';
+ if(stage.dataset.transformation!=='true'&&actor.getAttribute('src')!==poseSrc)actor.src=poseSrc;
+ actor.style.height=(small?[74,80,70,77]:[91,88,96,91])[variant]+'%';
+ actor.style.bottom=(small?-4:-6)+'%';
+ actor.style.transform=(S.index%2?'scaleX(-1) ':'')+'rotate('+[0,-1,1,0][variant]+'deg)';
+ monster.style.left=S.index%2?'62%':'17%';
+ monster.style.height=S.hidden?'38%':'72%';
+ const which=encounter?2:Math.abs(S.moves)%4;
+ if(curatorV3){
+   const frameUrl=curatorV3.monsterFrames[which];
+   if(creature.getAttribute('src')!==frameUrl)creature.src=frameUrl;
+ }else setMonsterFrame(PIXEL_BASE+'curator-monster-'+(S.moves%2+1)+'.png');
+ btn('night').hidden=night;
+ btn('exit').hidden=!night;
+ btn('torch').hidden=!night||caught;
+ btn('talk').hidden=night||!g;
+ btn('hide').hidden=!encounter||S.hidden;
+ btn('wait').hidden=!night||caught||!(S.hidden||encounter);
+ btn('fuse').hidden=!night||caught||!mission||!mission.fuses.includes(S.index)||mission.found.includes(S.index);
+ btn('quiet').hidden=!night||caught;
+ btn('quiet').textContent=mission?.quiet?'일반 걸음으로':'조용히 걷기';
+ btn('power').hidden=!night||caught||!mission||S.index!==mission.powerRoom;
+ btn('power').textContent=mission?.panel===1?'차단기 올리기':'퓨즈 설치 · 전원 복구';
+ btn('torch').textContent=S.torch?'손전등 끄기':'손전등 켜기';
+ btn('restart').hidden=!caught;
+ btn('fuse').disabled=encounter||S.hidden||!S.torch;
+ btn('fuse').title=!S.torch?'손전등을 켜야 찾을 수 있습니다.':'';
+ for(const[a,d,arrow] of [['prev',-1,'←'],['next',1,'→']]){
+   const danger=night&&mission&&games.length>1&&((S.index+d+games.length)%games.length===mission.monster);
+   btn(a).disabled=games.length<2||caught||S.hidden;
+   btn(a).textContent=arrow+(danger?' 발소리':'');
+   btn(a).setAttribute('aria-label',(d<0?'이전':'다음')+' 회랑'+(danger?' · 가까운 발소리':''));
+ }
+ const hud=$('.bk-hud');
+ hud.hidden=!night||!mission;
+ if(mission){
+   const risk=mission.alert>=65?'높음':mission.alert>=35?'보통':'낮음';
+   hud.textContent='퓨즈 '+mission.found.length+'/'+mission.fuses.length+
+     ' · 소음 '+(mission.noise>=60?'높음':mission.noise>=30?'보통':'낮음')+
+     ' · 발각 위험 '+risk+' · '+(S.torch?'손전등 켜짐':'소등');
+   hud.dataset.risk=risk;
+ }
+ let notice=message;
+ if(!notice&&night){
+   if(caught)notice='괴물에게 붙잡혔습니다. 다시 시도하거나 일반 관람으로 돌아갈 수 있습니다.';
+   else if(encounter)notice='누군가 가까이 있습니다. 숨거나 발소리가 없는 쪽으로 이동하세요.';
+   else if(mission&&mission.fuses.includes(S.index)&&!mission.found.includes(S.index))
+     notice=S.torch?'이 회랑에서 예비 퓨즈가 보입니다.':'이 근처에 퓨즈가 있습니다. 손전등을 켜서 찾아보세요.';
+   else if(mission&&S.index===mission.powerRoom)
+     notice=mission.found.length===mission.fuses.length?'필요한 퓨즈가 모였습니다. 분전반을 열고 차단기를 올리세요.':'비상전원실입니다. 나머지 퓨즈를 모아야 합니다.';
+   else notice=RULES.nearby(mission)?'멀지 않은 곳에서 발소리가 들립니다.':'멀리서 느린 발소리가 들립니다. 다음 회랑을 살펴보세요.';
+ }
+ caption.textContent=notice||(g?greetings[variant](g):'전시 중인 작품이 없습니다.');
+ const holder=$('.bk-list>div');
+ holder.replaceChildren();
+ games.forEach((item,i)=>{const b=document.createElement('button');b.textContent=(i+1)+'. '+item.title;b.dataset.room=String(i);holder.append(b);});
+ volume();
+}
+
 img.onload=()=>{img.hidden=!img.naturalWidth;};img.onerror=()=>{img.hidden=true;};
 function travel(target){cancelBlackout();curatorPose=target%2?'present':'neutral';if(target<0||target>=games.length)return;if(dark()&&S.phase==='warning'&&target===S.threat){render('그쪽으로는 갈 수 없습니다. 숨은 뒤 기다리거나 반대 방향을 선택하세요.');return;}S.index=target;S.hidden=false;if(dark()){S.moves++;const warning=games.length>2&&S.moves%2===1&&S.index!==S.power;S.phase=warning?'warning':'search';S.threat=warning?(S.index+1)%games.length:-1;if(S.threat===S.power)S.threat=(S.index-1+games.length)%games.length;}render();}
 function open(d){focus=document.activeElement;d.showModal();volume();}for(const d of[notice,list])d.addEventListener('close',()=>{focus?.focus?.();volume();});
