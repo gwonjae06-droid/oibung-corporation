@@ -25,3 +25,11 @@ window.OIBUNG_SCENE_ASSETS = Object.freeze({
     dark:{desktop:'assets/museum/special-dark.avif',mobile:'assets/museum/special-dark-mobile.avif'}
   }
 });
+
+/* Visual polish layer: appended last so it wins the cascade over gallery-scenes.css. */
+(function(){
+  if(document.querySelector('link[data-museum-polish]'))return;
+  var l=document.createElement('link');
+  l.rel='stylesheet';l.href='gallery-scenes-polish.css';l.setAttribute('data-museum-polish','');
+  (document.head||document.documentElement).appendChild(l);
+})();
