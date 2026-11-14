@@ -1228,10 +1228,12 @@
     portraitFill.intensity=darkness?0:2.1;
     torch.intensity=darkness&&flashlightOn?17:0;
     renderer.toneMappingExposure=darkness?.80:1.12;
-    exhibitionLights.forEach(light=>light.intensity=0);
-    emergencyLights.forEach(light=>light.intensity=0);
+    exhibitionLights.forEach(light=>{light.intensity=0;light.visible=false});
+    emergencyLights.forEach(light=>{light.intensity=0;light.visible=false});
     pocketLights.forEach(({light,strength})=>{
-      light.intensity=sceneMode==='inside'?(darkness?strength*.025:strength):0;
+      const near=sceneMode==='inside';
+      light.visible=near;
+      light.intensity=near?(darkness?strength*.025:strength):0;
     });
     glowingFixtures.forEach(mat=>mat.emissiveIntensity=darkness?0:1.25);
     portalSurfaces.forEach(({uniforms})=>{
@@ -1244,9 +1246,10 @@
   }
   function updateNearbyLights(time){
     if(sceneMode==='inside'){
-      exhibitionLights.forEach(light=>{light.intensity=0;});
-      emergencyLights.forEach(light=>{light.intensity=0;});
+      exhibitionLights.forEach(light=>{light.intensity=0;light.visible=false});
+      emergencyLights.forEach(light=>{light.intensity=0;light.visible=false});
       pocketLights.forEach(({light,strength})=>{
+        light.visible=true;
         light.intensity=darkness?strength*.025:strength;
       });
       if(darkness){
@@ -1256,9 +1259,11 @@
       return;
     }
     if(darkness) {
-      exhibitionLights.forEach(light=>{light.intensity=0});
+      exhibitionLights.forEach(light=>{light.intensity=0;light.visible=false});
       emergencyLights.forEach(light=>{
-        const near=Math.abs(light.position.z-camera.position.z)<13;
+        const near=Math.hypot(light.position.x-camera.position.x,
+          light.position.z-camera.position.z)<13;
+        light.visible=near;
         light.intensity=near?(.42 + Math.sin(time*.0017+light.position.z)*.06):0;
       });
       torch.intensity=flashlightOn?(16.5 + .45*Math.sin(time*.0038) + .12*Math.sin(time*.041)):0;
@@ -1267,10 +1272,12 @@
       });
     } else {
       exhibitionLights.forEach(light=>{
-        const dz=Math.abs(light.position.z-camera.position.z);
-        light.intensity=dz<14 ? (light.isSpotLight?8.7:light.distance<=6?4.2:12.5) : 0;
+        const near=Math.hypot(light.position.x-camera.position.x,
+          light.position.z-camera.position.z)<12.5;
+        light.visible=near;
+        light.intensity=near?(light.isSpotLight?8.7:light.distance<=6?4.2:12.5):0;
       });
-      emergencyLights.forEach(light=>light.intensity=0);
+      emergencyLights.forEach(light=>{light.intensity=0;light.visible=false});
       portalSurfaces.forEach(({uniforms})=>{uniforms.uDim.value=1;});
     }
   }
