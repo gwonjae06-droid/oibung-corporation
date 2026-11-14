@@ -1026,11 +1026,20 @@
     hasEntered=true;surface.classList.add('gallery-3d-entered');
     enter.blur();
     welcome.hidden=true;
-    hint.textContent='WASD 이동 · 마우스로 둘러보기 · E 감상';
+    jumpButton.hidden=false;
+    hint.textContent='WASD 이동 · 액자 앞 Space 점프 · E 정보 · R 귀환';
     tryPointerLock();
   }
   enter.addEventListener('click',start);
   action.addEventListener('click',()=>openArtwork(Number(action.dataset.index)));
+  jumpButton.addEventListener('click',()=>{
+    jumpButton.blur();
+    doJump();
+  });
+  backButton.addEventListener('click',()=>{
+    backButton.blur();
+    startPortal('exit',activeExhibit);
+  });
   lightToggle.addEventListener('click',()=>{
     const mode=darkness?'light':'dark';
     document.querySelector('[data-gallery-mode-choice="'+mode+'"]')?.click();
@@ -1041,11 +1050,14 @@
   });
   document.addEventListener('keydown',event=>{
     if(!document.body.classList.contains('three-gallery-ready')||paused()||isUserTyping(event))return;
-    if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown','ArrowRight','ShiftLeft','ShiftRight','KeyE','KeyF'].includes(event.code)){
+    if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown',
+      'ArrowRight','ShiftLeft','ShiftRight','KeyE','KeyF','KeyR','Space'].includes(event.code)){
       event.preventDefault();event.stopImmediatePropagation();
     }
     keys.add(event.code);
     if(event.repeat)return;
+    if(event.code==='Space')doJump();
+    if(event.code==='KeyR'&&sceneMode==='inside')startPortal('exit',activeExhibit);
     if(event.code==='KeyE'&&focused>=0)openArtwork(focused);
     if(event.code==='KeyF'&&darkness){flashlightOn=!flashlightOn;applyLighting();}
   },true);
@@ -1081,8 +1093,17 @@
     const bounds=renderer.domElement.getBoundingClientRect();
     pointerRay.set(((event.clientX-bounds.left)/bounds.width)*2-1,-((event.clientY-bounds.top)/bounds.height)*2+1);
     raycaster.setFromCamera(document.pointerLockElement===renderer.domElement?center:pointerRay,camera);
-    const hits=raycaster.intersectObjects(paintings,false);
-    if(hits.length){openArtwork(hits[0].object.userData.galleryIndex);return;}
+    if(sceneMode==='inside' && exitPortal && exitInReach()){
+      if(raycaster.intersectObject(exitPortal,false).length){
+        startPortal('exit',activeExhibit);return;
+      }
+    }
+    if(sceneMode==='hall'){
+      const hits=raycaster.intersectObjects(paintings,false);
+      if(hits.length){
+        doJump(hits[0].object.userData.galleryIndex);return;
+      }
+    }
     if(document.pointerLockElement!==renderer.domElement && !mouseDrag?.moved)
       tryPointerLock();
     mouseDrag=null;
@@ -1128,8 +1149,13 @@
       const rect=renderer.domElement.getBoundingClientRect();
       pointerRay.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
       raycaster.setFromCamera(pointerRay,camera);
-      const hit=raycaster.intersectObjects(paintings,false)[0];
-      if(hit)openArtwork(hit.object.userData.galleryIndex);
+      if(sceneMode==='inside' && exitInReach() && exitPortal
+        && raycaster.intersectObject(exitPortal,false).length){
+        startPortal('exit',activeExhibit);
+      }else if(sceneMode==='hall'){
+        const hit=raycaster.intersectObjects(paintings,false)[0];
+        if(hit)doJump(hit.object.userData.galleryIndex);
+      }
     }
   }
   lookZone.addEventListener('pointerup',lookRelease);
@@ -1141,7 +1167,7 @@
     if(event.detail?.from3d)return;
     if(Number.isInteger(event.detail?.index))teleport(event.detail.index);
   });
-  // The 2D guide panel visibility is deliberately independent of 3D NPCs.
+  // Live catalog changes update portal rooms and their linked artwork.
   new MutationObserver(()=>build()).observe(grid,{childList:true});
   // Procedural human models are disabled until a separately-authored,
   // visually reviewed 3D asset is available. No misleading load failure UI.
