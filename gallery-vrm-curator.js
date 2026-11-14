@@ -41,15 +41,19 @@ const presets = {
 };
 
 function rgb(hex) {
-  const color = new THREE.Color(hex);
-  return [Math.round(color.r*255),Math.round(color.g*255),Math.round(color.b*255)];
+  // Canvas pixel data is sRGB; using THREE.Color's linear RGB channels
+  // previously made blonde hair and skin-adjacent colours unnecessarily dark.
+  return [1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
 }
 function recolorTexture(original,hex,{warmth=1,depth=0.40}={}) {
   const source=original?.image;
   if (!source || !source.width || !source.height) return null;
   const canvas=document.createElement('canvas');
-  canvas.width=Math.min(2048,source.width);
-  canvas.height=Math.min(2048,source.height);
+  // Keep one source texture aspect ratio, but enforce a mobile budget.
+  const limit=matchMedia('(pointer:coarse)').matches?768:1536;
+  const factor=Math.min(1,limit/Math.max(source.width,source.height));
+  canvas.width=Math.max(1,Math.round(source.width*factor));
+  canvas.height=Math.max(1,Math.round(source.height*factor));
   const ctx=canvas.getContext('2d',{willReadFrequently:true});
   if (!ctx)return null;
   try{
@@ -93,7 +97,7 @@ async function loadBase() {
       const vrm=gltf.userData.vrm;
       if(!vrm?.scene)throw new Error('VRM did not contain a humanoid scene');
       // VRM0 models face the opposite direction to newer VRM1 models.
-      if(vrm.meta?.metaVersion==='0' || vrm.metaVersion==='0'){
+      if(String(vrm.meta?.metaVersion ?? vrm.metaVersion)==='0'){
         VRMUtils.rotateVRM0(vrm);
       }
       const group=vrm.scene;
@@ -132,15 +136,17 @@ function makePalette(avatar,preset){
       const type=meshCategory(node,material);
       if(!type)return material;
       const next=material.clone();
+      next.userData={...next.userData,oibungCuratorOwned:true};
       if(type==='hair'){
         const dyed=sharedRecolor(material.map,'#f3c775',{depth:.49});
         if(dyed){next.map=dyed;next.color.set(0xffffff);}
         else next.color.set('#ffda80');
       } else if(type==='outfit'){
         const dyed=sharedRecolor(material.map,colors.uniform,{depth:.56});
-        if(dyed){next.map=dyed;palette.push(dyed);next.color.set(0xffffff);}
+        if(dyed){next.map=dyed;next.color.set(0xffffff);}
         else next.color.set(colors.uniform);
       }
+      if('roughness' in next)next.roughness=type==='hair'?.51:.79;
       next.needsUpdate=true;
       return next;
     });
@@ -159,7 +165,9 @@ function makeClone(base,costume) {
   const root=new THREE.Group();
   root.add(model);
   const scaled=MODEL_HEIGHT/base.rawHeight;
-  model.scale.setScalar(scaled);
+  // Small silhouette refinement of the ORIGINAL skinned mesh, not extra
+  // spheres/cylinders: slightly longer stature and less chibi-wide framing.
+  model.scale.set(scaled*.965,scaled*1.025,scaled*.982);
   model.updateWorldMatrix(true,true);
   const bounds=new THREE.Box3().setFromObject(model);
   model.position.y-=bounds.min.y; // feet stand on the actual gallery floor
@@ -176,7 +184,13 @@ function makeClone(base,costume) {
       /^(blink|fcl_eye_close|eye_close|blinkboth)$/i.test(name));
     if(found)blinkTargets.push({mesh:node,index:found[1]});
   });
-  return {root,model,bones,texturePalette,blinkTargets,costume};
+  const hairBones=[];
+  model.traverse(node=>{
+    if(!node.isBone || !/hair|毛|髪|sway|spring|pony|j_hair/i.test(node.name))return;
+    if(hairBones.length>=28)return;
+    hairBones.push({node,base:node.rotation.clone(),phase:hairBones.length*.54});
+  });
+  return {root,model,bones,texturePalette,blinkTargets,hairBones,costume};
 }
 function animateRig(rig,time,phase=0){
   const t=time*.001+phase,breath=Math.sin(t*1.48);
@@ -194,6 +208,12 @@ function animateRig(rig,time,phase=0){
     // Natural relaxed gallery guide posture: lower T/A-pose shoulders.
     const down=key==='left'?-.72:.72;
     bone.node.rotation.z=bone.base.z+down+Math.sin(t*.63+(key==='left'?0:1.4))*.018;
+  }
+  for(const {node,base,phase} of rig.hairBones){
+    // Low-amplitude bone sway keeps an existing modeled hairstyle natural
+    // without replacing hair with procedural cones or ribbon strips.
+    node.rotation.z=base.z+Math.sin(t*.76+phase)*.017;
+    node.rotation.x=base.x+Math.sin(t*.58+phase*.6)*.014;
   }
   for(const {mesh,index} of rig.blinkTargets){
     if(!mesh.morphTargetInfluences)continue;
@@ -213,7 +233,7 @@ export async function getVRMCuratorFactory(){
         rig.model.traverse(node=>{
           if(node.isMesh || node.isSkinnedMesh){
             const mats=Array.isArray(node.material)?node.material:[node.material];
-            mats.forEach(mat=>{if(mat && mat!==base.group.material)mat.dispose?.()});
+            mats.forEach(mat=>{if(mat?.userData?.oibungCuratorOwned)mat.dispose?.()});
           }
         });
         // Recolored textures are shared across all copies of each costume.
