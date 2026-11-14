@@ -452,6 +452,7 @@
       else games[index] = merged;
       byId.set(game.id, merged);
       render();
+      document.dispatchEvent(new Event('oibung-catalog-updated'));
       syncOpenDetail();
     },
     setSharedGames(shared) {
@@ -461,6 +462,7 @@
       byId.clear();
       next.forEach((game, id) => byId.set(id, game));
       render();
+      document.dispatchEvent(new Event('oibung-catalog-updated'));
       syncOpenDetail();
       if (pendingLinkedGame && byId.has(pendingLinkedGame) && !detailDialog.open) openDetail(pendingLinkedGame, { fromHistory: true });
     }
