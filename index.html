@@ -24,7 +24,6 @@
   <link rel="stylesheet" href="gallery-immersive.css?v=gallery-immersive-1">
   <link rel="stylesheet" href="gallery-cinematic.css?v=cinematic-museum-1">
   <link rel="stylesheet" href="gallery-atelier.css?v=gallery-atelier-2">
-  <link rel="stylesheet" href="gallery-guide.css?v=gallery-guide-1">
   <link rel="stylesheet" href="gallery-premiere.css?v=gallery-premiere-2">
   <link rel="stylesheet" href="gallery-live-scene.css?v=gallery-live-scene-1">
   <link rel="stylesheet" href="gallery-continuum.css?v=continuous-hall-1">
@@ -33,7 +32,7 @@
   <link rel="stylesheet" href="gallery-clarity.css?v=explore-3">
   <link rel="stylesheet" href="gallery-room-map.css?v=room-map-1">
   <link rel="stylesheet" href="gallery-3d.css?v=mint-local-sculpt-1">
-  <link rel="preload" as="image" type="image/svg+xml" href="assets/guide-costume-knight.svg">
+  <link rel="stylesheet" href="gallery-portal.css?v=painting-portal-1">
   <!-- 3D actor meshes are now local; only the 3D engine loads externally. -->
   <script src="gallery-display-mode.js?v=blackout-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
@@ -43,10 +42,8 @@
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
   <script src="gallery-walk.js?v=explore-4" defer></script>
-  <script src="gallery-guide.js?v=curator-poses-2" defer></script>
-  <script src="gallery-curator.js?v=explore-3" defer></script>
   <script src="gallery-room-map.js?v=room-map-1" defer></script>
-  <script src="gallery-3d.js?v=illustrated-guide-recovery-1" defer></script>
+  <script src="gallery-3d.js?v=painting-portal-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -89,7 +86,6 @@
       <button id="motion-toggle" class="motion-control" type="button" aria-label="애니메이션 줄이기" aria-pressed="false">
         <svg aria-hidden="true"><use href="#i-check"/></svg><span class="motion-control-label">움직임 줄이기</span>
       </button>
-      <button type="button" id="menu-toggle-guide" aria-pressed="true">가이드 숨기기</button>
     </nav>
   </header>
 
@@ -162,17 +158,28 @@
               <strong id="gallery-3d-focus" class="gallery-3d-location-title">오이붕 갤러리</strong>
               <span id="gallery-3d-hint" class="gallery-3d-location-hint">작품을 찾아 가까이 다가가세요</span>
             </div>
-            <button type="button" id="gallery-3d-action" class="gallery-3d-action" hidden>작품 감상하기 · E</button>
+            <button type="button" id="gallery-3d-action" class="gallery-3d-action" hidden>작품 정보 · E</button>
+            <button type="button" id="gallery-portal-jump" class="gallery-portal-jump" title="액자에 뛰어들기" hidden>↟ 점프</button>
+            <button type="button" id="gallery-portal-back" class="gallery-portal-back" hidden>↩ 전시관 귀환</button>
+            <section id="gallery-portal-room-card" class="gallery-portal-room-card" aria-label="작품 속 전시실" hidden>
+              <strong id="gallery-portal-room-title"></strong>
+              <p id="gallery-portal-room-description"></p>
+            </section>
+            <div id="gallery-portal-transition" class="gallery-portal-transition" aria-hidden="true" hidden>
+              <span class="portal-waves" aria-hidden="true"></span>
+              <strong class="portal-caption" id="gallery-portal-caption"></strong>
+            </div>
             <div id="gallery-3d-joystick" class="gallery-3d-joystick" aria-label="이동 조이스틱">
               <span id="gallery-3d-knob" class="gallery-3d-knob"></span>
             </div>
             <div id="gallery-3d-lookzone" class="gallery-3d-lookzone" aria-label="터치하여 시점 회전"></div>
-            <div class="gallery-3d-help">W A S D 이동　·　마우스 시점　·　Shift 달리기　·　E 감상　·　F 손전등　·　ESC 커서</div>
+            <div class="gallery-3d-help">WASD 이동 · 마우스 시점 · Space 액자 점프 · E 정보 · R 귀환 · F 손전등</div>
             <div id="gallery-3d-welcome" class="gallery-3d-welcome">
               <span class="museum-overline">OIBUNG GALLERY · IMMERSIVE EXHIBITION</span>
               <h2>작품 속으로 들어가세요</h2>
-              <p>작품이 걸린 3D 전시관을 직접 걸으며 감상하세요. 검증되지 않은 캐릭터 모델 대신 작품별 비서 일러스트를 전시하고 있습니다. 소등 모드에서는 손전등으로 작품을 찾아볼 수 있습니다.</p>
-              <p>PC: WASD · 마우스 · E 감상　 /　 모바일: 왼쪽 이동 · 오른쪽 둘러보기</p>
+              <p>작품 액자에 가까이 다가가 점프해 보세요. 액자 표면이 물결치며 각 작품의 전용 전시 세계로 이어집니다. 작품 안에서 E를 눌러 상세 정보와 플레이 링크를 볼 수 있습니다.</p>
+              <p>PC: WASD 이동 · 마우스 시점 · Space 점프 · E 작품 정보 · R 돌아오기</p>
+              <p>모바일: 왼쪽 이동 · 오른쪽 시점 · 점프 버튼 · 전시관 귀환 버튼</p>
               <button id="gallery-3d-enter" class="gallery-3d-start" type="button">전시관 입장하기</button>
             </div>
           </div>
@@ -391,51 +398,6 @@
       </form>
     </div>
   </dialog>
-  <aside id="gallery-guide" class="gallery-guide" data-guide-pose="calm" data-guide-outfit="knight" aria-label="오이붕 갤러리 안내 비서">
-    <button type="button" id="gallery-guide-avatar" class="gallery-guide-avatar"
-      aria-expanded="false" aria-controls="gallery-guide-panel" aria-label="가이드 비서에게 말 걸기"
-      title="전시관 가이드">
-      <span class="sr-only">전시관 가이드 안내 열기</span>
-      <span class="guide-illustration" aria-hidden="true">
-        <img id="gallery-guide-image" class="guide-hires-image" src="assets/guide-costume-knight.svg"
-          width="416" height="512" alt="" decoding="async" fetchpriority="high">
-        <span class="guide-head-rig">
-          <img id="gallery-guide-head" class="guide-costume-head" src="assets/guide-costume-knight.svg"
-            width="416" height="512" alt="" decoding="async">
-        </span>
-        <img id="gallery-guide-fabric" class="guide-costume-fabric" src="assets/guide-costume-knight.svg"
-          width="416" height="512" alt="" decoding="async">
-      </span>
-    </button>
-    <section id="gallery-guide-panel" class="gallery-guide-panel" role="dialog"
-      aria-modal="false" aria-labelledby="gallery-guide-title" hidden>
-      <header class="gallery-guide-panel-head">
-        <h2 id="gallery-guide-title">전시 안내</h2>
-        <button type="button" id="gallery-guide-close" class="gallery-guide-close" aria-label="안내 닫기">×</button>
-      </header>
-      <p id="gallery-guide-message" class="gallery-guide-message" role="status" aria-live="polite"></p>
-      <div class="gallery-guide-actions">
-        <button type="button" data-guide-action="about">이 작품은?</button>
-        <button type="button" data-guide-action="previous">이전 작품</button>
-        <button type="button" data-guide-action="next">다음 작품</button>
-        <button type="button" data-guide-action="detail">작품 자세히</button>
-        <button type="button" data-guide-action="search">작품 찾기</button>
-        <button type="button" data-guide-action="reviews">관람 후기</button>
-      </div>
-      <div class="gallery-guide-panel-foot">
-        <button type="button" id="gallery-guide-hide" class="gallery-guide-hide">가이드 감추기</button>
-      </div>
-    </section>
-  </aside>
-  <!-- Independent reading surface: never transform this text with the 3D curator. -->
-  <section id="gallery-guide-intro" class="gallery-guide-intro" aria-label="비서의 작품 소개" aria-live="polite" aria-atomic="true" hidden>
-    <p class="guide-intro-overline">OIBUNG GALLERY · CURATOR</p>
-    <h2 id="gallery-guide-intro-title" class="guide-intro-title"></h2>
-    <p id="gallery-guide-intro-description" class="guide-intro-description"></p>
-    <div class="guide-intro-controls">
-      <button id="gallery-guide-intro-detail" type="button" data-curator="detail">작품 자세히</button>
-    </div>
-  </section>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
