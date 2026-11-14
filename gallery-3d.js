@@ -559,7 +559,7 @@
     jumpHeight=0;jumpVelocity=0;queuedJump=null;
     if(kind==='enter'){
       if(!exhibits[index])return false;
-      savedHallPose={
+      savedHallPose=portalTransition?.hallPose||{
         x:camera.position.x,z:camera.position.z,yaw,pitch
       };
       if(!buildPocket(index))return false;
@@ -588,6 +588,7 @@
     portalOverlay.classList.remove('portal-return');
     portalOverlay.hidden=true;
     jumpHeight=0;jumpVelocity=0;queuedJump=null;
+    camera.position.y=1.68;
     lastTime=performance.now();
   }
   function startPortal(kind,index){
@@ -599,7 +600,19 @@
     }
     keys.clear();joyX=joyY=0;joystickKnob.style.transform='';
     queuedJump=null;
-    portalTransition={kind,index,start:performance.now(),swapped:false};
+    const startPosition=camera.position.clone();
+    let endPosition=startPosition.clone();
+    if(kind==='enter'){
+      const side=index%2===0?1:-1;
+      endPosition.set(side*5.12,2.52,-4.3-index*9.4);
+    }else{
+      endPosition.set(0,2.45,8.75);
+    }
+    portalTransition={
+      kind,index,start:performance.now(),swapped:false,
+      startPosition,endPosition,
+      hallPose:kind==='enter'?{x:startPosition.x,z:startPosition.z,yaw,pitch}:null
+    };
     portalCaption.textContent=kind==='enter'
       ?exhibits[index].title:'오이붕 갤러리로 돌아갑니다';
     portalOverlay.hidden=false;
@@ -615,10 +628,21 @@
     if(!portalTransition)return false;
     const tr=portalTransition;
     const elapsed=time-tr.start;
+    if(!tr.swapped){
+      // A physical camera push into the painting, before the world swap.
+      const t=THREE.MathUtils.clamp(elapsed/410,0,1);
+      const eased=t*t*(3-2*t);
+      camera.position.lerpVectors(tr.startPosition,tr.endPosition,eased);
+    }
     if(!tr.swapped && elapsed>=410){
       tr.swapped=true;
       const ok=performPortalSwap(tr.kind,tr.index);
       if(!ok){finishPortalTransition();return false;}
+    }
+    if(tr.swapped && tr.kind==='enter'){
+      // Emerge from the other side into the dedicated exhibit.
+      const t=THREE.MathUtils.clamp((elapsed-410)/570,0,1);
+      camera.position.z=5.0-1.8*(t*t*(3-2*t));
     }
     if(elapsed>=1070){
       finishPortalTransition();
