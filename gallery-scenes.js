@@ -155,15 +155,26 @@
     const art = document.createElement('div');
     art.className = 'museum-art';
     const source = card.querySelector('.artwork-image-window');
-    if (source) {
-      const copy = source.cloneNode(true);
-      copy.querySelectorAll('img').forEach(img => {
-        img.loading = 'lazy';
-        img.decoding = 'async';
-        img.removeAttribute('width');
-        img.removeAttribute('height');
-      });
-      art.appendChild(copy);
+    const artwork = source?.querySelector('img.game-thumbnail');
+    if (artwork?.getAttribute('src')) {
+      const picture = artwork.cloneNode(true);
+      picture.loading = 'lazy';
+      picture.decoding = 'async';
+      picture.removeAttribute('width');
+      picture.removeAttribute('height');
+      art.appendChild(picture);
+    } else {
+      // Seed entries may not have thumbnails. Render a deliberate
+      // themed illustration instead of relying on legacy scoped CSS.
+      const fallback = document.createElement('div');
+      const visual = String(item(card).visual || 'custom');
+      fallback.className = 'museum-cover museum-cover-' +
+        (['eclipse','arena','duel','tactics'].includes(visual) ? visual : 'custom');
+      fallback.setAttribute('aria-hidden', 'true');
+      fallback.innerHTML = '<span class="museum-cover-orbit"></span>' +
+        '<span class="museum-cover-crest"></span>' +
+        '<span class="museum-cover-gleam"></span>';
+      art.appendChild(fallback);
     }
     const plaque = document.createElement('span');
     plaque.className = 'museum-plaque';
@@ -296,7 +307,8 @@
     el('museum-approach').disabled = !card;
     el('museum-forward').disabled = !card && scene.area !== 'entrance';
     const gameForGuide = game || {};
-    guideImage.src = wardrobe[outfitFor(gameForGuide)];
+    const outfitSrc = wardrobe[outfitFor(gameForGuide)];
+    if (guideImage.getAttribute('src') !== outfitSrc) guideImage.src = outfitSrc;
     guideSpeech.textContent = mode() === 'dark'
       ? '불이 꺼졌네요. 손전등으로 액자를 찾아보세요.'
       : scene.area === 'entrance'
@@ -522,9 +534,26 @@
     event.preventDefault();
   }, true);
   // A virtual flashlight is cheaper than a WebGL shadow pass; only pointer movement updates it.
+  // On touch screens swiping changes the fixed scene; there is no free-camera drag.
+  let swipeStart = null;
+  surface.addEventListener('pointerdown', event => {
+    if (!event.isPrimary || event.target.closest?.('button,a,input,label')) return;
+    swipeStart = { id:event.pointerId, x:event.clientX, y:event.clientY };
+  }, { passive:true });
+  surface.addEventListener('pointerup', event => {
+    if (!swipeStart || swipeStart.id !== event.pointerId) return;
+    const start = swipeStart; swipeStart = null;
+    const dx = event.clientX - start.x, dy = event.clientY - start.y;
+    if (Math.abs(dx) >= 65 && Math.abs(dx) >= 1.4 * Math.abs(dy) &&
+        !document.querySelector('dialog[open]')) {
+      move(dx < 0 ? 1 : -1);
+    }
+  }, { passive:true });
+  surface.addEventListener('pointercancel', () => { swipeStart = null; }, { passive:true });
   surface.addEventListener('pointermove', event => {
     if (!darkMode() || !torchOn || pointerFrame) return;
     const bounds = view.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) return;
     pointer = { x: (event.clientX - bounds.left) / bounds.width * 100,
       y: (event.clientY - bounds.top) / bounds.height * 100 };
     pointerFrame = requestAnimationFrame(() => {
