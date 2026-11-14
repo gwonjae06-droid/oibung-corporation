@@ -114,7 +114,7 @@
   let yaw = 0, pitch = .12, velocity = 0, stride = 0;
   let moveVelX=0,moveVelZ=0,avatarFacing=0;
   let cameraDistance=5.5,cameraSnap=true,cameraShake=0;
-  let jumpCombo=0,lastLandingAt=0,longJumpUntil=0;
+  let jumpCombo=0,lastLandingAt=0,longJumpUntil=0,jumpStartedAt=0;
   let groundY=0;
   const walls=[];const cameraWalls=[];const exhibitPlacements=[];
   const playerRadius=.41;
@@ -239,8 +239,15 @@
     explorer.root.visible=hasEntered && !portalTransition;
     explorer.bodyPivot.position.y=airborne?.05:Math.sin(time*.014)*.035*walking;
     const breath=1+Math.sin(time*.002)*.018;
-    explorer.bodyPivot.scale.set(1,airborne?1.095:breath,airborne?.92:1);
-    explorer.bodyPivot.rotation.x=airborne?-.09:Math.min(.12,walking*.07);
+    const dive=airborne&&time<longJumpUntil;
+    const squash=!airborne&&cameraShake>.4;
+    explorer.bodyPivot.scale.set(1+(squash?.065:0),
+      airborne?1.095:squash?1-cameraShake*.10:breath,airborne?.92:1);
+    explorer.bodyPivot.rotation.x=dive?-.48:airborne?-.14:Math.min(.12,walking*.07);
+    // The third consecutive jump gets its own graceful aerial turn.
+    const turnAge=Math.max(0,(time-jumpStartedAt)/900);
+    explorer.bodyPivot.rotation.y=airborne&&jumpCombo===3
+      ?Math.min(1,turnAge)*Math.PI*2:0;
     explorer.arms.forEach(({pivot,side})=>{
       pivot.rotation.z=side*(airborne?.52:walking*.14);
       pivot.rotation.x=airborne?-.45:Math.sin(time*.014+(side===1?0:Math.PI))*.56*walking;
@@ -868,6 +875,7 @@
     const fast=Math.hypot(moveVelX,moveVelZ)>2.0;
     const longJump=running&&fast;
     jumpCombo=time-lastLandingAt<660?(jumpCombo%3)+1:1;
+    jumpStartedAt=time;
     jumpVelocity=longJump?5.10:[0,5.65,6.48,7.48][jumpCombo];
     jumpHeight=.025;
     if(longJump){
