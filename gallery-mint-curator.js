@@ -327,6 +327,59 @@ export function createMintCurator(THREE, options={}) {
         [s*.21,1.31,.118]],.037,accent,0,'curator trim');
     }
   }
+  // Join sculpted patches that share a material into larger real meshes.
+  // This preserves head / left hair / right hair / arm rig hierarchy while
+  // massively reducing draw calls on mobile (the vertices remain unchanged).
+  function consolidate(group){
+    const byMaterial=new Map();
+    for(const child of [...group.children]){
+      if(!child.isMesh || !child.geometry?.getAttribute('position'))continue;
+      if(!byMaterial.has(child.material))byMaterial.set(child.material,[]);
+      byMaterial.get(child.material).push(child);
+    }
+    for(const [mat,items] of byMaterial){
+      if(items.length<2)continue;
+      const positions=[],uvs=[],indices=[];
+      let offset=0;
+      for(const obj of items){
+        obj.updateMatrix();
+        const geo=obj.geometry;
+        const attribute=geo.getAttribute('position'),uv=geo.getAttribute('uv');
+        const p=new THREE.Vector3();
+        for(let i=0;i<attribute.count;i++){
+          p.fromBufferAttribute(attribute,i).applyMatrix4(obj.matrix);
+          positions.push(p.x,p.y,p.z);
+          if(uv)uvs.push(uv.getX(i),uv.getY(i));
+          else uvs.push(0,0);
+        }
+        if(geo.index){
+          for(let i=0;i<geo.index.count;i++)indices.push(geo.index.getX(i)+offset);
+        }else{
+          for(let i=0;i<attribute.count;i++)indices.push(i+offset);
+        }
+        offset+=attribute.count;
+        group.remove(obj);
+        geo.dispose();
+      }
+      const geo=new THREE.BufferGeometry();
+      geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+      geo.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+      geo.setIndex(indices);
+      mesh(group,geo,mat,'merged organic surface · '+items.length+' sculpted parts');
+    }
+  }
+  function consolidateHierarchy(start){
+    const nodes=[start];
+    for(let i=0;i<nodes.length;i++){
+      for(const child of [...nodes[i].children]){
+        if(child.isGroup)nodes.push(child);
+      }
+    }
+    // Groups are merged independently so hair and arms can still animate.
+    for(const node of nodes)consolidate(node);
+  }
+  consolidateHierarchy(root);
+
   // One continuous character rotation / hierarchical micro-rig.
   function animate(time,phase=0){
     const t=time*.001+phase;
