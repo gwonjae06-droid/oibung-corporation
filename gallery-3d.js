@@ -148,163 +148,172 @@
     parent.add(obj);
     return obj;
   }
-  // Original platforming mascot: a soft seed-shaped museum explorer.
-  // Intentionally non-human; no attempts at an uncanny procedural face.
+  // Small original 3D stickman. Intentionally simple and low-poly:
+  // one head sphere, a handful of rods, and joint pivots for real motion.
   function createExplorer(){
-    const root=new THREE.Group();root.name='오이붕 · 탐험 마스코트';
-    const bodyPivot=new THREE.Group();root.add(bodyPivot);
-    const mint=new THREE.MeshStandardMaterial({color:0x8dd1bd,roughness:.82});
-    const pale=new THREE.MeshStandardMaterial({color:0xf4edd9,roughness:.86});
-    const gold=new THREE.MeshStandardMaterial({color:0xe9b75d,roughness:.58,metalness:.12});
-    const dark=new THREE.MeshStandardMaterial({color:0x263748,roughness:.74});
-    const blush=new THREE.MeshStandardMaterial({color:0xf2a5a9,roughness:.9});
-    const light=new THREE.MeshStandardMaterial({color:0xfff9e9,roughness:.68});
-    const sole=new THREE.MeshStandardMaterial({color:0x3b5262,roughness:.85});
-    const geometry=new THREE.LatheGeometry([
-      [0,.29],[.20,.29],[.34,.39],[.45,.70],[.50,.98],
-      [.47,1.27],[.37,1.51],[.20,1.67],[.04,1.71],[0,1.71]
-    ].map(p=>new THREE.Vector2(...p)),mobile?14:25);
-    const torso=new THREE.Mesh(geometry,mint);
-    bodyPivot.add(torso);
-    function sphere(parent,x,y,z,sx,sy,sz,mat){
-      const shape=new THREE.Mesh(new THREE.SphereGeometry(1,mobile?10:18,mobile?7:14),mat);
-      shape.position.set(x,y,z);shape.scale.set(sx,sy,sz);
-      parent.add(shape);return shape;
+    const root=new THREE.Group();
+    root.name='오이붕 갤러리 · 작은 3D 졸라맨';
+    const bodyPivot=new THREE.Group();
+    root.add(bodyPivot);
+    const ink=new THREE.MeshLambertMaterial({color:0x29333b});
+    const joints=new THREE.MeshLambertMaterial({color:0x40545c});
+    const face=new THREE.MeshBasicMaterial({color:0xf8f4e9});
+    const cheek=new THREE.MeshBasicMaterial({color:0xbce6d7});
+    const sphereGeo=new THREE.SphereGeometry(1,12,9);
+    const rodGeo=new THREE.CylinderGeometry(1,1,1,9);
+    function ball(parent,mat,x,y,z,s){
+      const mesh=new THREE.Mesh(sphereGeo,mat);
+      mesh.position.set(x,y,z);
+      mesh.scale.setScalar(s);
+      parent.add(mesh);return mesh;
     }
-    // Large readable eyes and a single little smile; the character faces -Z.
-    for(const side of [-1,1]){
-      sphere(bodyPivot,side*.196,1.237,-.494,.071,.109,.040,dark);
-      sphere(bodyPivot,side*.210,1.276,-.534,.023,.033,.012,light);
-      sphere(bodyPivot,side*.325,1.073,-.385,.081,.046,.021,blush);
+    function rod(parent,mat,x,y,z,r,h){
+      const mesh=new THREE.Mesh(rodGeo,mat);
+      mesh.position.set(x,y,z);
+      mesh.scale.set(r,h,r);
+      parent.add(mesh);return mesh;
     }
-    const smile=new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-.10,.952,-.520),
-      new THREE.Vector3(0,.927,-.535),
-      new THREE.Vector3(.10,.952,-.520)]);
-    bodyPivot.add(new THREE.Mesh(
-      new THREE.TubeGeometry(smile,12,.013,6,false),dark));
-    // Neck scarf and glowing leaf crest distinguish this from any existing
-    // platform-game protagonist.
-    const scarf=new THREE.Mesh(new THREE.TorusGeometry(.494,.066,9,mobile?16:26),gold);
-    scarf.rotation.x=Math.PI/2;scarf.position.y=.90;
-    bodyPivot.add(scarf);
-    sphere(bodyPivot,0,.83,-.528,.12,.18,.065,gold);
-    const cap=sphere(bodyPivot,0,1.62,.0,.31,.13,.31,pale);
-    sphere(bodyPivot,.04,1.79,0,.11,.20,.09,gold).rotation.z=-.45;
-    const leaf=sphere(bodyPivot,-.13,1.87,-.04,.22,.071,.13,mint);
-    leaf.rotation.z=.38;leaf.rotation.y=.2;
+    // Height 1.16 world units — much smaller than the previous 1.9m mascot.
+    ball(bodyPivot,ink,0,1.00,0,.17);
+    // A tiny pale face and two dots, not a realistic humanoid head.
+    ball(bodyPivot,face,0,1.006,-.143,.079);
+    for(const side of [-1,1])ball(bodyPivot,ink,side*.033,1.02,-.211,.012);
+    rod(bodyPivot,joints,0,.58,0,.065,.48);
+    ball(bodyPivot,joints,0,.79,0,.08);
+    ball(bodyPivot,joints,0,.33,0,.079);
     const arms=[],legs=[];
     for(const side of [-1,1]){
-      const arm=new THREE.Group();arm.position.set(side*.444,1.07,-.015);bodyPivot.add(arm);
-      sphere(arm,side*.085,-.19,-.013,.145,.237,.155,mint);
-      sphere(arm,side*.092,-.398,-.035,.136,.13,.138,pale);
-      arms.push({pivot:arm,side});
-      const leg=new THREE.Group();leg.position.set(side*.225,.355,0);bodyPivot.add(leg);
-      sphere(leg,0,-.07,0,.139,.23,.136,dark);
-      sphere(leg,0,-.233,-.10,.18,.11,.255,sole);
-      legs.push({pivot:leg,side});
+      const shoulder=new THREE.Group();
+      shoulder.position.set(side*.095,.77,0);
+      bodyPivot.add(shoulder);
+      rod(shoulder,ink,side*.065,-.17,0,.038,.35);
+      ball(shoulder,ink,side*.065,-.36,0,.049);
+      arms.push({pivot:shoulder,side});
+      const hip=new THREE.Group();
+      hip.position.set(side*.071,.33,0);
+      bodyPivot.add(hip);
+      rod(hip,ink,side*.016,-.14,0,.045,.29);
+      ball(hip,joints,side*.016,-.31,0,.055);
+      legs.push({pivot:hip,side});
     }
-    // One compact explorer satchel on the back.
-    const satchel=new THREE.Mesh(new THREE.BoxGeometry(.46,.43,.17),gold);
-    satchel.position.set(0,.99,.48);bodyPivot.add(satchel);
-    const clasp=new THREE.Mesh(new THREE.BoxGeometry(.17,.07,.035),pale);
-    clasp.position.set(0,1.01,.578);bodyPivot.add(clasp);
-    const shadow=new THREE.Mesh(
-      new THREE.CircleGeometry(.66,24),
-      new THREE.MeshBasicMaterial({color:0x14211e,transparent:true,opacity:.22,depthWrite:false}));
-    shadow.rotation.x=-Math.PI/2;scene.add(shadow);
-    const landingRing=new THREE.Mesh(
-      new THREE.RingGeometry(.45,.53,32),
-      new THREE.MeshBasicMaterial({color:0xf1dcab,transparent:true,opacity:0,
-        side:THREE.DoubleSide,depthWrite:false}));
-    landingRing.rotation.x=-Math.PI/2;scene.add(landingRing);
-    const glow=new THREE.PointLight(0x98dfc8,0,2.7,2);
-    scene.add(glow);
+    // One small accent makes the character readable against a dark museum.
+    ball(bodyPivot,cheek,0,.62,-.075,.054);
+    const shadow=new THREE.Mesh(new THREE.CircleGeometry(.34,16),
+      new THREE.MeshBasicMaterial({color:0x101c20,transparent:true,
+        opacity:.18,depthWrite:false}));
+    shadow.rotation.x=-Math.PI/2;
+    scene.add(shadow);
+    const landingRing=new THREE.Mesh(new THREE.RingGeometry(.28,.37,20),
+      new THREE.MeshBasicMaterial({color:0xf1dfb3,transparent:true,
+        opacity:0,depthWrite:false,side:THREE.DoubleSide}));
+    landingRing.rotation.x=-Math.PI/2;
+    scene.add(landingRing);
     scene.add(root);
-    return {root,bodyPivot,arms,legs,shadow,landingRing,glow};
+    // No per-character dynamic PointLight — unnecessary GPU work.
+    return {root,bodyPivot,arms,legs,shadow,landingRing};
   }
   const explorer=createExplorer();
   function updateExplorer(time,dt){
-    const yFloor=groundY;
     const px=camera.position.x,pz=camera.position.z;
-    const walking=Math.min(1,Math.hypot(moveVelX,moveVelZ)/4.2);
-    const airborne=jumpHeight>.04;
-    explorer.root.position.set(px,yFloor+jumpHeight,pz);
-    if(walking>.12){
+    const speed=Math.hypot(moveVelX,moveVelZ);
+    const gait=Math.min(1,speed/4.0);
+    const air=jumpHeight>.05;
+    explorer.root.position.set(px,groundY+jumpHeight,pz);
+    if(speed>.24){
       const desired=Math.atan2(-moveVelX,-moveVelZ);
-      const delta=Math.atan2(Math.sin(desired-avatarFacing),Math.cos(desired-avatarFacing));
-      avatarFacing+=delta*Math.min(1,dt*11);
+      const diff=Math.atan2(Math.sin(desired-avatarFacing),Math.cos(desired-avatarFacing));
+      avatarFacing+=diff*Math.min(1,dt*14);
     }
     explorer.root.rotation.y=avatarFacing;
     explorer.root.visible=hasEntered && !portalTransition;
-    explorer.bodyPivot.position.y=airborne?.05:Math.sin(time*.014)*.035*walking;
-    const breath=1+Math.sin(time*.002)*.018;
-    const dive=airborne&&time<longJumpUntil;
-    const squash=!airborne&&cameraShake>.4;
-    explorer.bodyPivot.scale.set(1+(squash?.065:0),
-      airborne?1.095:squash?1-cameraShake*.10:breath,airborne?.92:1);
-    explorer.bodyPivot.rotation.x=dive?-.48:airborne?-.14:Math.min(.12,walking*.07);
-    // The third consecutive jump gets its own graceful aerial turn.
-    const turnAge=Math.max(0,(time-jumpStartedAt)/900);
-    explorer.bodyPivot.rotation.y=airborne&&jumpCombo===3
-      ?Math.min(1,turnAge)*Math.PI*2:0;
-    explorer.arms.forEach(({pivot,side})=>{
-      pivot.rotation.z=side*(airborne?.52:walking*.14);
-      pivot.rotation.x=airborne?-.45:Math.sin(time*.014+(side===1?0:Math.PI))*.56*walking;
-    });
-    explorer.legs.forEach(({pivot,side})=>{
-      pivot.rotation.x=airborne?-.31:Math.sin(time*.014+(side===1?Math.PI:0))*.72*walking;
-    });
-    explorer.shadow.position.set(px,yFloor+.025,pz);
-    explorer.shadow.scale.setScalar(1+jumpHeight*.35);
-    explorer.shadow.material.opacity=Math.max(.08,.23-jumpHeight*.07);
-    explorer.shadow.visible=hasEntered;
-    explorer.landingRing.position.set(px,yFloor+.04,pz);
-    explorer.landingRing.material.opacity=Math.max(0,cameraShake*.46);
-    explorer.landingRing.scale.setScalar(1+(1-cameraShake)*1.5);
-    explorer.landingRing.visible=cameraShake>.001 && hasEntered;
-    cameraShake=Math.max(0,cameraShake-dt*2.5);
-    explorer.glow.position.set(px,groundY+1.35,pz);
-    explorer.glow.intensity=darkness && hasEntered?.42:0;
-  }
-  function followPlayer(dt){
-    const target=new THREE.Vector3(camera.position.x,
-      camera.position.y+.20,camera.position.z);
-    const dist=cameraDistance;
-    const horizontal=dist*Math.cos(pitch*.72);
-    const desired=new THREE.Vector3(
-      target.x+Math.sin(yaw)*horizontal,
-      target.y+1.25+Math.sin(pitch)*dist,
-      target.z+Math.cos(yaw)*horizontal
+    const elapsed=Math.max(0,(time-jumpStartedAt)*.001);
+    const rising=air && jumpVelocity>0;
+    const landing=!air && cameraShake>.10;
+    const longJump=air && time<longJumpUntil;
+    const spin=air && jumpCombo===3 && !longJump;
+    explorer.bodyPivot.rotation.x=longJump?-.55:rising?-.15:air?.19:gait*.05;
+    explorer.bodyPivot.rotation.y=spin
+      ?Math.min(1,elapsed/1.05)*Math.PI*2:0;
+    explorer.bodyPivot.scale.set(
+      landing?1+cameraShake*.12:air?.94:1,
+      landing?1-cameraShake*.16:rising?1.10:air?.97:1,
+      air?.94:1
     );
-    if(sceneMode==='inside'){
-      desired.x=THREE.MathUtils.clamp(desired.x,-7.20,7.20);
-      desired.z=THREE.MathUtils.clamp(desired.z,-8.2,8.2);
-      desired.y=THREE.MathUtils.clamp(desired.y,1.25,4.85);
-    }else{
-      desired.y=THREE.MathUtils.clamp(desired.y,1.4,7.0);
+    explorer.bodyPivot.position.y=landing?-.04:air?.045:
+      Math.sin(stride*17)*.026*gait;
+    for(const {pivot,side} of explorer.arms){
+      pivot.rotation.z=side*(rising?-.73:air?.34:.14);
+      pivot.rotation.x=longJump?-.97:rising?-.76:air?.37:
+        Math.sin(stride*13+(side>0?0:Math.PI))*.58*gait;
     }
-    // Prevent the trailing camera from clipping through wall geometry.
-    const rayVector=desired.clone().sub(target);
-    const fullLength=rayVector.length();
-    if(fullLength>.01){
-      const dir=rayVector.normalize(),ray=new THREE.Ray(target,dir);
-      const intersection=new THREE.Vector3();
-      const obstacles=sceneMode==='hall'?cameraWalls:[]; 
+    for(const {pivot,side} of explorer.legs){
+      pivot.rotation.x=longJump?(side>0?-.65:.55):rising?-.28:air?.52:
+        Math.sin(stride*13+(side>0?Math.PI:0))*.62*gait;
+    }
+    explorer.shadow.position.set(px,groundY+.025,pz);
+    explorer.shadow.material.opacity=Math.max(.035,.18-jumpHeight*.050);
+    explorer.shadow.scale.setScalar(1+jumpHeight*.20);
+    explorer.shadow.visible=hasEntered;
+    explorer.landingRing.position.set(px,groundY+.03,pz);
+    explorer.landingRing.material.opacity=Math.max(0,cameraShake*.46);
+    explorer.landingRing.scale.setScalar(1+(1-cameraShake)*1.3);
+    explorer.landingRing.visible=hasEntered && cameraShake>.01;
+    cameraShake=Math.max(0,cameraShake-dt*2.4);
+  }
+  // Reusable camera mathematics: no accumulated Euler rotations or pitch flips.
+  const camTarget=new THREE.Vector3(),camDesired=new THREE.Vector3();
+  const camDirection=new THREE.Vector3(),camIntersection=new THREE.Vector3();
+  const camRay=new THREE.Ray();
+  function followPlayer(dt){
+    // Orbit a fixed waist-height pivot instead of the invisible 1P camera.
+    // A bounded elevation prevents upside-down views at any mouse position.
+    pitch=THREE.MathUtils.clamp(pitch,-.12,.79);
+    camTarget.set(camera.position.x,groundY+jumpHeight+.87,camera.position.z);
+    const cos=Math.cos(pitch),sin=Math.sin(pitch);
+    const horizontal=cameraDistance*cos;
+    camDesired.set(
+      camTarget.x+Math.sin(yaw)*horizontal,
+      camTarget.y+.30+cameraDistance*sin,
+      camTarget.z+Math.cos(yaw)*horizontal
+    );
+    camDesired.y=Math.max(camTarget.y+.38,camDesired.y);
+    if(sceneMode==='inside'){
+      camDesired.x=THREE.MathUtils.clamp(camDesired.x,-7.2,7.2);
+      camDesired.z=THREE.MathUtils.clamp(camDesired.z,-8.2,8.2);
+      camDesired.y=Math.min(4.8,camDesired.y);
+    }else camDesired.y=Math.min(7.05,camDesired.y);
+    // Find the NEAREST obstruction in the entire boom. The old loop
+    // overwrote a near hit with farther wall hits, causing camera teleporting.
+    camDirection.copy(camDesired).sub(camTarget);
+    const length=camDirection.length();
+    if(length>.01){
+      camDirection.multiplyScalar(1/length);
+      camRay.set(camTarget,camDirection);
+      let maxDistance=length;
+      const obstacles=sceneMode==='hall'?cameraWalls:[];
       for(const box of obstacles){
-        const hit=ray.intersectBox(box,intersection);
-        if(hit){
-          const d=target.distanceTo(hit);
-          if(d<fullLength)desired.copy(target).addScaledVector(dir,Math.max(.9,d-.35));
+        if(camRay.intersectBox(box,camIntersection)){
+          const hitDistance=camTarget.distanceTo(camIntersection);
+          if(hitDistance<maxDistance)maxDistance=hitDistance;
         }
+      }
+      if(maxDistance<length){
+        camDesired.copy(camTarget).addScaledVector(
+          camDirection,Math.max(.85,maxDistance-.20)
+        );
+        // Even in a narrow corner, keep the camera slightly above target.
+        camDesired.y=Math.max(camTarget.y+.20,camDesired.y);
       }
     }
     if(cameraSnap){
-      followCamera.position.copy(desired);cameraSnap=false;
+      followCamera.position.copy(camDesired);
+      cameraSnap=false;
     }else{
-      followCamera.position.lerp(desired,1-Math.exp(-dt*8));
+      const smooth=1-Math.exp(-Math.max(0,dt)*11);
+      followCamera.position.lerp(camDesired,smooth);
     }
-    followCamera.lookAt(target.x,target.y+.3,target.z);
+    followCamera.up.set(0,1,0);
+    followCamera.lookAt(camTarget);
   }
 
   function makeCanvas(w,h) {
