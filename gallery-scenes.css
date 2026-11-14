@@ -634,3 +634,25 @@ html.motion-off #gallery-3d [data-gallery-mode="dark"] .museum-emergency-light{a
   #gallery-3d .museum-description{width:28%;padding:9px}
   #gallery-3d .museum-movement{bottom:8px}
 }
+
+
+/* V1.1 navigation clearance: site header, account menu and edit/search
+   controls occupy the upper band. The museum toolbar must not sit underneath
+   their clickable regions (verified by Playwright pointer hit testing). */
+#gallery-3d .museum-toolbar{
+  top:clamp(165px,19dvh,204px);
+  padding-top:6px;
+  background:linear-gradient(#1614119c,transparent);
+}
+@media(max-width:650px){
+  #gallery-3d .museum-toolbar{
+    top:clamp(155px,20dvh,197px);
+    padding:4px 9px;
+  }
+  #gallery-3d .museum-toolbar-actions button{min-height:42px}
+}
+@media(max-height:570px) and (orientation:landscape){
+  #gallery-3d .museum-toolbar{top:112px;padding:2px 10px}
+  #gallery-3d .museum-location span{display:none}
+  #gallery-3d .museum-location strong{font-size:13px}
+}
