@@ -478,7 +478,7 @@
     if(!exhibits[index])return;
     const side=index%2===0?1:-1;
     camera.position.set(side*2.65,1.68,-4.3-index*9.4+.25);
-    yaw=side>0?-Math.PI/2:Math.PI/2;pitch=-.06;
+    yaw=side>0?-Math.PI/2:Math.PI/2;pitch=.30;
     setOrientation();updateFocus();
   }
   function paused(){
