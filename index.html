@@ -34,6 +34,16 @@
   <link rel="stylesheet" href="gallery-room-map.css?v=room-map-1">
   <link rel="stylesheet" href="gallery-3d.css?v=first-person-1">
   <link rel="preload" as="image" type="image/svg+xml" href="assets/guide-costume-knight.svg">
+  <!-- Three.js + VRM share exactly one module instance; no primitive-body proxy. -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+      "@pixiv/three-vrm": "https://unpkg.com/@pixiv/three-vrm@3.4.2/lib/three-vrm.module.js"
+    }
+  }
+  </script>
   <script src="gallery-display-mode.js?v=blackout-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
   <script src="community-config.js" defer></script>
@@ -45,7 +55,7 @@
   <script src="gallery-guide.js?v=curator-poses-2" defer></script>
   <script src="gallery-curator.js?v=explore-3" defer></script>
   <script src="gallery-room-map.js?v=room-map-1" defer></script>
-  <script src="gallery-3d.js?v=anime-curator-1" defer></script>
+  <script src="gallery-3d.js?v=rigged-vrm-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
