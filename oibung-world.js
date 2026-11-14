@@ -235,6 +235,10 @@
     const api=window.OIBUNG_CATALOG;
     if(!api||typeof api.openDetail!=='function')return false;
     announce(b.game.title+'을(를) 소개할게요!',3);
+    const detail=document.getElementById('game-dialog');
+    if(detail)detail.dataset.worldTheme=b.style;
+    const bannerName=document.getElementById('world-interior-name');
+    if(bannerName)bannerName.textContent=b.game.title+'의 세계';
     api.openDetail(b.game.id);
     return true;
   }
@@ -300,6 +304,9 @@
   window.addEventListener('keyup',e=>{
     const map={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
     if(map[e.code])movement(map[e.code],false);
+  });
+  document.getElementById('game-dialog')?.addEventListener('close',e=>{
+    delete e.currentTarget.dataset.worldTheme;
   });
   window.addEventListener('blur',()=>{keys.left=false;keys.right=false;});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.left=false;keys.right=false;}});
