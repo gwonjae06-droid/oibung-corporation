@@ -121,6 +121,11 @@ const fs=require('node:fs/promises');
     }
     await run.locator('[data-act="next"]').click();
     assert.equal(await run.locator('[data-act="fuse"]').isVisible(),true);
+    // Hiding automatically extinguishes the torch. Collecting requires light.
+    if((await run.locator('.bk-stage').getAttribute('data-torch'))==='false'){
+      assert.equal(await run.locator('[data-act="fuse"]').isDisabled(),true);
+      await run.locator('[data-act="torch"]').click();
+    }
     await run.locator('[data-act="fuse"]').click();
     assert.match(await run.locator('.bk-hud').textContent(),/퓨즈 2\/2/);
     await run.locator('[data-act="prev"]').click();
