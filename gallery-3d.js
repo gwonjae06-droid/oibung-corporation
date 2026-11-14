@@ -88,7 +88,7 @@
   camera.add(portraitFill);
 
   const raycaster = new THREE.Raycaster();
-  raycaster.far = 4.4;
+  raycaster.far = 5.4;
   const center = new THREE.Vector2(0, 0);
   const pointerRay = new THREE.Vector2();
   const keys = new Set();
@@ -722,13 +722,16 @@
       sceneMode='inside';activeExhibit=index;
       world.visible=false;pocketWorld.visible=true;
       camera.position.set(0,1.68,3.2);
-      yaw=0;pitch=0;
+      groundY=0;moveVelX=moveVelZ=0;cameraSnap=true;
+      yaw=0;pitch=.16;
     }else{
       if(sceneMode!=='inside')return false;
       sceneMode='hall';activeExhibit=-1;
       world.visible=true;disposePocket();
       const restore=savedHallPose||{x:0,z:-.95,yaw:-.55,pitch:0};
-      camera.position.set(restore.x,1.68,restore.z);
+      groundY=floorHeightAt(restore.x,restore.z);
+      camera.position.set(restore.x,1.68+groundY,restore.z);
+      moveVelX=moveVelZ=0;cameraSnap=true;
       yaw=restore.yaw;pitch=restore.pitch;
       savedHallPose=null;
     }
@@ -744,7 +747,9 @@
     portalOverlay.classList.remove('portal-return');
     portalOverlay.hidden=true;
     jumpHeight=0;jumpVelocity=0;queuedJump=null;
-    camera.position.y=1.68;
+    groundY=floorHeightAt(camera.position.x,camera.position.z);
+    camera.position.y=1.68+groundY;
+    cameraSnap=true;
     reflectRoomUI();
     lastTime=performance.now();
   }
@@ -762,8 +767,8 @@
     const startPosition=camera.position.clone();
     let endPosition=startPosition.clone();
     if(kind==='enter'){
-      const side=index%2===0?1:-1;
-      endPosition.set(side*5.12,2.52,-4.3-index*9.4);
+      const loc=exhibitPlacements[index]||paintingLocation(index);
+      endPosition.set(loc.x+loc.nx*.3,loc.y,loc.z+loc.nz*.3);
     }else{
       endPosition.set(0,2.45,8.75);
     }
@@ -803,7 +808,8 @@
         sceneMode='hall';activeExhibit=-1;
         if(world)world.visible=true;
         savedHallPose=null;
-        camera.position.set(.18,1.68,-.95);yaw=-.55;pitch=0;
+        camera.position.set(0,1.68,5.8);yaw=0;pitch=.12;
+        groundY=0;cameraSnap=true;
         setOrientation();applyLighting();
       }
       if(!ok){finishPortalTransition();return false;}
@@ -821,11 +827,10 @@
   }
   function isNearEntry(index){
     if(!Number.isInteger(index)||index<0||index>=exhibits.length)return false;
-    const side=index%2===0?1:-1;
-    const artZ=-4.3-index*9.4;
-    const dx=camera.position.x-side*5.15;
-    const dz=camera.position.z-artZ;
-    return Math.hypot(dx,dz)<3.55 && Math.abs(dz)<2.20;
+    const loc=exhibitPlacements[index];
+    if(!loc)return false;
+    return Math.hypot(camera.position.x-loc.x,camera.position.z-loc.z)<3.75
+      && Math.abs(camera.position.y-loc.y)<2.22;
   }
   function exitInReach(){
     return sceneMode==='inside'
@@ -837,9 +842,10 @@
     if(direct>=0)return direct;
     const near=nearestArt();
     if(near<0||!isNearEntry(near))return -1;
-    const side=near%2===0?1:-1;
-    const dx=side*5.28-camera.position.x;
-    const dz=-4.3-near*9.4-camera.position.z;
+    const loc=exhibitPlacements[near];
+    if(!loc)return -1;
+    const dx=loc.x-camera.position.x;
+    const dz=loc.z-camera.position.z;
     const distance=Math.hypot(dx,dz)||1;
     const toward=(-Math.sin(yaw)*dx-Math.cos(yaw)*dz)/distance;
     // Visitors need not line their reticle up with one exact pixel of art.
@@ -1151,12 +1157,15 @@
     }else{
       sceneMode='hall';activeExhibit=-1;
       if(keep>=0){
-        camera.position.z=Math.min(6,Math.max(roomEnd+1.2,camera.position.z));
+        camera.position.z=Math.min(8.8,Math.max(roomEnd+1.2,camera.position.z));
       }else{
-        camera.position.set(.18,1.68,-.95);
-        yaw=-.55;pitch=.055;nearIndex=-1;
+        camera.position.set(0,1.68,5.8);
+        yaw=0;pitch=.12;nearIndex=-1;
       }
     }
+    groundY=floorHeightAt(camera.position.x,camera.position.z);
+    camera.position.y=1.68+groundY;
+    moveVelX=moveVelZ=0;cameraSnap=true;
     jumpHeight=0;jumpVelocity=0;queuedJump=null;
     reflectRoomUI();
     setOrientation();
@@ -1237,6 +1246,7 @@
     const w=surface.clientWidth,h=surface.clientHeight;
     if(w<1||h<1)return;
     camera.aspect=w/h;camera.updateProjectionMatrix();
+    followCamera.aspect=w/h;followCamera.updateProjectionMatrix();
     renderer.setSize(w,h,false);
   }
   function setOrientation(){
@@ -1285,11 +1295,12 @@
     if(sceneMode!=='hall')return -1;
     let closest=-1,dist=Infinity;
     exhibits.forEach((game,i)=>{
-      const z=-4.3-i*9.4,side=i%2===0?1:-1;
-      const d=Math.hypot(camera.position.x-side*4.8,camera.position.z-z);
+      const loc=exhibitPlacements[i];
+      if(!loc)return;
+      const d=Math.hypot(camera.position.x-loc.x,camera.position.z-loc.z,(camera.position.y-loc.y)*.8);
       if(d<dist){dist=d;closest=i;}
     });
-    return dist<7.5?closest:-1;
+    return dist<9?closest:-1;
   }
   function updateFocus(){
     if(sceneMode==='inside'){
@@ -1341,9 +1352,12 @@
       savedHallPose=null;
     }
     jumpHeight=0;jumpVelocity=0;queuedJump=null;
-    const side=index%2===0?1:-1;
-    camera.position.set(side*2.65,1.68,-4.3-index*9.4+.25);
-    yaw=side>0?-Math.PI/2:Math.PI/2;pitch=.06;
+    const loc=exhibitPlacements[index]||paintingLocation(index);
+    const x=loc.x+loc.nx*2.65,z=loc.z+loc.nz*2.65;
+    groundY=floorHeightAt(x,z);
+    camera.position.set(x,1.68+groundY,z);
+    yaw=Math.atan2(loc.nx,loc.nz);pitch=.12;cameraSnap=true;
+    moveVelX=moveVelZ=0;
     reflectRoomUI();
     setOrientation();applyLighting();updateFocus();
   }
