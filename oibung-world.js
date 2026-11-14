@@ -275,6 +275,13 @@
     list.hidden=!list.hidden;
     listButton.setAttribute('aria-expanded',String(!list.hidden));
   });
+  world.querySelector('.world-hint a')?.addEventListener('click',event=>{
+    event.preventDefault();
+    const panel=document.getElementById('world-all-games');
+    if(!panel)return;
+    panel.open=true;
+    panel.scrollIntoView({behavior:reduceMotion.matches?'auto':'smooth',block:'start'});
+  });
   world.addEventListener('click',e=>{
     if(e.target!==canvas)return;
     const rect=canvas.getBoundingClientRect();
