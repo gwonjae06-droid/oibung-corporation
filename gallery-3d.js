@@ -486,9 +486,10 @@
       lightArt.position.set(side*3.9,3.7,z);
       world.add(lightArt);exhibitionLights.push(lightArt);
     });
-    // Obey the existing "hide guide" setting in both 2D and 3D.
-    const showGuides=!document.getElementById('gallery-guide')?.hidden;
-    avatarSprites.forEach(({sprite})=>{sprite.visible=showGuides;});
+    // Exhibition NPCs belong to the 3D gallery itself. The legacy
+    // "hide guide" preference hides only the 2D floating assistant panel;
+    // it must NEVER remove every 3D character from the museum.
+    avatarSprites.forEach(({sprite})=>{sprite.visible=true;});
     const keep=next.findIndex(g=>g.id===previous);
     if(keep>=0){camera.position.z=Math.min(6,Math.max(roomEnd+1.2,camera.position.z));}
     else {
@@ -646,8 +647,7 @@
     // Nearby guide meshes animate; distant ones are culled on desktop and mobile.
     avatarSprites.forEach(({sprite,y,phase,rig})=>{
       const close = Math.abs(sprite.position.z-camera.position.z)<23;
-      const allowGuide = !document.getElementById('gallery-guide')?.hidden;
-      sprite.visible=close && allowGuide;
+      sprite.visible=close;
       if(!sprite.visible || reduced())return;
       if(rig)rig.animate(time,phase);
       else sprite.position.y=y+Math.sin(time*.0015+phase)*.028;
@@ -781,13 +781,7 @@
     if(event.detail?.from3d)return;
     if(Number.isInteger(event.detail?.index))teleport(event.detail.index);
   });
-  const guidePreference=document.getElementById('gallery-guide');
-  if(guidePreference){
-    new MutationObserver(()=>{
-      const visible=!guidePreference.hidden;
-      avatarSprites.forEach(({sprite})=>{sprite.visible=visible;});
-    }).observe(guidePreference,{attributes:true,attributeFilter:['hidden']});
-  }
+  // The 2D guide panel visibility is deliberately independent of 3D NPCs.
   new MutationObserver(()=>build()).observe(grid,{childList:true});
   // A failure must never leave invisible characters. The 2D stand-ins are
   // present immediately, and are replaced atomically only when the VRM is ready.
@@ -817,8 +811,13 @@
       // Create one clone in advance. Bad source material/skeleton must not
       // replace a functioning illustrated exhibition.
       const probe=factory({costume:'knight'});
-      if(!probe?.group)throw new Error('VRM factory returned no visible model');
+      if(!probe?.group)throw new Error('VRM factory returned no model');
+      let actualGeometry=false;
+      probe.group.traverse(node=>{
+        if((node.isSkinnedMesh || node.isMesh) && node.geometry?.attributes?.position?.count) actualGeometry=true;
+      });
       probe.dispose?.();
+      if(!actualGeometry)throw new Error('VRM model contained no renderable mesh');
       createAnimeCurator=(_THREE,opts)=>factory(opts);
       build();
       curatorStatus.hidden=true;
