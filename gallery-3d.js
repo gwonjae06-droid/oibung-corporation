@@ -46,7 +46,12 @@
   // until a visually verified 3D asset can replace it.
   let renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: !matchMedia('(pointer:coarse)').matches, powerPreference:'high-performance' });
+    renderer = new THREE.WebGLRenderer({
+      antialias: !matchMedia('(pointer:coarse)').matches,
+      powerPreference:'high-performance',
+      alpha:false,
+      stencil:false
+    });
   } catch (error) {
     console.warn('[3D Gallery] WebGL not supported; using the existing gallery.', error);
     return;
@@ -54,7 +59,10 @@
   const mobile = matchMedia('(pointer:coarse)').matches;
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const reduced = () => reduceMotion.matches || document.documentElement.classList.contains('motion-off');
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile ? 1.35 : 1.8));
+  const deviceResolution=Math.min(devicePixelRatio||1,mobile?1.0:1.30);
+  let renderResolution=deviceResolution;
+  const minimumResolution=mobile?.78:.90;
+  renderer.setPixelRatio(renderResolution);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.12;
@@ -120,6 +128,8 @@
   const playerRadius=.41;
   let focused = -1, nearIndex = -1;
   let lastTime = 0, lastCount = 0, lastMove = 0,lastMapTick=0;
+  let lastLightCheck=0,lastResolutionCheck=0,resolutionSamples=0,resolutionTime=0;
+  let lastPreviewFrame=0;
   let hasEntered = false, flashlightOn = true;
   let darkness = false, active = false, rebuilding = false;
   let roomEnd = -20;
@@ -1521,9 +1531,29 @@
       lastTime=time;
       return;
     }
-    const dt=Math.min(.05,Math.max(0,(time-lastTime)/1000||0));
+    // The static welcome screen needs only ~24 fps; the game uses full speed.
+    if(!hasEntered && time-lastPreviewFrame<42)return;
+    lastPreviewFrame=time;
+    const frameTime=Math.max(0,(time-lastTime)/1000||0);
+    const dt=Math.min(.05,frameTime);
     lastTime=time;
     const inTransition=advancePortalTransition(time);
+    // Adapt the framebuffer, not native HTML text, to GPU performance.
+    if(hasEntered && !inTransition && frameTime>.001 && frameTime<.20){
+      resolutionSamples++;
+      resolutionTime+=frameTime;
+      if(time-lastResolutionCheck>4800){
+        const average=resolutionTime/Math.max(1,resolutionSamples);
+        const candidate=average>.030?renderResolution-.13:
+          average<.018?renderResolution+.07:renderResolution;
+        const adjusted=THREE.MathUtils.clamp(candidate,minimumResolution,deviceResolution);
+        if(Math.abs(adjusted-renderResolution)>.035){
+          renderResolution=adjusted;
+          renderer.setPixelRatio(renderResolution);
+        }
+        lastResolutionCheck=time;resolutionTime=0;resolutionSamples=0;
+      }
+    }
     if(hasEntered && !inTransition){
       movePlayer(dt);
       checkAirbornePortal(time);
