@@ -297,12 +297,14 @@
     el('museum-forward').disabled = !card && scene.area !== 'entrance';
     const gameForGuide = game || {};
     guideImage.src = wardrobe[outfitFor(gameForGuide)];
-    guideSpeech.textContent = scene.area === 'entrance'
-      ? '어서 오세요. 전시관으로 안내할게요.'
-      : scene.area === 'lobby'
-        ? '좌우 회랑과 특별 전시실을 자유롭게 둘러보세요.'
-        : card ? title(card) + ' 작품입니다. 가까이 가서 감상해 보세요.'
-          : '등록된 작품이 없어요. 작품 등록으로 새로운 전시를 시작할 수 있어요.';
+    guideSpeech.textContent = mode() === 'dark'
+      ? '불이 꺼졌네요. 손전등으로 액자를 찾아보세요.'
+      : scene.area === 'entrance'
+        ? '어서 오세요. 전시관으로 안내할게요.'
+        : scene.area === 'lobby'
+          ? '좌우 회랑과 특별 전시실을 자유롭게 둘러보세요.'
+          : card ? title(card) + ' 작품입니다. 가까이 가서 감상해 보세요.'
+            : '등록된 작품이 없어요. 작품 등록으로 새로운 전시를 시작할 수 있어요.';
   }
   function updateMap() {
     const rooms = el('museum-map-rooms');
@@ -425,6 +427,9 @@
       void stage.offsetWidth;
       stage.classList.add('museum-flicker');
     } else stage.classList.remove('museum-flicker');
+    guideSpeech.textContent = dark ? '불이 꺼졌네요. 손전등으로 액자를 찾아보세요.' :
+      scene.area === 'entrance' ? '어서 오세요. 전시관으로 안내할게요.' :
+      focusedCard() ? title(focusedCard()) + ' 작품을 감상해 보세요.' : '이동 화살표로 다른 전시실을 둘러보세요.';
     applyBackdrop();
   }
   function switchMode() {
