@@ -98,5 +98,41 @@ const fs=require('node:fs/promises');
   await reduced.waitForFunction(()=>document.querySelector('.bk-stage')?.dataset.dark==='true',{timeout:5000});
   console.log('PASS reduced-motion: instant non-flashing entrance');
   await reduced.close();
+
+  // Play a complete 4-room sample run through actual UI buttons. This catches
+  // regressions where the rule engine can solve the puzzle but the screen
+  // fails to reveal a fuse or the second breaker action.
+  const run=await browser.newPage({viewport:{width:1440,height:900}});
+  await run.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
+  await run.goto('http://127.0.0.1:8000/',{waitUntil:'domcontentloaded'});
+  await run.locator('.bk-stage').waitFor();
+  const roomCount=await run.locator('.bk-list>div>button').count();
+  if(roomCount===4){
+    await run.locator('[data-act="night"]').click();
+    await run.locator('[data-act="start"]').click();
+    await run.waitForFunction(()=>document.querySelector('.bk-stage')?.dataset.dark==='true',{timeout:5000});
+    await run.locator('[data-act="next"]').click();
+    assert.equal(await run.locator('[data-act="fuse"]').isVisible(),true);
+    await run.locator('[data-act="fuse"]').click();
+    await run.locator('[data-act="next"]').click();
+    if(await run.locator('[data-act="hide"]').isVisible()){
+      await run.locator('[data-act="hide"]').click();
+      await run.locator('[data-act="wait"]').click();
+    }
+    await run.locator('[data-act="next"]').click();
+    assert.equal(await run.locator('[data-act="fuse"]').isVisible(),true);
+    await run.locator('[data-act="fuse"]').click();
+    assert.match(await run.locator('.bk-hud').textContent(),/퓨즈 2\/2/);
+    await run.locator('[data-act="prev"]').click();
+    await run.locator('[data-act="power"]').click();
+    assert.match(await run.locator('[data-act="power"]').textContent(),/차단기/);
+    await run.locator('[data-act="power"]').click();
+    assert.equal(await run.locator('.bk-stage').getAttribute('data-dark'),'false');
+    await run.screenshot({path:'artifacts/desktop-restored-after-quest.png',animations:'disabled'});
+    console.log('PASS complete UI quest: fuse 1, hide, fuse 2, install breaker, restore');
+  }else{
+    console.log('SKIP fixed 4-room UI victory route; unit tests cover all room counts:',roomCount);
+  }
+  await run.close();
  }finally{await browser.close();}
 })().catch(err=>{console.error(err);process.exit(1)});
