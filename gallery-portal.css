@@ -132,3 +132,16 @@
  #gallery-3d .gallery-portal-transition .portal-caption{animation:none!important}
 }
 html.motion-off #gallery-3d .gallery-portal-transition *{animation:none!important}
+
+
+/* Hide the hallway map while entering or exploring a painting world. */
+#walk-gallery .gallery-room-map[hidden]{display:none!important}
+#gallery-3d.gallery-portal-inside .gallery-3d-action{
+  background:#f3dfb8;color:#22251f;
+}
+@media(max-width:390px){
+  #gallery-3d .gallery-portal-jump{
+    min-height:45px;bottom:calc(110px + env(safe-area-inset-bottom,0px));
+  }
+  #gallery-3d .gallery-portal-room-card{max-width:52vw}
+}
