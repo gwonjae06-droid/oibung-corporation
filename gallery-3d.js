@@ -538,6 +538,8 @@
     surface.classList.toggle('gallery-portal-inside',Boolean(inRoom));
     backButton.hidden=!inRoom;
     roomCard.hidden=!inRoom;
+    const mapDock=document.querySelector('.gallery-room-map');
+    if(mapDock)mapDock.hidden=Boolean(inRoom);
     if(inRoom){
       const game=exhibits[activeExhibit];
       const theme=roomTheme(game);
@@ -637,12 +639,25 @@
       && Math.abs(camera.position.x)<2.2
       && camera.position.z>5.0;
   }
+  function aimedPortalIndex(){
+    const direct=targetedArt();
+    if(direct>=0)return direct;
+    const near=nearestArt();
+    if(near<0||!isNearEntry(near))return -1;
+    const side=near%2===0?1:-1;
+    const dx=side*5.28-camera.position.x;
+    const dz=-4.3-near*9.4-camera.position.z;
+    const distance=Math.hypot(dx,dz)||1;
+    const toward=(-Math.sin(yaw)*dx-Math.cos(yaw)*dz)/distance;
+    // Visitors need not line their reticle up with one exact pixel of art.
+    return toward>.63?near:-1;
+  }
   function doJump(hintIndex=null){
     if(!hasEntered||portalTransition||paused())return;
     if(jumpHeight>.025||jumpVelocity>0)return;
     jumpVelocity=5.25;
     jumpHeight=.025;
-    const candidate=Number.isInteger(hintIndex)?hintIndex:targetedArt();
+    const candidate=Number.isInteger(hintIndex)?hintIndex:aimedPortalIndex();
     if(sceneMode==='hall' && candidate>=0 && isNearEntry(candidate)){
       queuedJump={kind:'enter',index:candidate,start:performance.now()};
     }else if(exitInReach()){
@@ -662,7 +677,7 @@
     // Jumping forwards can trigger the frame on contact, not only when
     // already standing still in front of it.
     if(sceneMode==='hall'){
-      const idx=targetedArt();
+      const idx=aimedPortalIndex();
       if(idx>=0&&isNearEntry(idx))startPortal('enter',idx);
     }else if(exitInReach()){
       startPortal('exit',activeExhibit);
@@ -811,7 +826,7 @@
       ?roomTheme(exhibits[activeExhibit]):null;
     scene.background.set(darkness?0x020305:(theme?.wall??0xa8a59d));
     scene.fog.color.set(darkness?0x020306:(theme?.wall??0xa8a59d));
-    scene.fog.density=darkness?.061:(theme?.020:.012);
+    scene.fog.density=darkness ? .061 : (theme ? .020 : .012);
     ambient.intensity=darkness?.008:.7;
     hemisphere.intensity=darkness?.018:1.45;
     sun.intensity=darkness?0:.95;
@@ -936,7 +951,7 @@
         :'작품 속 전시실 · E로 작품 정보 · R로 귀환';
       return;
     }
-    const targeted=targetedArt();
+    const targeted=aimedPortalIndex();
     focused=targeted;
     const near=nearestArt();
     if(near!==nearIndex){
