@@ -113,7 +113,7 @@
   let jumpHeight = 0, jumpVelocity = 0, queuedJump = null;
   let yaw = 0, pitch = .12, velocity = 0, stride = 0;
   let moveVelX=0,moveVelZ=0,avatarFacing=0;
-  let cameraDistance=5.5,cameraSnap=true,cameraShake=0;
+  let cameraDistance=4.25,cameraSnap=true,cameraShake=0;
   let jumpCombo=0,lastLandingAt=0,longJumpUntil=0,jumpStartedAt=0;
   let groundY=0;
   const walls=[];const cameraWalls=[];const exhibitPlacements=[];
@@ -1504,18 +1504,19 @@
     welcome.hidden=true;
     jumpButton.hidden=false;
     hint.textContent='WASD 이동 · Space 점프 · V 카메라 거리 · E 작품 정보';
-    tryPointerLock();
+    // Platform-game controls: the pointer stays usable for clicking artworks.
+    // Orbit only while dragging the mouse (no forced pointer-lock).
   }
   enter.addEventListener('click',start);
   action.addEventListener('click',()=>openArtwork(Number(action.dataset.index)));
   function cycleCamera(){
-    const distances=[3.6,5.5,7.6];
-    const i=distances.findIndex(d=>Math.abs(d-cameraDistance)<.15);
+    const distances=[3.20,4.25,5.80];
+    const i=distances.reduce((best,d,i)=>Math.abs(d-cameraDistance)<Math.abs(distances[best]-cameraDistance)?i:best,0);
     cameraDistance=distances[(i+1)%distances.length];
     cameraSnap=false;
     if(cameraToggle){
-      cameraToggle.textContent=cameraDistance<4?'시점: 가까이'
-        :cameraDistance<6?'시점: 보통':'시점: 멀리';
+      cameraToggle.textContent=cameraDistance<3.7?'시점: 가까이'
+        :cameraDistance<5?'시점: 보통':'시점: 멀리';
       cameraToggle.blur();
     }
   }
@@ -1546,7 +1547,7 @@
     if(event.repeat)return;
     if(event.code==='Space')doJump();
     if(event.code==='KeyV')cycleCamera();
-    if(event.code==='KeyQ'){yaw=avatarFacing;pitch=.12;}
+    if(event.code==='KeyQ'){yaw=avatarFacing;pitch=.20;}
     if(event.code==='KeyR'&&sceneMode==='inside')startPortal('exit',activeExhibit);
     if(event.code==='KeyE'&&focused>=0)openArtwork(focused);
     if(event.code==='KeyF'&&darkness){flashlightOn=!flashlightOn;applyLighting();}
@@ -1556,49 +1557,63 @@
   document.addEventListener('pointerlockchange',()=>{
     surface.classList.toggle('gallery-3d-locked',document.pointerLockElement===renderer.domElement);
   });
-  let mouseDrag = null;
+  // Drag-to-orbit camera. No surprise pointer-lock, duplicated cursor delta,
+  // accumulating Euler angles or accidental portal clicks after a drag.
+  let mouseDrag=null,mouseDragged=false;
+  renderer.domElement.addEventListener('contextmenu',event=>event.preventDefault());
   renderer.domElement.addEventListener('pointerdown',event=>{
-    if(mobile || event.button!==0 || document.pointerLockElement===renderer.domElement)return;
-    mouseDrag={x:event.clientX,y:event.clientY,moved:false};
+    if(mobile||!hasEntered||paused()||portalTransition)return;
+    if(event.button!==0&&event.button!==2)return;
+    mouseDrag={x:event.clientX,y:event.clientY,moved:false,id:event.pointerId};
+    mouseDragged=false;
   });
-  document.addEventListener('pointerup',()=>{mouseDrag=null;});
-  document.addEventListener('mousemove',event=>{
-    if(paused())return;
-    if(document.pointerLockElement===renderer.domElement){
-      yaw-=event.movementX*.0021;
-      pitch=THREE.MathUtils.clamp(pitch-event.movementY*.0018,-1.22,1.22);
-      return;
+  document.addEventListener('pointerup',event=>{
+    if(mouseDrag&&event.pointerId===mouseDrag.id){
+      mouseDragged=mouseDrag.moved;
+      mouseDrag=null;
     }
-    if(mouseDrag && hasEntered){
-      const dx=event.clientX-mouseDrag.x,dy=event.clientY-mouseDrag.y;
-      if(Math.abs(dx)+Math.abs(dy)>4)mouseDrag.moved=true;
-      yaw-=dx*.003;
-      pitch=THREE.MathUtils.clamp(pitch-dy*.0027,-1.22,1.22);
+  });
+  document.addEventListener('pointercancel',()=>{mouseDrag=null;});
+  document.addEventListener('mousemove',event=>{
+    if(!hasEntered||paused()||portalTransition)return;
+    if(document.pointerLockElement===renderer.domElement){
+      yaw-=THREE.MathUtils.clamp(event.movementX,-80,80)*.0024;
+      pitch=THREE.MathUtils.clamp(pitch-event.movementY*.0019,-.12,.79);
+    }else if(mouseDrag){
+      const dx=THREE.MathUtils.clamp(event.clientX-mouseDrag.x,-100,100);
+      const dy=THREE.MathUtils.clamp(event.clientY-mouseDrag.y,-100,100);
+      if(Math.abs(dx)+Math.abs(dy)>2)mouseDrag.moved=true;
+      yaw-=dx*.0030;
+      pitch=THREE.MathUtils.clamp(pitch-dy*.0024,-.12,.79);
       mouseDrag.x=event.clientX;mouseDrag.y=event.clientY;
     }
+    // Floating-point yaw doesn't need to grow unbounded through long sessions.
+    if(Math.abs(yaw)>Math.PI*2)yaw=Math.atan2(Math.sin(yaw),Math.cos(yaw));
   });
+  renderer.domElement.addEventListener('wheel',event=>{
+    if(!hasEntered||paused()||portalTransition)return;
+    event.preventDefault();
+    cameraDistance=THREE.MathUtils.clamp(cameraDistance+Math.sign(event.deltaY)*.35,3.0,6.3);
+    if(cameraToggle){
+      cameraToggle.textContent=cameraDistance<3.7?'시점: 가까이'
+        :cameraDistance<5?'시점: 보통':'시점: 멀리';
+    }
+  },{passive:false});
   renderer.domElement.addEventListener('click',event=>{
     if(!hasEntered){start();return;}
-    if(mobile)return;
+    if(mobile||mouseDragged||portalTransition){mouseDragged=false;return;}
     const bounds=renderer.domElement.getBoundingClientRect();
-    pointerRay.set(((event.clientX-bounds.left)/bounds.width)*2-1,-((event.clientY-bounds.top)/bounds.height)*2+1);
-    raycaster.setFromCamera(
-      document.pointerLockElement===renderer.domElement?center:pointerRay,
-      followCamera);
-    if(sceneMode==='inside' && exitPortal && exitInReach()){
+    pointerRay.set(((event.clientX-bounds.left)/bounds.width)*2-1,
+      -((event.clientY-bounds.top)/bounds.height)*2+1);
+    raycaster.setFromCamera(pointerRay,followCamera);
+    if(sceneMode==='inside'&&exitPortal&&exitInReach()){
       if(raycaster.intersectObject(exitPortal,false).length){
         startPortal('exit',activeExhibit);return;
       }
+    }else if(sceneMode==='hall'){
+      const hit=raycaster.intersectObjects(paintings,false)[0];
+      if(hit)doJump(hit.object.userData.galleryIndex);
     }
-    if(sceneMode==='hall'){
-      const hits=raycaster.intersectObjects(paintings,false);
-      if(hits.length){
-        doJump(hits[0].object.userData.galleryIndex);return;
-      }
-    }
-    if(document.pointerLockElement!==renderer.domElement && !mouseDrag?.moved)
-      tryPointerLock();
-    mouseDrag=null;
   });
 
   function joyUpdate(event){
@@ -1631,7 +1646,7 @@
     if(event.pointerId!==lookPointer)return;
     const dx=event.clientX-lastLookX,dy=event.clientY-lastLookY;
     if(Math.abs(dx)+Math.abs(dy)>5)lookMoved=true;
-    yaw-=dx*.005;pitch=THREE.MathUtils.clamp(pitch-dy*.004,-1.22,1.22);
+    yaw-=dx*.0032;pitch=THREE.MathUtils.clamp(pitch-dy*.0026,-.12,.79);
     lastLookX=event.clientX;lastLookY=event.clientY;
   });
   function lookRelease(event){
