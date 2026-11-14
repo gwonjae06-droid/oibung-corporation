@@ -60,7 +60,7 @@
   renderer.toneMappingExposure = 1.12;
   renderer.setClearColor(0x22252a);
   mount.appendChild(renderer.domElement);
-  renderer.domElement.setAttribute('aria-label', '3D 전시관 시점. PC는 WASD로 이동, 마우스로 둘러보고 E로 감상합니다.');
+  renderer.domElement.setAttribute('aria-label', '오이붕 3인칭 3D 탐험. WASD 이동, Space 점프, V 시점 변경, E 작품 정보.');
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0xa8a59d);
   scene.fog = new THREE.FogExp2(0xa8a59d, 0.012);
@@ -939,6 +939,17 @@
     }
     return block;
   }
+  function stageColumn(parent,x,y,z,radius,height,mat){
+    const shape=elCylinder(parent,x,y,z,radius,radius*1.12,height,
+      mat,mobile?10:16);
+    const r=radius*.92;
+    walls.push({minX:x-r,maxX:x+r,minZ:z-r,maxZ:z+r,
+      minY:y-height/2,maxY:y+height/2});
+    cameraWalls.push(new THREE.Box3(
+      new THREE.Vector3(x-r,y-height/2,z-r),
+      new THREE.Vector3(x+r,y+height/2,z+r)));
+    return shape;
+  }
   function blockedAt(x,z){
     const feet=groundY+jumpHeight;
     for(const b of walls){
@@ -1031,7 +1042,7 @@
       elBox(world,side*9.28,.62,0,.19,1.18,19.0,materials.oak);
       elBox(world,side*9.38,6.85,0,.15,.18,19.0,accent);
       for(const z of [-7.85,7.85]){
-        elCylinder(world,side*8.38,3.45,z,.38,.47,6.83,column,mobile?10:16);
+        stageColumn(world,side*8.38,3.45,z,.40,6.83,column);
         elBox(world,side*8.38,.33,z,1.15,.66,1.15,stone);
         elBox(world,side*8.38,6.95,z,1.23,.48,1.23,accent);
       }
@@ -1115,7 +1126,7 @@
       const z=-12.0-j*7.0;
       if(z<roomEnd+1)break;
       for(const side of [-1,1]){
-        elCylinder(world,side*7.25,3.14,z,.22,.28,6.20,column,10);
+        stageColumn(world,side*7.25,3.14,z,.25,6.20,column);
         elBox(world,side*7.25,.36,z,.82,.72,.83,accent);
         elBox(world,side*7.25,6.33,z,.87,.27,.9,accent);
       }
