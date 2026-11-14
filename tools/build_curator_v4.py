@@ -64,7 +64,7 @@ def blend_frames(a,b,t,frame):
         y=round(OH*.20+frame*13)%max(1,OH-35)
         strip=result.crop((0,y,OW,y+12))
         result.paste(Image.new("RGBA",(OW,12)),(0,y))
-        result.alpha_composite(strip,(max(0,amplitude),y))
+        result.alpha_composite(strip.crop((0,0,OW-amplitude,12)),(amplitude,y))
     return result
 
 def main():
