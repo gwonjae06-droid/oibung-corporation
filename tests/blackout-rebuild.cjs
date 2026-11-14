@@ -31,6 +31,9 @@ const fs=require('node:fs/promises');
    await page.locator('[data-act="talk"]').click();
    assert.match(await actor.getAttribute('src'),/assets\/curator\/explain\.png$/);
    await actor.evaluate(img=>img.decode());
+   const curatorBounds=await actor.boundingBox();
+   assert.ok(curatorBounds&&curatorBounds.x>=-4&&curatorBounds.x+curatorBounds.width<=viewport.width+4,
+    name+' has curator clipped outside screen: '+JSON.stringify(curatorBounds));
    await page.screenshot({path:'artifacts/'+name+'-light.png',animations:'disabled'});
 
    // Navigation should cancel pending horror rather than switching modes later.
