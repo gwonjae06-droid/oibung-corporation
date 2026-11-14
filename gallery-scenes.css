@@ -493,3 +493,144 @@ html.motion-off #gallery-3d .museum-stage.museum-flicker .museum-blackout{animat
   #gallery-3d [data-gallery-mode="dark"] .museum-emergency-light{animation:none}
 }
 html.motion-off #gallery-3d [data-gallery-mode="dark"] .museum-emergency-light{animation:none}
+
+
+/* V1.1 — original self-contained poster graphics for seed games without cover uploads.
+   All are CSS layers, not stretched thumbnails or blurry canvas text. */
+#gallery-3d .museum-cover{
+  position:relative;width:100%;height:100%;overflow:hidden;isolation:isolate;
+  box-shadow:inset 0 0 55px #0009;
+}
+#gallery-3d .museum-cover::before,
+#gallery-3d .museum-cover::after,
+#gallery-3d .museum-cover span{content:"";position:absolute;display:block;pointer-events:none}
+#gallery-3d .museum-cover .museum-cover-orbit{
+  width:72%;aspect-ratio:1;left:14%;top:12%;
+  border:clamp(2px,.48vw,7px) solid #ffe8bf88;border-radius:50%;
+  box-shadow:0 0 55px #fff8e73b,inset 0 0 24px #ffffff20;
+}
+#gallery-3d .museum-cover .museum-cover-crest{
+  width:37%;aspect-ratio:1;left:31.5%;top:28%;border-radius:50%;
+  box-shadow:inset -10px -14px 25px #0009,0 0 40px #ffe0a150;
+}
+#gallery-3d .museum-cover .museum-cover-gleam{
+  inset:0;background:linear-gradient(115deg,#ffffff25 0%,transparent 27% 76%,#0008 100%);
+}
+#gallery-3d .museum-cover-eclipse{
+  background:
+    radial-gradient(circle at 50% 30%,#f3e8c8 0 2%,#d99f744f 5%,transparent 36%),
+    radial-gradient(ellipse at 55% 47%,#661b21 0%,#211519 45%,#090d15 100%);
+}
+#gallery-3d .museum-cover-eclipse::before{
+  inset:48% -30% -35%;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 11%,#07090b 11.5% 16%,transparent 16.5% 24%),
+    linear-gradient(#35171d,#07090d);
+  transform:perspective(220px) rotateX(50deg);
+}
+#gallery-3d .museum-cover-eclipse .museum-cover-orbit{
+  left:21%;top:17%;width:58%;border:2px solid #c8645277;
+  box-shadow:0 0 40px #ac2f3177,0 0 20px inset #ffb3a633;
+}
+#gallery-3d .museum-cover-eclipse .museum-cover-crest{
+  top:22%;left:34%;width:32%;background:radial-gradient(circle at 38% 28%,#393436,#08080c 65%);
+  box-shadow:0 0 0 2px #ffb6a7,0 0 25px 9px #d6644a9c,0 0 60px 30px #9c32385e;
+}
+#gallery-3d .museum-cover-arena{
+  background:
+    repeating-radial-gradient(ellipse at 50% 75%,transparent 0 32px,#44f9e214 33px 35px,transparent 36px 60px),
+    radial-gradient(circle at 45% 32%,#3ed5c2,#154764 48%,#0a1a2f 100%);
+}
+#gallery-3d .museum-cover-arena::before{
+  inset:58% -30% -48%;
+  transform:perspective(160px) rotateX(66deg);
+  background:
+    repeating-linear-gradient(90deg,#72f8df44 0 2px,transparent 3px 36px),
+    repeating-linear-gradient(0deg,#b8dff455 0 2px,transparent 3px 36px);
+}
+#gallery-3d .museum-cover-arena .museum-cover-orbit{
+  left:4%;top:17%;width:92%;border:4px dashed #b2fff0c2;transform:rotate(-28deg) scaleY(.72);
+}
+#gallery-3d .museum-cover-arena .museum-cover-crest{
+  top:24%;left:34%;width:32%;
+  background:radial-gradient(circle at 34% 24%,#f8ffd3,#ffbb6a 36%,#8c2c61 70%,#321c5c);
+  box-shadow:0 13px 30px #0009,0 0 20px 6px #fff6c78a;
+}
+#gallery-3d .museum-cover-duel{
+  background:radial-gradient(circle at 46% 22%,#cec5ef,#534687 34%,#191d3a 75%,#111128);
+}
+#gallery-3d .museum-cover-duel::before{
+  inset:19% 0 12%;
+  clip-path:polygon(0 62%,24% 19%,42% 58%,65% 8%,100% 44%,83% 88%,57% 67%,24% 99%);
+  background:linear-gradient(123deg,#ffffff9c,#514fbd 31%,#161848 44%,#d3d0ff 62%,#252259 82%);
+  filter:drop-shadow(0 20px 15px #08061baa);
+}
+#gallery-3d .museum-cover-duel .museum-cover-orbit{
+  left:11%;top:8%;width:78%;transform:rotate(-24deg) scaleY(.64);border-color:#e0d5ff6b;
+}
+#gallery-3d .museum-cover-duel .museum-cover-crest{
+  left:41%;top:18%;width:18%;background:#faf9ff;
+  clip-path:polygon(50% 0%,100% 76%,48% 100%,0 76%);
+  border-radius:0;
+  box-shadow:none;
+}
+#gallery-3d .museum-cover-tactics{
+  background:linear-gradient(#c5e3b6,#3e786b 41%,#1e3835 72%,#0b2427);
+}
+#gallery-3d .museum-cover-tactics::before{
+  inset:25% 0 0;
+  clip-path:polygon(0 61%,16% 45%,30% 48%,45% 24%,58% 35%,79% 13%,100% 44%,100% 100%,0 100%);
+  background:linear-gradient(135deg,#a9bf9a,#526b67 60%,#193939);
+}
+#gallery-3d .museum-cover-tactics::after{
+  inset:57% -30% -43%;
+  transform:perspective(200px) rotateX(65deg);
+  background:
+    repeating-linear-gradient(90deg,transparent 0 12%,#cee6bd99 12.2% 12.5%,transparent 12.8% 25%),
+    repeating-linear-gradient(0deg,transparent 0 24%,#ccebc299 24.5% 25%,transparent 25.5% 50%);
+}
+#gallery-3d .museum-cover-tactics .museum-cover-orbit{
+  width:64%;top:9%;left:18%;border:2px solid #e9fbd3ad;transform:rotate(-8deg) scaleY(.45);
+}
+#gallery-3d .museum-cover-tactics .museum-cover-crest{
+  top:20%;left:39%;width:22%;border-radius:0;
+  clip-path:polygon(50% 0%,100% 32%,90% 100%,15% 100%,0 30%);
+  background:linear-gradient(115deg,#e2c487,#99753f 55%,#5b452c);
+}
+#gallery-3d .museum-cover-custom{background:radial-gradient(circle at 49% 38%,#dabf9c,#6e5360 42%,#222335)}
+#gallery-3d .museum-cover-custom .museum-cover-crest{background:linear-gradient(130deg,#d7ba91,#534657)}
+/* Fully unlit architecture must not look like daytime through the torch. */
+#gallery-3d [data-gallery-mode="dark"] .museum-view:not(.museum-has-render) .museum-architecture{
+  filter:brightness(.45) saturate(.44) contrast(1.2);
+}
+#gallery-3d [data-gallery-mode="dark"] .museum-painting{
+  filter:brightness(.65);
+}
+#gallery-3d [data-gallery-mode="dark"] .museum-works.museum-close .museum-painting{
+  filter:brightness(.85);
+}
+#gallery-3d .museum-painting{
+  max-width:100%;overflow:visible;
+}
+#gallery-3d .museum-works .museum-cover,
+#gallery-3d .museum-works .museum-cover span{flex-shrink:0}
+#gallery-3d .museum-art img{max-width:100%;max-height:100%}
+/* Assistive and touch affordances are not shrunk below a usable hit target. */
+@media(max-width:520px){
+  #gallery-3d .museum-plaque strong{font-size:12px;white-space:normal;text-align:center}
+  #gallery-3d .museum-doors button{font-size:11px;min-height:37px}
+  #gallery-3d .museum-movement{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(2,42px)}
+  #gallery-3d .museum-movement button span{font-size:10px}
+  #gallery-3d .museum-curator{width:23vw;height:26vh;bottom:99px;right:0}
+  #gallery-3d #museum-guide-toggle{top:0;right:0;min-height:35px}
+  #gallery-3d .museum-entry-copy{top:28%}
+}
+@media(max-height:570px) and (orientation:landscape){
+  #gallery-3d .museum-works{inset:18% 15% 29%}
+  #gallery-3d .museum-entry-copy{top:24%;padding:12px}
+  #gallery-3d .museum-entry-copy h2{font-size:23px;margin:6px 0}
+  #gallery-3d .museum-entry-copy p{margin-bottom:10px}
+  #gallery-3d .museum-curator{width:15vw;height:48vh}
+  #gallery-3d .museum-description{width:28%;padding:9px}
+  #gallery-3d .museum-movement{bottom:8px}
+}
