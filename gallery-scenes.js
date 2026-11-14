@@ -11,14 +11,6 @@
   const root = document.documentElement;
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches ||
     root.classList.contains('motion-off');
-  const wardrobe = {
-    knight: 'assets/guide-costume-knight.svg',
-    maid: 'assets/guide-costume-maid.svg',
-    arena: 'assets/guide-costume-arena.svg',
-    duelist: 'assets/guide-costume-duelist.svg',
-    commander: 'assets/guide-costume-commander.svg',
-    egypt: 'assets/guide-costume-egypt.svg'
-  };
   const areaLabels = {
     entrance: '정문', lobby: '중앙 로비', left: '좌측 회랑',
     right: '우측 회랑', special: '특별 전시실', focus: '작품 정면'
@@ -56,7 +48,7 @@
       '</div>',
       '<div class="museum-ui">',
         '<header class="museum-toolbar">',
-          '<div class="museum-location"><span>OIBUNG GALLERY · MUSEUM</span>',
+          '<div class="museum-location">',
             '<strong id="museum-area-name">정문</strong></div>',
           '<div class="museum-toolbar-actions">',
             '<button type="button" id="museum-map-button" aria-haspopup="dialog">전시 지도</button>',
@@ -80,7 +72,7 @@
           '<button type="button" id="museum-right" aria-label="오른쪽으로 이동">→<span>다음</span></button>',
         '</nav>',
         '<div class="museum-curator" id="museum-curator">',
-          '<img id="museum-curator-image" src="assets/guide-costume-egypt.svg" alt="작품별 의상을 입은 안내 비서" decoding="async">',
+          '<img id="museum-curator-image" src="assets/museum-curator.png" width="1024" height="1536" alt="짙은 녹색 제복을 입은 오이붕 갤러리 안내 비서" decoding="async">',
           '<div class="museum-curator-dialogue" id="museum-curator-dialogue">어서 오세요. 작품을 둘러보세요.</div>',
           '<button type="button" id="museum-guide-toggle" aria-label="안내 비서 숨기기">×</button>',
         '</div>',
@@ -108,7 +100,6 @@
   const entry = el('museum-entry-copy');
   const map = el('museum-map-dialog');
   const guidance = el('museum-curator');
-  const guideImage = el('museum-curator-image');
   const guideSpeech = el('museum-curator-dialogue');
   const guideShow = el('museum-guide-show');
   const intro = el('museum-description');
@@ -135,16 +126,6 @@
       return areaItems(scene.area)[scene.selected] || null;
     }
     return null;
-  }
-  function outfitFor(game) {
-    const name = [game.id, game.title, game.english].filter(Boolean).join(' ').toLowerCase();
-    const genre = String(game.genre || '').toLowerCase();
-    if (/퍼리|furry|furi|고양이|cat/.test(name + ' ' + genre)) return 'maid';
-    if (/오든링|oden.?ring|elden.?ring|소울|souls/.test(name + ' ' + genre)) return 'knight';
-    if (/아레나|arena|ballfight|핀볼|pinball/.test(name + ' ' + genre)) return 'arena';
-    if (/오이챔스|ochams|duel|듀얼/.test(name)) return 'duelist';
-    if (/대학전선|campus|strategy|전략/.test(name + ' ' + genre)) return 'commander';
-    return 'egypt';
   }
   function makeFrame(card, ordinal, place) {
     const button = document.createElement('button');
@@ -314,9 +295,6 @@
     el('museum-details').hidden = !card;
     el('museum-approach').disabled = !card;
     el('museum-forward').disabled = !card && scene.area !== 'entrance';
-    const gameForGuide = game || {};
-    const outfitSrc = wardrobe[outfitFor(gameForGuide)];
-    if (guideImage.getAttribute('src') !== outfitSrc) guideImage.src = outfitSrc;
     guideSpeech.textContent = mode() === 'dark'
       ? '불이 꺼졌네요. 손전등으로 액자를 찾아보세요.'
       : scene.area === 'entrance'

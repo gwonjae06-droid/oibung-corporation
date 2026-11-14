@@ -30,7 +30,6 @@ window.OIBUNG_SCENE_ASSETS = Object.freeze({
    Left/right walk through ALL corridors (no wing to get stuck in). */
 (function(){
   var css='#gallery-3d .museum-map-rooms{display:none}'+
-    '#gallery-3d .museum-curator-dialogue{top:36%}'+
     '#gallery-3d .museum-view::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;mix-blend-mode:soft-light;background:var(--corridor-tint,transparent);transition:background .5s}'+
     '#gallery-3d .museum-view[data-corridor="1"]{--corridor-tint:#3a5a9a66}'+
     '#gallery-3d .museum-view[data-corridor="2"]{--corridor-tint:#8a3a5a60}'+
@@ -70,9 +69,8 @@ window.OIBUNG_SCENE_ASSETS = Object.freeze({
   },true);
 })();
 
-/* Corridors, map jumps, curator art. */
+/* Corridors and map jumps. */
 (function(){
-  var SRC='assets/guide-curator-anime.svg';
   var lobbyBusy=false;
   function info(){
     var stage=document.getElementById('museum-stage');
@@ -108,11 +106,6 @@ window.OIBUNG_SCENE_ASSETS = Object.freeze({
     go(target,6);
   },true);
   function apply(){
-    var list=document.querySelectorAll('#gallery-3d .museum-curator img');
-    for(var i=0;i<list.length;i++){
-      var img=list[i];
-      if(img.getAttribute('src')!==SRC){img.removeAttribute('srcset');img.setAttribute('src',SRC);}
-    }
     var ps=document.querySelectorAll('#gallery-3d .museum-painting');
     for(var j=0;j<ps.length;j++){
       var a=ps[j].getAttribute('aria-label')||'';
@@ -143,7 +136,7 @@ window.OIBUNG_SCENE_ASSETS = Object.freeze({
   }
   function start(){
     apply();
-    new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['src','data-area']});
+    new MutationObserver(apply).observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:['data-area']});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
