@@ -149,6 +149,13 @@
     if (!panel.hidden && !dock.contains(event.target)) openMap(false);
   });
   document.addEventListener('keydown', event => {
+    if (event.code === 'KeyM' && document.body.classList.contains('three-gallery-ready')
+      && !dock.hidden && !document.querySelector('dialog[open]')
+      && !event.target.closest?.('input,textarea,select,[contenteditable="true"]')) {
+      event.preventDefault();
+      openMap(panel.hidden);
+      return;
+    }
     if (event.key === 'Escape' && !panel.hidden) {
       event.stopPropagation();
       openMap(false);
