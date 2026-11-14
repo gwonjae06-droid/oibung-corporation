@@ -1,0 +1,85 @@
+{
+  "style": "Hybrid B: static Blender museum, crisp HTML, pixel curator and related creature",
+  "source": "assets/curator/{neutral,present,explain,alert}.png",
+  "logical_height": 224,
+  "palette_colors": 32,
+  "assets": {
+    "curator-neutral.png": {
+      "size": [
+        56,
+        224
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    "curator-present.png": {
+      "size": [
+        79,
+        224
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    "curator-explain.png": {
+      "size": [
+        79,
+        224
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    "curator-alert.png": {
+      "size": [
+        60,
+        224
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    "curator-corrupt.png": {
+      "size": [
+        100,
+        266
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    "curator-monster-1.png": {
+      "size": [
+        100,
+        266
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    "curator-monster-2.png": {
+      "size": [
+        100,
+        266
+      ],
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    }
+  },
+  "sha256_original_portrait": "f4714b0c97824355dc8422a42a5a81f433a7595a1b3fada6429101be9ccaee7e",
+  "notes": [
+    "Source portrait files preserved; no generated replacement character",
+    "Monster is pixel deformation of the same original curator, not separate stock art",
+    "No Blender backgrounds, game thumbnails, or HTML text pixelated",
+    "Not genuine per-bone rigging or frame-by-frame hand-painted pixel animation"
+  ]
+}
