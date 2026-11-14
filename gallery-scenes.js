@@ -119,6 +119,13 @@ function render(message){
  const asset=window.OIBUNG_SCENE_ASSETS?.[area]?.[night?'dark':'light'];
  const url=typeof asset==='string'?asset:(matchMedia('(max-width:700px)').matches?asset?.mobile:asset?.desktop);
  room.style.backgroundImage=url?'url("'+url+'")':'';
+ // A same-camera daylight render is revealed only where the flashlight shines.
+ // This makes the pitch-black pre-rendered night museum navigable without
+ // changing the architecture or any work's uploaded artwork.
+ const dayAsset=window.OIBUNG_SCENE_ASSETS?.[area]?.light;
+ const dayUrl=typeof dayAsset==='string'?dayAsset:
+   (matchMedia('(max-width:700px)').matches?dayAsset?.mobile:dayAsset?.desktop);
+ room.style.setProperty('--museum-day-room',dayUrl?'url("'+dayUrl+'")':'none');
  const small=matchMedia('(max-width:700px)').matches,variant=S.index%4;
  const poseSrc=curatorV3?curatorV3.humanFrames[CURATOR_V3_GUIDE[curatorPose]??0]:PIXEL_BASE+'curator-'+curatorPose+'.png';
  if(stage.dataset.transformation!=='true'&&actor.getAttribute('src')!==poseSrc)actor.src=poseSrc;
