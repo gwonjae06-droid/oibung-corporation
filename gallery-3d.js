@@ -299,27 +299,6 @@
     if(/대학전선|campus|frontier|전략/.test(phrase))return 'commander';
     return 'egypt';
   }
-  const wardrobe={
-    maid:'assets/guide-costume-maid.svg',knight:'assets/guide-costume-knight.svg',
-    arena:'assets/guide-costume-arena.svg',duelist:'assets/guide-costume-duelist.svg',
-    commander:'assets/guide-costume-commander.svg',egypt:'assets/guide-costume-egypt.svg'
-  };
-  const guideTextures={};
-  const loader=new THREE.TextureLoader();
-  for(const [key,url] of Object.entries(wardrobe)) {
-    loader.load(url,texture=>{
-      texture.colorSpace=THREE.SRGBColorSpace;
-      guideTextures[key]=texture;
-      avatarSprites.forEach(({sprite,costume})=>{
-        if(costume===key && sprite.isSprite){
-          sprite.material.map=texture;
-          sprite.material.opacity=1;
-          sprite.material.color.set(darkness?0x272326:0xffffff);
-          sprite.material.needsUpdate=true;
-        }
-      });
-    },undefined,()=>{ /* Costumes are optional; artwork remains interactive. */ });
-  }
 
   function fromCatalog(){
     return [...grid.querySelectorAll(':scope > .game-card')].map(card=>{
@@ -335,8 +314,7 @@
   }
   function clearWorld(){
     if(!world)return;
-    // Dispose stage-only meshes and sprite materials; wardrobe textures are
-    // cached and reused by the next exhibit build.
+    // Cleanly dispose the previous hall; no curator assets remain.
     scene.remove(world);
     world.traverse(node=>{
       node.geometry?.dispose?.();
@@ -347,8 +325,8 @@
       else disposeMat(node.material);
     });
     allTextures.forEach(t=>t.dispose());allTextures=[];
-    paintings.length=0;exhibitionLights.length=0;emergencyLights.length=0;
-    glowingFixtures.length=0;avatarSprites.length=0;
+    paintings.length=0;portalSurfaces.length=0;exhibitionLights.length=0;
+    emergencyLights.length=0;glowingFixtures.length=0;
     world=null;
   }
 
@@ -630,10 +608,7 @@
       group.rotation.y=side>0 ? -Math.PI/2 : Math.PI/2;
       world.add(group);
       elBox(group,0,0,-.02,4.26,2.77,.13,materials.black);
-      const painting=new THREE.Mesh(new THREE.PlaneGeometry(3.74,2.31),
-        new THREE.MeshStandardMaterial({map:artworkTexture(game,i),roughness:.82,metalness:0,side:THREE.DoubleSide}));
-      painting.position.z=.067;
-      painting.userData.galleryIndex=i;
+      const painting=portalPainting(artworkTexture(game,i),i);
       paintings.push(painting);group.add(painting);
       const frameMat=materials.gold;
       elBox(group,0,1.27,.11,4.32,.20,.22,frameMat);
@@ -649,36 +624,11 @@
       spot.position.set(side*4.1,4.9,z);
       spot.target.position.set(side*5.0,2.7,z);
       world.add(spot,spot.target);exhibitionLights.push(spot);
-      // Exhibited guide, intentionally illustrated rather than claiming that
-      // disjoint primitives constitute natural human 3D character modeling.
-      // Three.js Sprite keeps artwork facing the visitor from every angle.
-      const costume=costumeKey(game);
-      const spriteMat=new THREE.SpriteMaterial({
-        map:guideTextures[costume] || null,
-        transparent:true,depthWrite:false,
-        color:0xffffff,opacity:guideTextures[costume]?1:0
-      });
-      const sprite=new THREE.Sprite(spriteMat);
-      sprite.name='Gallery illustrated curator: '+costume;
-      sprite.userData.galleryCuratorIllustration=true;
-      sprite.position.set(side*3.64,1.47,z-1.67);
-      const artRatio=costume==='maid'?.53:costume==='knight'?.81:.65;
-      sprite.scale.set(2.76*artRatio,2.76,1);
-      sprite.renderOrder=5;
-      world.add(sprite);
-      avatarSprites.push({sprite,costume,y:sprite.position.y,phase:i*1.17});
-      const ropeZ=z+3.0;
-      [-1,1].forEach(offset=>{
-        elCylinder(world,side*3.85,.42,ropeZ+offset*1.75,.07,.09,.84,materials.gold);
-      });
+      // The painting itself is the portal: no floating guide or NPC.
       const lightArt=new THREE.PointLight(0xffc486,0,6,2);
       lightArt.position.set(side*3.9,3.7,z);
       world.add(lightArt);exhibitionLights.push(lightArt);
     });
-    // Exhibition NPCs belong to the 3D gallery itself. The legacy
-    // "hide guide" preference hides only the 2D floating assistant panel;
-    // it must NEVER remove every 3D character from the museum.
-    avatarSprites.forEach(({sprite})=>{sprite.visible=true;});
     const keep=next.findIndex(g=>g.id===previous);
     if(keep>=0){camera.position.z=Math.min(6,Math.max(roomEnd+1.2,camera.position.z));}
     else {
@@ -715,10 +665,8 @@
     exhibitionLights.forEach(light=>light.intensity=0);
     emergencyLights.forEach(light=>light.intensity=0);
     glowingFixtures.forEach(mat=>mat.emissiveIntensity=darkness?0:1.25);
-    avatarSprites.forEach(({sprite})=>{
-      if(!sprite.isSprite)return;
-      sprite.material.color.set(darkness?0x272326:0xffffff);
-      sprite.material.opacity=sprite.material.map?1:0;
+    portalSurfaces.forEach(({uniforms})=>{
+      uniforms.uDim.value=darkness?.45:1;
     });
     lightToggle.textContent=darkness?'☀ 불 켜기':'☾ 소등';
     flashlightButton.hidden=!darkness;
@@ -733,20 +681,8 @@
         light.intensity=near?(.42 + Math.sin(time*.0017+light.position.z)*.06):0;
       });
       torch.intensity=flashlightOn?(16.5 + .45*Math.sin(time*.0038) + .12*Math.sin(time*.041)):0;
-      // Basic sprite shaders ignore real world lights. Light the illustrated
-      // guide ONLY when the visitor is nearby with their torch on.
-      avatarSprites.forEach(({sprite})=>{
-        if(!sprite.isSprite)return;
-        const dx=sprite.position.x-camera.position.x, dz=sprite.position.z-camera.position.z;
-        const distance=Math.hypot(dx,dz);
-        const look=new THREE.Vector3(dx,0,dz).normalize();
-        const facing=Math.max(0,-Math.sin(yaw)*look.x-Math.cos(yaw)*look.z);
-        const lightAmount=flashlightOn?Math.max(0,1-distance/9)*facing:0;
-        sprite.material.color.setRGB(
-          .105+lightAmount*.87,
-          .090+lightAmount*.86,
-          .100+lightAmount*.88
-        );
+      portalSurfaces.forEach(({uniforms})=>{
+        uniforms.uDim.value=flashlightOn?.48:.13;
       });
     } else {
       exhibitionLights.forEach(light=>{
@@ -754,7 +690,7 @@
         light.intensity=dz<14 ? (light.isSpotLight?8.7:light.distance<=6?4.2:12.5) : 0;
       });
       emergencyLights.forEach(light=>light.intensity=0);
-      avatarSprites.forEach(({sprite})=>{if(sprite.isSprite)sprite.material.color.set(0xffffff)});
+      portalSurfaces.forEach(({uniforms})=>{uniforms.uDim.value=1;});
     }
   }
 
@@ -856,11 +792,12 @@
     if(hasEntered && time-lastCount>90){
       updateFocus();lastCount=time;
     }
-    // Lightweight idle motion for artwork; this is *not* a 3D rig.
-    avatarSprites.forEach(({sprite,y,phase})=>{
-      sprite.visible=Math.abs(sprite.position.z-camera.position.z)<23;
-      if(sprite.visible && !reduced())
-        sprite.position.y=y+Math.sin(time*.00145+phase)*.023;
+    portalSurfaces.forEach(({uniforms,index})=>{
+      uniforms.uTime.value=time*.001;
+      const highlighted=sceneMode==='hall' && (focused===index);
+      const globalWarp=portalTransition?.kind==='enter' && portalTransition.index===index;
+      const targetWarp=globalWarp?1.6:highlighted?.26:.015;
+      uniforms.uWarp.value+=(targetWarp-uniforms.uWarp.value)*Math.min(1,dt*11);
     });
     renderer.render(scene,camera);
   }
