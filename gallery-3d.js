@@ -879,27 +879,42 @@
       -(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-joyY;
     const sideways=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)
       -(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)+joyX;
-    const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')?5.5:3.25);
+    const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')?5.4:3.3);
     const len=Math.hypot(forward,sideways);
     velocity=Math.min(1,len);
     if(len>.03){
       const f=forward/len,r=sideways/len;
       const dx=(-Math.sin(yaw)*f+Math.cos(yaw)*r)*dt*speed;
       const dz=(-Math.cos(yaw)*f-Math.sin(yaw)*r)*dt*speed;
-      // A corridor, not a spectator rail: the visitor can walk in all directions.
-      camera.position.x=THREE.MathUtils.clamp(camera.position.x+dx,-4.5,4.5);
-      camera.position.z=THREE.MathUtils.clamp(camera.position.z+dz,roomEnd+1.1,6.35);
+      const room=sceneMode==='inside';
+      camera.position.x=THREE.MathUtils.clamp(
+        camera.position.x+dx,room?-7.2:-4.5,room?7.2:4.5);
+      camera.position.z=THREE.MathUtils.clamp(
+        camera.position.z+dz,room?-7.35:roomEnd+1.1,
+        room?7.55:6.35);
       stride+=dt*speed;
       lastMove=performance.now();
     }
-    camera.position.y=1.68+(reduced()?0:Math.sin(stride*8)*.012*velocity);
+    // Jump is genuine camera height physics: impulse, gravity, landing.
+    // Never alter the global gallery coordinate frame to fake a jump.
+    if(jumpHeight>0 || jumpVelocity>0){
+      jumpHeight+=jumpVelocity*dt;
+      jumpVelocity-=14.2*dt;
+      if(jumpHeight<=0){
+        jumpHeight=0;jumpVelocity=0;queuedJump=null;
+      }
+    }
+    const bob=reduced()?0:Math.sin(stride*8)*.012*velocity;
+    camera.position.y=1.68+jumpHeight+bob;
   }
   function targetedArt(){
+    if(sceneMode!=='hall')return -1;
     raycaster.setFromCamera(center,camera);
     const hits=raycaster.intersectObjects(paintings,false);
     return hits.length?hits[0].object.userData.galleryIndex:-1;
   }
   function nearestArt(){
+    if(sceneMode!=='hall')return -1;
     let closest=-1,dist=Infinity;
     exhibits.forEach((game,i)=>{
       const z=-4.3-i*9.4,side=i%2===0?1:-1;
@@ -909,6 +924,18 @@
     return dist<7.5?closest:-1;
   }
   function updateFocus(){
+    if(sceneMode==='inside'){
+      const game=exhibits[activeExhibit];
+      focused=activeExhibit;
+      if(!game)return;
+      focusLabel.textContent=game.title;
+      action.hidden=false;
+      action.dataset.index=String(activeExhibit);
+      hint.textContent=exitInReach()
+        ?'출구 액자 가까이 · 점프 또는 R로 복도 귀환'
+        :'작품 속 전시실 · E로 작품 정보 · R로 귀환';
+      return;
+    }
     const targeted=targetedArt();
     focused=targeted;
     const near=nearestArt();
@@ -921,12 +948,14 @@
     if(game){
       focusLabel.textContent=game.title;
       action.hidden=false;action.dataset.index=String(idx);
-      hint.textContent='E 또는 작품 클릭 · 자세히 감상하기';
+      hint.textContent='Space 점프 / 액자 클릭으로 진입 · E 작품 정보';
     } else {
       action.hidden=true;
       const nearest=exhibits[near];
       focusLabel.textContent=nearest ? nearest.title : '오이붕 갤러리';
-      hint.textContent=darkness?'손전등 [F] · 작품을 찾아 다가가세요':'주변을 둘러보고 작품에 가까이 다가가세요';
+      hint.textContent=darkness
+        ?'손전등 [F] · 액자 앞에서 Space 점프'
+        :'액자에 다가가서 Space를 눌러 뛰어드세요';
     }
   }
   function openArtwork(index){
@@ -936,10 +965,19 @@
   }
   function teleport(index){
     if(!exhibits[index])return;
+    if(portalTransition)finishPortalTransition();
+    if(sceneMode==='inside'){
+      sceneMode='hall';activeExhibit=-1;
+      disposePocket();
+      world.visible=true;
+      savedHallPose=null;
+    }
+    jumpHeight=0;jumpVelocity=0;queuedJump=null;
     const side=index%2===0?1:-1;
     camera.position.set(side*2.65,1.68,-4.3-index*9.4+.25);
-    yaw=side>0?-Math.PI/2:Math.PI/2;pitch=.30;
-    setOrientation();updateFocus();
+    yaw=side>0?-Math.PI/2:Math.PI/2;pitch=.06;
+    reflectRoomUI();
+    setOrientation();applyLighting();updateFocus();
   }
   function paused(){
     return document.hidden || window.OIBUNG_CURRENT_VIEW==='reviews' ||
@@ -957,10 +995,14 @@
     }
     const dt=Math.min(.05,Math.max(0,(time-lastTime)/1000||0));
     lastTime=time;
-    if(hasEntered)movePlayer(dt);
+    const inTransition=advancePortalTransition(time);
+    if(hasEntered && !inTransition){
+      movePlayer(dt);
+      checkAirbornePortal(time);
+    }
     updateNearbyLights(time);
     setOrientation();
-    if(hasEntered && time-lastCount>90){
+    if(hasEntered && !inTransition && time-lastCount>90){
       updateFocus();lastCount=time;
     }
     portalSurfaces.forEach(({uniforms,index})=>{
