@@ -6,6 +6,7 @@ on:
       - "tools/prepare_curator.py"
       - "tools/finish_curator.py"
       - "tests/blackout-rebuild.cjs"
+      - "gallery-scenes.css"
       - ".github/workflows/curator-recovery.yml"
   workflow_dispatch:
 
