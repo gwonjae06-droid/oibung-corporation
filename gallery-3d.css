@@ -330,3 +330,11 @@ body.three-gallery-ready .page-switcher{z-index:54}
   #gallery-3d .gallery-3d-hud{top:80px;max-width:250px}
   #gallery-3d .gallery-3d-location{top:135px}
 }
+
+/* Free cursor third-person orbit: drag the scene instead of pointer locking. */
+#gallery-3d.gallery-3d-entered #gallery-3d-canvas canvas{
+  cursor:grab;
+}
+#gallery-3d.gallery-3d-entered #gallery-3d-canvas canvas:active{
+  cursor:grabbing;
+}
