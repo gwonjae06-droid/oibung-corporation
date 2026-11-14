@@ -369,10 +369,9 @@
     const detailButton = event.target.closest('[data-details]');
     if (detailButton) { openDetail(detailButton.dataset.details); return; }
     const card = event.target.closest('.game-card');
-    // In the immersive reference scenes, the room is scenery: only the
-    // physical painting itself (or Enter on the focused card) opens details.
-    if (card && !card.querySelector('.museum-scene-stage') &&
-        !event.target.closest('button,a,input,select,textarea,label,summary')) {
+    // Direct catalog: clicking anywhere on the card (except dedicated
+    // edit/favorite/play controls) opens the existing detail dialog.
+    if (card && !event.target.closest('button,a,input,select,textarea,label,summary')) {
       openDetail(card.dataset.gameId);
     }
   });
