@@ -656,3 +656,26 @@ html.motion-off #gallery-3d [data-gallery-mode="dark"] .museum-emergency-light{a
   #gallery-3d .museum-location span{display:none}
   #gallery-3d .museum-location strong{font-size:13px}
 }
+
+
+/* Night flashlight reveals the SAME-camera day render through a soft mask.
+   This is brighter than unmasking pixels already rendered without lighting. */
+#gallery-3d .museum-view::before{
+  content:"";position:absolute;inset:0;z-index:5;pointer-events:none;
+  background-image:var(--museum-day-render,none);
+  background-size:cover;background-position:center;
+  -webkit-mask-image:radial-gradient(circle clamp(145px,21vw,335px) at var(--torch-x) var(--torch-y),
+    #000e 0%,#000a 40%,#0000 90%);
+  mask-image:radial-gradient(circle clamp(145px,21vw,335px) at var(--torch-x) var(--torch-y),
+    #000e 0%,#000a 40%,#0000 90%);
+  opacity:0;transition:opacity .22s ease;
+}
+#gallery-3d [data-gallery-mode="dark"]:not(.museum-torch-off) .museum-view.museum-has-render::before{opacity:.86}
+@media(max-width:520px){
+  #gallery-3d .museum-view::before{
+    -webkit-mask-image:radial-gradient(circle 155px at var(--torch-x) var(--torch-y),
+      #000d 0%,#0008 42%,transparent 92%);
+    mask-image:radial-gradient(circle 155px at var(--torch-x) var(--torch-y),
+      #000d 0%,#0008 42%,transparent 92%);
+  }
+}
