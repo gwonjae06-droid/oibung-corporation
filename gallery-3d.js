@@ -119,7 +119,7 @@
   const walls=[];const cameraWalls=[];const exhibitPlacements=[];
   const playerRadius=.41;
   let focused = -1, nearIndex = -1;
-  let lastTime = 0, lastCount = 0, lastMove = 0;
+  let lastTime = 0, lastCount = 0, lastMove = 0,lastMapTick=0;
   let hasEntered = false, flashlightOn = true;
   let darkness = false, active = false, rebuilding = false;
   let roomEnd = -20;
@@ -1161,6 +1161,11 @@
       wash.position.set(loc.x+loc.nx*1.4,loc.y+1.0,loc.z+loc.nz*1.4);
       world.add(wash);exhibitionLights.push(wash);
     });
+    document.dispatchEvent(new CustomEvent('oibung-gallery-layout',{
+      detail:{placements:exhibitPlacements.map(loc=>({
+        x:loc.x,y:loc.y,z:loc.z,upper:loc.upper
+      }))}
+    }));
     const keep=next.findIndex(g=>g.id===previous);
     const roomIndex=previousRoomId
       ?next.findIndex(g=>g.id===previousRoomId):-1;
@@ -1423,6 +1428,15 @@
     setOrientation();
     updateExplorer(time,dt);
     followPlayer(dt);
+    if(time-lastMapTick>120){
+      lastMapTick=time;
+      const mapPanel=document.getElementById('gallery-room-map-panel');
+      if(mapPanel && !mapPanel.hidden){
+        document.dispatchEvent(new CustomEvent('oibung-gallery-player-motion',{
+          detail:{x:camera.position.x,z:camera.position.z,yaw,room:sceneMode}
+        }));
+      }
+    }
     if(hasEntered && !inTransition && time-lastCount>90){
       updateFocus();lastCount=time;
     }
