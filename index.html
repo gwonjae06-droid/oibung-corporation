@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#c6c0b8">
-  <meta name="description" content="친구들이 만든 게임을 전시하는 오이붕 갤러리입니다. 게임 소개와 스크린샷, 플레이어 후기를 둘러보세요.">
+  <meta name="description" content="친구들이 만든 게임을 3D 1인칭 전시관에서 직접 탐험하세요. 작품 감상과 플레이어 후기, 소등형 공포 전시관을 경험할 수 있습니다.">
   <meta property="og:title" content="오이붕 갤러리">
-  <meta property="og:description" content="친구들이 만든 게임을 한자리에 모은 작품관입니다.">
+  <meta property="og:description" content="친구들의 게임을 직접 걸어 다니며 감상하는 3D 오이붕 갤러리입니다.">
   <meta property="og:type" content="website">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <title>오이붕 갤러리</title>
@@ -44,7 +44,7 @@
   <script src="gallery-guide.js?v=curator-poses-2" defer></script>
   <script src="gallery-curator.js?v=explore-3" defer></script>
   <script src="gallery-room-map.js?v=room-map-1" defer></script>
-  <script src="gallery-3d.js?v=first-person-1" defer></script>
+  <script src="gallery-3d.js?v=first-person-2" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -77,11 +77,11 @@
       <button type="button" data-open-editor>작품 등록</button>
       <button type="button" id="menu-open-filters">작품 검색 · 분류</button>
       <div class="gallery-mode-switch" role="group" aria-label="전시관 밝기">
-        <button type="button" data-gallery-mode-choice="light" aria-pressed="true" aria-label="라이트 테마" title="라이트 테마">
+        <button type="button" data-gallery-mode-choice="light" aria-pressed="true" aria-label="전시관 조명 켜기" title="일반 조명">
           <span class="gallery-mode-icon" aria-hidden="true">☀</span><span class="gallery-mode-text">라이트</span>
         </button>
-        <button type="button" data-gallery-mode-choice="dark" aria-pressed="false" aria-label="다크 테마" title="다크 테마">
-          <span class="gallery-mode-icon" aria-hidden="true">☾</span><span class="gallery-mode-text">다크</span>
+        <button type="button" data-gallery-mode-choice="dark" aria-pressed="false" aria-label="모든 조명 소등 · 공포 전시관" title="소등 · 공포 모드">
+          <span class="gallery-mode-icon" aria-hidden="true">☾</span><span class="gallery-mode-text">소등</span>
         </button>
       </div>
       <button id="motion-toggle" class="motion-control" type="button" aria-label="애니메이션 줄이기" aria-pressed="false">
