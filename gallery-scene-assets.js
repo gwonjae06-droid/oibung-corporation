@@ -26,9 +26,10 @@ window.OIBUNG_SCENE_ASSETS = Object.freeze({
   }
 });
 
-/* Corridor model + large per-corridor curator composition (original curators: costume SVG and hi-res poses). */
+/* Corridor model + large per-corridor curator composition (single curator image for every corridor). */
 (function(){
   var css=[
+    '#gallery-guide{display:none!important}',
     '#gallery-3d .museum-map-rooms{display:none}',
     '#gallery-3d .museum-view::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;mix-blend-mode:soft-light;background:var(--corridor-tint,transparent);transition:background .5s}',
     '#gallery-3d .museum-view[data-corridor="1"]{--corridor-tint:#3a5a9a66}',
@@ -84,8 +85,8 @@ window.OIBUNG_SCENE_ASSETS = Object.freeze({
 
 /* Corridors, map jumps, curator composition. */
 (function(){
-  /* Odd corridors (2, 4, ...) use the three original hi-res poses; the others keep the museum's own per-game costume curator. */
-  var HIRES=['assets/guide-hires-present.webp','assets/guide-hires-calm.webp','assets/guide-hires-welcome.webp'];
+  /* The one and only curator image. */
+  var SRC='KakaoTalk_20261114_191639676.png';
   var DESK=[{h:150,b:-20,cx:17,rot:0},{h:125,b:-5,cx:15,rot:-2},{h:175,b:-35,cx:20,rot:1.5},{h:140,b:-14,cx:13,rot:-1},{h:160,b:-27,cx:18,rot:2}];
   var MOB=[{h:78,b:-14,cx:16,rot:0},{h:70,b:-8,cx:17,rot:-2},{h:90,b:-22,cx:18,rot:1.5},{h:74,b:-10,cx:15,rot:-1},{h:84,b:-18,cx:17,rot:2}];
   var lobbyBusy=false;
@@ -126,10 +127,7 @@ window.OIBUNG_SCENE_ASSETS = Object.freeze({
     var box=document.getElementById('museum-curator');
     if(!box)return;
     var img=box.querySelector('img');
-    if(img&&idx%2===1){
-      var want=HIRES[Math.floor(idx/2)%3];
-      if(img.getAttribute('src')!==want){img.removeAttribute('srcset');img.setAttribute('src',want);}
-    }
+    if(img&&img.getAttribute('src')!==SRC){img.removeAttribute('srcset');img.setAttribute('src',SRC);}
     var mobile=window.matchMedia('(max-width:700px)').matches;
     var cfg=(mobile?MOB:DESK)[idx%5];
     var key=(mobile?'m':'d')+idx;
