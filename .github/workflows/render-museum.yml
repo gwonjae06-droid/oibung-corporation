@@ -14,6 +14,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 jobs:
   render:
@@ -24,12 +25,25 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           persist-credentials: true
+      - name: Reuse verified images from the previous successful render
+        id: restore
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p assets/museum
+          if gh run download 43570476998 --name oibung-museum-1 --dir assets/museum; then
+            echo "restored=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "restored=no" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install Blender and image encoder
+        if: steps.restore.outputs.restored != 'yes'
         run: |
           sudo apt-get update
           sudo apt-get install -y blender xvfb ffmpeg libgl1-mesa-dri
           blender --version | head -3
       - name: Render 24 camera-locked architectural backgrounds
+        if: steps.restore.outputs.restored != 'yes'
         env:
           QUALITY: ${{ github.event.inputs.quality || 'final' }}
           LIBGL_ALWAYS_SOFTWARE: "1"
@@ -41,6 +55,7 @@ jobs:
           fi
           test "$(find build/museum -maxdepth 1 -name '*.png' | wc -l)" -eq 24
       - name: Encode AVIF
+        if: steps.restore.outputs.restored != 'yes'
         run: |
           mkdir -p assets/museum
           for png in build/museum/*.png; do
@@ -102,5 +117,8 @@ jobs:
           git add assets/museum gallery-scene-assets.js
           if ! git diff --cached --quiet; then
             git commit -m "assets: pre-render museum backgrounds [skip ci]"
+            # The contributor branch may have changed while rendering.
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME"
             git push origin HEAD:"$GITHUB_REF_NAME"
           fi
