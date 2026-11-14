@@ -273,3 +273,60 @@ body.three-gallery-ready .page-switcher{z-index:54}
     font-size:11px;padding:8px 11px;
   }
 }
+
+
+/* CASTLE PLATFORMER: a clean third-person screen, not a camera crosshair UI.
+ * The explorer and paintings convey where the visitor can jump. */
+#gallery-3d .gallery-3d-reticle{display:none!important}
+#gallery-3d .gallery-3d-hud #gallery-3d-camera{
+  background:#d4bb8ae8;color:#202622;border:1px solid #fae9b3;
+  min-width:91px;letter-spacing:-.02em;
+}
+#gallery-3d .gallery-3d-hud #gallery-3d-camera:hover{
+  background:#fff0c3;color:#131c20
+}
+#gallery-3d .gallery-3d-welcome{
+  max-width:min(510px,calc(100vw - 22px));
+  border-radius:8px;
+  background:linear-gradient(155deg,#263a3af7,#101e28fa);
+  border:2px solid #d3b477;
+}
+#gallery-3d .gallery-3d-welcome h2{
+  letter-spacing:-.03em;
+}
+#gallery-3d .gallery-3d-welcome p{
+  line-height:1.77;
+}
+#gallery-3d .gallery-3d-location{
+  border-right:2px solid #d6bc86;
+  background:linear-gradient(90deg,transparent,#18232bb0 25%);
+}
+#gallery-3d .gallery-3d-location-title{
+  text-shadow:0 1px 5px #000b;
+}
+@media(pointer:coarse){
+  #gallery-3d .gallery-3d-hud{
+    flex-wrap:wrap;justify-content:flex-end;
+    max-width:min(275px,65vw);
+  }
+  #gallery-3d .gallery-3d-hud button{
+    min-height:38px;font-size:11px;padding:7px 9px;
+  }
+  #gallery-3d .gallery-3d-location{
+    pointer-events:none;
+    max-width:min(40vw,210px);
+  }
+}
+@media(max-width:760px) and (orientation:portrait){
+  #gallery-3d .gallery-3d-hud{
+    top:clamp(123px,17dvh,157px);
+    right:10px;
+  }
+  #gallery-3d .gallery-3d-welcome{
+    padding:22px 18px;
+  }
+}
+@media(max-height:560px) and (orientation:landscape){
+  #gallery-3d .gallery-3d-hud{top:80px;max-width:250px}
+  #gallery-3d .gallery-3d-location{top:135px}
+}
