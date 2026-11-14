@@ -503,10 +503,11 @@
     renderer.render(scene,camera);
   }
   function isUserTyping(event){
-    return event.target.closest?.('input,textarea,select,[contenteditable="true"],button,a,summary');
+    return !!event.target.closest?.('input,textarea,select,[contenteditable="true"],dialog,[role="dialog"],.gallery-room-map,#mobile-nav,.gallery-3d-hud,.page-switcher');
   }
   function start(){
     hasEntered=true;surface.classList.add('gallery-3d-entered');
+    enter.blur();
     welcome.hidden=true;
     hint.textContent='WASD 이동 · 마우스로 둘러보기 · E 감상';
     if(!mobile && renderer.domElement.requestPointerLock)
@@ -616,6 +617,13 @@
   document.addEventListener('oibung-page-changed',()=>{lastTime=performance.now()});
   document.querySelectorAll('dialog').forEach(dialog=>{
     dialog.addEventListener('close',()=>{lastTime=performance.now()});
+  });
+  renderer.domElement.addEventListener('webglcontextlost', event => {
+    event.preventDefault();
+    if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
+    document.body.classList.remove('three-gallery-ready');
+    surface.hidden=true;
+    console.warn('[3D Gallery] WebGL context lost; showing original exhibition.');
   });
   build();
   if(!exhibits.length) {
