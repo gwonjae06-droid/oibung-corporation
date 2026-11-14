@@ -474,3 +474,6 @@ body.scene-gallery-ready #gallery-3d {
 html.motion-off #gallery-3d .museum-transition,
 html.motion-off #gallery-3d .museum-curator,
 html.motion-off #gallery-3d .museum-stage.museum-flicker .museum-blackout{animation:none!important}
+
+/* Once original Blender scenery is installed, don't draw surrogate architecture on top. */
+#gallery-3d .museum-view.museum-has-render .museum-architecture{opacity:0}
