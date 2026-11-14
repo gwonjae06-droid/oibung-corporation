@@ -132,7 +132,8 @@ def light(name, position, power, color, size=3):
     obj = bpy.data.objects.new(name, data)
     bpy.context.collection.objects.link(obj)
     obj.location = position
-    obj.rotation_euler = (math.pi, 0, 0)
+    # Area lights emit along local -Z; leave them facing down into the hall.
+    obj.rotation_euler = (0, 0, 0)
     return obj
 
 
