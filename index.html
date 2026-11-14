@@ -31,8 +31,8 @@
   <link rel="stylesheet" href="gallery-outfits.css?v=costumes-1">
   <link rel="stylesheet" href="gallery-clarity.css?v=explore-3">
   <link rel="stylesheet" href="gallery-room-map.css?v=room-map-1">
-  <link rel="stylesheet" href="gallery-3d.css?v=mint-local-sculpt-1">
-  <link rel="stylesheet" href="gallery-portal.css?v=painting-portal-2">
+  <link rel="stylesheet" href="gallery-3d.css?v=platformer-castle-1">
+  <link rel="stylesheet" href="gallery-portal.css?v=platformer-castle-1">
   <!-- 3D actor meshes are now local; only the 3D engine loads externally. -->
   <script src="gallery-display-mode.js?v=blackout-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
@@ -43,7 +43,7 @@
   <script src="motion.js?v=museum-daylight-1" defer></script>
   <script src="gallery-walk.js?v=explore-4" defer></script>
   <script src="gallery-room-map.js?v=room-map-1" defer></script>
-  <script src="gallery-3d.js?v=painting-portal-2" defer></script>
+  <script src="gallery-3d.js?v=platformer-castle-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -146,11 +146,12 @@
           </div>
         </details>
         <p class="catalog-count" id="catalog-count" aria-live="polite"></p>
-        <section class="walk-gallery" id="walk-gallery" aria-label="오이붕 갤러리 3D 1인칭 전시관">
-          <div id="gallery-3d" class="gallery-3d" aria-label="자유 이동형 3D 오이붕 미술관" hidden>
+        <section class="walk-gallery" id="walk-gallery" aria-label="오이붕 갤러리 3D 플랫폼 탐험 전시관">
+          <div id="gallery-3d" class="gallery-3d" aria-label="마스코트를 조작하며 탐험하는 3인칭 3D 오이붕 미술관" hidden>
             <div id="gallery-3d-canvas" class="gallery-3d-canvas"></div>
             <div class="gallery-3d-reticle" aria-hidden="true"></div>
             <div class="gallery-3d-hud">
+              <button id="gallery-3d-camera" type="button" title="3인칭 카메라 거리 변경 · V">시점: 보통</button>
               <button id="gallery-3d-lights" type="button" title="전시관 조명 켜기 또는 끄기">☾ 소등</button>
               <button id="gallery-3d-torch" type="button" title="손전등 조작" hidden>손전등 끄기 [F]</button>
             </div>
@@ -173,13 +174,13 @@
               <span id="gallery-3d-knob" class="gallery-3d-knob"></span>
             </div>
             <div id="gallery-3d-lookzone" class="gallery-3d-lookzone" aria-label="터치하여 시점 회전"></div>
-            <div class="gallery-3d-help">WASD 이동 · 마우스 시점 · Space 액자 점프 · E 정보 · R 귀환 · F 손전등</div>
+            <div class="gallery-3d-help">WASD 이동 · 마우스 카메라 · Space 연속 점프 · Shift 달리기 · V 시점 · E 정보 · R 귀환</div>
             <div id="gallery-3d-welcome" class="gallery-3d-welcome">
               <span class="museum-overline">OIBUNG GALLERY · IMMERSIVE EXHIBITION</span>
-              <h2>작품 속으로 들어가세요</h2>
-              <p>작품 액자에 가까이 다가가 점프해 보세요. 액자 표면이 물결치며 각 작품의 전용 전시 세계로 이어집니다. 작품 안에서 E를 눌러 상세 정보와 플레이 링크를 볼 수 있습니다.</p>
-              <p>PC: WASD 이동 · 마우스 시점 · Space 점프 · E 작품 정보 · R 돌아오기</p>
-              <p>모바일: 왼쪽 이동 · 오른쪽 시점 · 점프 버튼 · 전시관 귀환 버튼. 소등 모드에서는 손전등으로 액자를 찾아보세요.</p>
+              <h2>오이붕 성의 전시관에 오신 것을 환영합니다</h2>
+              <p>귀여운 오이붕 마스코트를 직접 움직여 보세요. 중앙 로비, 복도, 계단 위 갤러리를 탐험하며 벽에 걸린 액자 속으로 뛰어들 수 있습니다.</p>
+              <p>PC: WASD 이동 · 마우스 카메라 · Space 점프(연속 점프) · Shift+Space 멀리뛰기 · V 카메라 거리 · E 작품 정보 · R 귀환</p>
+              <p>모바일: 왼쪽 조이스틱 이동 · 오른쪽 드래그 카메라 · 점프 버튼 · 시점 버튼. 다크모드에서는 손전등으로 액자를 찾아보세요.</p>
               <button id="gallery-3d-enter" class="gallery-3d-start" type="button">전시관 입장하기</button>
             </div>
           </div>
