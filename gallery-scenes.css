@@ -68,3 +68,11 @@ body.scene-gallery-ready #gallery-3d{display:block!important;position:absolute!i
   #gallery-3d .bk-caption{left:31%;right:9%;bottom:5px;padding:6px 10px}
   #gallery-3d .bk-caption p{font-size:11px;line-height:1.35;margin:3px 0}
 }
+
+
+/* Final visual QA: keep previous-room arrow away from the curator's face,
+   and avoid painting the old site's brand under the gallery's top actions. */
+body.blackout-rebuild .site-header .brand{visibility:hidden!important;pointer-events:none!important}
+@media(max-width:700px) and (orientation:portrait){
+  #gallery-3d .bk-nav{inset:30% 9px auto}
+}
