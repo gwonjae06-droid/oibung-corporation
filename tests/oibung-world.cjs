@@ -55,6 +55,7 @@ const fs=require('node:fs/promises');
    assert.equal(await page.locator('#game-dialog').getAttribute('data-world-theme'),'castle');
    assert.match(await page.locator('#world-interior-name').textContent(),/오든링/);
    assert.equal(await page.locator('.world-interior-banner').isVisible(),true);
+   await page.screenshot({path:'artifacts/'+name+'-odenring-interior.png',animations:'disabled'});
    await page.locator('#close-detail').click();
    await jump.selectOption('oibung-arena');
    await page.waitForTimeout(50);
