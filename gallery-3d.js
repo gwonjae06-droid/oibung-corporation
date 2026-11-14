@@ -708,6 +708,7 @@
     pocketLights=[{light:illumination,strength:8.2},
       {light:portalGlow,strength:4.5}];
     pocketTextures=allTextures.slice(textureStart);
+    batchArchitecture(pocketWorld);
     pocketWorld.visible=false;
     return true;
   }
@@ -942,6 +943,70 @@
       }
     }
     return 0;
+  }
+  // Merge non-moving opaque architectural meshes by shared material.
+  // This cuts hundreds of per-object draw calls without downloading an addon.
+  // Portal canvases, plaques, lighting and the animated stickman stay separate.
+  function batchArchitecture(root){
+    if(!root)return 0;
+    root.updateWorldMatrix(true,true);
+    const pools=new Map();
+    root.traverse(node=>{
+      if(!node.isMesh||node.children.length||node.userData.galleryIndex!=null)return;
+      const mat=node.material,geo=node.geometry;
+      if(!mat?.isMeshStandardMaterial||mat.map||mat.transparent||!geo)return;
+      if(!geo.getAttribute('position')||!geo.getAttribute('normal')||
+        !geo.getAttribute('uv'))return;
+      const list=pools.get(mat)||[];
+      list.push(node);pools.set(mat,list);
+    });
+    let saved=0;
+    for(const [mat,items] of pools){
+      if(items.length<3)continue;
+      const count=items.reduce((n,m)=>n+
+        (m.geometry.index?.count||m.geometry.getAttribute('position').count),0);
+      const vertices=new Float32Array(count*3);
+      const normals=new Float32Array(count*3);
+      const uvs=new Float32Array(count*2);
+      let offset=0;
+      for(const mesh of items){
+        const geometry=mesh.geometry.clone();
+        geometry.applyMatrix4(mesh.matrixWorld);
+        const pos=geometry.getAttribute('position');
+        const nor=geometry.getAttribute('normal');
+        const uv=geometry.getAttribute('uv');
+        const indices=geometry.index;
+        const n=indices?.count||pos.count;
+        for(let k=0;k<n;k++){
+          const i=indices?indices.getX(k):k;
+          const v=(offset+k)*3,t=(offset+k)*2;
+          vertices[v]=pos.getX(i);
+          vertices[v+1]=pos.getY(i);
+          vertices[v+2]=pos.getZ(i);
+          normals[v]=nor.getX(i);
+          normals[v+1]=nor.getY(i);
+          normals[v+2]=nor.getZ(i);
+          uvs[t]=uv.getX(i);
+          uvs[t+1]=uv.getY(i);
+        }
+        offset+=n;
+        geometry.dispose();
+      }
+      const merged=new THREE.BufferGeometry();
+      merged.setAttribute('position',new THREE.BufferAttribute(vertices,3));
+      merged.setAttribute('normal',new THREE.BufferAttribute(normals,3));
+      merged.setAttribute('uv',new THREE.BufferAttribute(uvs,2));
+      merged.computeBoundingBox();merged.computeBoundingSphere();
+      const batch=new THREE.Mesh(merged,mat);
+      batch.name='museum static architecture · '+items.length+' merged pieces';
+      root.add(batch);
+      for(const mesh of items){
+        mesh.parent.remove(mesh);
+        mesh.geometry.dispose();
+      }
+      saved+=items.length-1;
+    }
+    return saved;
   }
   function stageWall(parent,x,y,z,w,h,d,mat,collidable=true){
     const block=elBox(parent,x,y,z,w,h,d,mat);
@@ -1190,6 +1255,7 @@
       wash.position.set(loc.x+loc.nx*1.4,loc.y+1.0,loc.z+loc.nz*1.4);
       world.add(wash);exhibitionLights.push(wash);
     });
+    batchArchitecture(world);
     document.dispatchEvent(new CustomEvent('oibung-gallery-layout',{
       detail:{placements:exhibitPlacements.map(loc=>({
         x:loc.x,y:loc.y,z:loc.z,upper:loc.upper
@@ -1675,7 +1741,13 @@
     if(Number.isInteger(event.detail?.index))teleport(event.detail.index);
   });
   // Live catalog changes update portal rooms and their linked artwork.
-  new MutationObserver(()=>build()).observe(grid,{childList:true});
+  // Catalog apps often issue several DOM batches in one short interval.
+  // Coalesce them to avoid repeatedly building the entire 3D castle.
+  let catalogRebuildTimer=0;
+  new MutationObserver(()=>{
+    clearTimeout(catalogRebuildTimer);
+    catalogRebuildTimer=setTimeout(()=>build(),160);
+  }).observe(grid,{childList:true});
   // Procedural human models are disabled until a separately-authored,
   // visually reviewed 3D asset is available. No misleading load failure UI.
   new MutationObserver(()=>applyLighting()).observe(document.documentElement,{
