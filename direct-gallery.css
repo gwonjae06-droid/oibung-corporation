@@ -341,3 +341,36 @@ html[data-gallery-mode="dark"] #games .direct-catalog .game-card-footer .play-li
 @media(prefers-reduced-motion:reduce){
  #games .direct-catalog .game-card,#games .direct-intro-actions :is(a,button){transition:none!important;translate:none!important}
 }
+
+
+/* Final UX polish: the old floor/wall illusion belongs to the retired
+   walkthrough mode, not to a readable scrolling game catalog. */
+body::before,body::after {content:none!important;display:none!important}
+body{background:#efede7!important}
+html[data-gallery-mode="dark"] body{background:#202923!important}
+#games.library.section-pad{background:#efede7!important}
+html[data-gallery-mode="dark"] #games.library.section-pad{background:#202923!important}
+@media(max-width:690px){
+  #games .section-heading-row p{display:none!important}
+  #games .section-heading-row{margin-bottom:13px!important}
+  #games .direct-intro{
+    grid-template-columns:minmax(0,1fr) 76px!important;
+    gap:4px!important;padding:15px 14px!important;
+    margin-bottom:16px!important;min-height:0!important
+  }
+  #games .direct-intro h2{font-size:20px!important;line-height:1.32!important;margin:6px 0!important}
+  #games .direct-intro p{
+    display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+    overflow:hidden;font-size:11px!important;line-height:1.6!important
+  }
+  #games .direct-intro-actions{margin-top:9px!important;gap:6px!important}
+  #games .direct-intro-actions :is(a,button){font-size:10px!important;min-height:34px!important;padding:7px 9px!important}
+  #games .direct-mascot{height:132px!important;width:74px!important}
+  #games .direct-mascot img{max-height:132px!important;max-width:74px!important;width:auto!important}
+  #games .walk-filter-drawer .library-toolbar{padding:10px!important}
+  #games .walk-filter-drawer .filter-chip{font-size:10px!important;min-height:32px!important;padding:6px 8px!important}
+  #games .catalog-count{margin:10px 0!important}
+  #games .direct-catalog-heading{margin:0 0 12px!important}
+  #games .direct-catalog-heading h2{font-size:19px!important}
+  #games .direct-catalog-heading p{display:none}
+}
