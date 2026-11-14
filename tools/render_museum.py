@@ -62,6 +62,11 @@ def marble(name, base="#dfd7c8", vein="#a6a098"):
     middle.color = rgba("#f1ece1")
     links.new(tex.outputs["Fac"], ramp.inputs["Fac"])
     links.new(ramp.outputs["Color"], shader.inputs["Base Color"])
+    # Fine surface relief so marble catches light instead of looking flat.
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = .04
+    links.new(tex.outputs["Fac"], bump.inputs["Height"])
+    links.new(bump.outputs["Normal"], shader.inputs["Normal"])
     return mat
 
 
@@ -102,6 +107,16 @@ def sphere(name, location, radius, mat):
     bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, radius=radius, location=location)
     obj = bpy.context.object
     obj.name = name
+    bpy.ops.object.shade_smooth()
+    return assign(obj, mat)
+
+
+def ellipsoid(name, location, scale, mat):
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=32, ring_count=16, radius=1, location=location)
+    obj = bpy.context.object
+    obj.name = name
+    obj.scale = scale
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     bpy.ops.object.shade_smooth()
     return assign(obj, mat)
 
@@ -149,6 +164,55 @@ def point_light(name, position, power, color, radius=1):
     return obj
 
 
+def spot_light(name, position, target, power, color, angle=1.0, blend=.6):
+    data = bpy.data.lights.new(name, "SPOT")
+    data.energy = power
+    data.color = color
+    data.spot_size = angle
+    data.spot_blend = blend
+    data.shadow_soft_size = .3
+    obj = bpy.data.objects.new(name, data)
+    bpy.context.collection.objects.link(obj)
+    obj.location = position
+    direction = Vector(target) - Vector(position)
+    obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+    obj["base_energy"] = power
+    return obj
+
+
+def add_details(pale_stone, dark_stone, gold, trim, walnut, bronze, runner):
+    """Props and dressing that make the hall read as a real museum.
+    Kept off the centre axis so framed-artwork overlays stay unobstructed."""
+    # Long burgundy runner with gilded edging (sits under the entry carpet).
+    box("Burgundy gallery runner", (0, 0, .006), (2.6, 36, .012), runner)
+    for x in (-1.3, 1.3):
+        box("Runner gilt edge", (x, 0, .014), (.06, 36, .008), gold)
+    # Stone plinth skirting along both hall walls.
+    for x in (-8.68, 8.68):
+        box("Wall skirting", (x, 0, .32), (.2, 37.6, .64), dark_stone, .02)
+    # Marble busts on pedestals between the columns.
+    for side in (-1, 1):
+        for y in (-13, -6, 0):
+            x = side * 6.2
+            box("Bust plinth", (x, y, .09), (1.1, 1.1, .18), dark_stone, .02)
+            box("Bust pedestal", (x, y, .68), (.86, .86, 1.3), pale_stone, .03)
+            box("Bust pedestal cap", (x, y, 1.37), (1.02, 1.02, .1), trim, .02)
+            ellipsoid("Bust shoulders", (x, y, 1.7), (.38, .2, .3), pale_stone)
+            cylinder("Bust neck", (x, y, 2.0), .08, .18, pale_stone, 24)
+            ellipsoid("Bust head", (x, y, 2.2), (.14, .16, .2), pale_stone)
+    # Walnut benches with bronze supports, off-centre.
+    for x in (-2.4, 2.4):
+        box("Bench seat", (x, -4, .46), (1.8, .6, .12), walnut, .02)
+        for dx in (-.78, .78):
+            box("Bench support", (x + dx, -4, .2), (.1, .5, .4), bronze, .015)
+    # Wall-wash spotlights over the back wall and doorways.
+    spots = []
+    for x in (-5.3, 0, 5.3):
+        spots.append(spot_light("Back wall wash", (x, -16.2, 7.7), (x, -18.7, 3.6),
+                                700, (1.0, .82, .58), 1.0, .6))
+    return spots
+
+
 def build():
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
@@ -162,6 +226,9 @@ def build():
     plaster = material("Mottled warm plaster", "#d8c7ae", roughness=.85)
     pale_stone = marble("Veined honed marble", "#e5dfd3", "#bbb6ab")
     dark_stone = marble("Midnight marble inlay", "#606771", "#303b47")
+    floor_mat = marble("Mirror polished floor", "#e3dacb", "#b4ad9f")
+    floor_mat.node_tree.nodes["Principled BSDF"].inputs["Roughness"].default_value = .1
+    runner = material("Burgundy runner", "#5b1d27", roughness=.92)
     gold = material("Brushed antique gilt", "#b99961", metallic=.75, roughness=.30)
     trim = material("Champagne gold trim", "#d0b17e", metallic=.68, roughness=.33)
     walnut = material("Dark smoked walnut", "#513728", roughness=.44)
@@ -170,7 +237,7 @@ def build():
     red = material("Red emergency lens", "#91221b", roughness=.28)
 
     # One genuinely connected building; all views use this unchanged geometry.
-    box("Polished marble floor", (0, 0, -.16), (18, 38, .32), pale_stone)
+    box("Polished marble floor", (0, 0, -.16), (18, 38, .32), floor_mat)
     box("Inlaid entry carpet", (0, 10, .012), (3.5, 8, .018), dark_stone)
     box("Decorated coffered ceiling", (0, 0, 8.6), (18, 38, .4), ivory)
     box("Back exhibition wall", (0, -19, 4.2), (18, .4, 8.4), plaster)
@@ -251,6 +318,7 @@ def build():
             sphere("Emergency lamp lens", (x,y,7.6), .1, red)
             emergency_lights.append(point_light("Emergency illumination", (x,y,7.5), 0,
                                                  (1.0,.03,.014), .9))
+    ceiling_lights.extend(add_details(pale_stone, dark_stone, gold, trim, walnut, bronze, runner))
     ceiling_lights.append(light("Architectural luminous sky", (0,-4,8.2), 1700,
                                 (1.0,.88,.73), 8))
     return ceiling_lights, emergency_lights
@@ -287,9 +355,11 @@ def set_lighting(is_dark, ceiling_lights, emergency_lights):
     world_bg = bpy.context.scene.world.node_tree.nodes["Background"].inputs["Strength"]
     world_bg.default_value = .013 if is_dark else .16
     for obj in ceiling_lights:
-        # Area and point lights have substantially different nominal intensities.
-        default = 1700 if obj.data.type == "AREA" else (260 if "sconce" in obj.name.lower() else 1150)
-        obj.data.energy = default * (.003 if is_dark else 1.0)
+        base = obj.get("base_energy")
+        if base is None:
+            # Area and point lights have substantially different nominal intensities.
+            base = 1700 if obj.data.type == "AREA" else (260 if "sconce" in obj.name.lower() else 1150)
+        obj.data.energy = base * (.003 if is_dark else 1.0)
     for obj in emergency_lights:
         obj.data.energy = 80 if is_dark else 0
 

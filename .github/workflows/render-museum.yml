@@ -11,6 +11,11 @@ on:
         default: final
         type: choice
         options: [preview, final]
+      reuse:
+        description: Reuse previously rendered images instead of re-rendering
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -25,13 +30,14 @@ jobs:
         with:
           ref: ${{ github.ref_name }}
           persist-credentials: true
-      - name: Reuse verified images from the previous successful render
+      - name: Reuse verified images from the previous successful render (opt-in)
         id: restore
         env:
           GH_TOKEN: ${{ github.token }}
+          REUSE: ${{ github.event.inputs.reuse }}
         run: |
           mkdir -p assets/museum
-          if gh run download 43570476998 --name oibung-museum-1 --dir assets/museum; then
+          if [ "$REUSE" = "true" ] && gh run download 43570476998 --name oibung-museum-1 --dir assets/museum; then
             echo "restored=yes" >> "$GITHUB_OUTPUT"
           else
             echo "restored=no" >> "$GITHUB_OUTPUT"
@@ -94,6 +100,7 @@ jobs:
             }
           });
           EOF
+          cat tools/scene-assets-footer.js >> gallery-scene-assets.js
       - name: Verify generated image assets
         run: |
           python - <<'PY'
@@ -109,15 +116,14 @@ jobs:
           name: oibung-museum-${{ github.run_number }}
           path: assets/museum/*.avif
           retention-days: 14
-      - name: Commit rendered files back to the feature branch
-        if: github.ref_name == 'feat/hybrid-scene-museum-v1'
+      - name: Commit rendered files back to the branch
+        if: github.ref_name == 'main' || github.ref_name == 'feat/hybrid-scene-museum-v1'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add assets/museum gallery-scene-assets.js
           if ! git diff --cached --quiet; then
             git commit -m "assets: pre-render museum backgrounds [skip ci]"
-            # The contributor branch may have changed while rendering.
             git fetch origin "$GITHUB_REF_NAME"
             git rebase "origin/$GITHUB_REF_NAME"
             git push origin HEAD:"$GITHUB_REF_NAME"
