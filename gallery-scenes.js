@@ -335,11 +335,18 @@
       list.append(button);
     });
   }
+  const mobileScene = matchMedia('(max-width: 700px)');
+  function sceneImage(area, lighting = mode()) {
+    const source = window.OIBUNG_SCENE_ASSETS?.[area]?.[lighting];
+    if (typeof source === 'string') return source;
+    return mobileScene.matches ? (source?.mobile || source?.desktop || '')
+      : (source?.desktop || source?.mobile || '');
+  }
   function applyBackdrop() {
     // If Blender renders are added later, a matching scene/lighting file wins.
     // The architectural CSS fallback works fully offline, even without assets.
     const area = scene.area === 'focus' ? 'focus' : scene.area;
-    const url = window.OIBUNG_SCENE_ASSETS?.[area]?.[mode()] || '';
+    const url = sceneImage(area);
     // Do not request missing renders. An explicit manifest opts in each scene.
     if (!/^assets\/museum\/[a-z0-9/_-]+\.avif$/.test(url)) {
       view.style.removeProperty('--museum-render');
@@ -361,7 +368,7 @@
       image.onload = () => {
         imageChecks.set(url, true);
         const current = (scene.area === 'focus' ? 'focus' : scene.area) + '-' + mode();
-        if (url === (window.OIBUNG_SCENE_ASSETS?.[area]?.[mode()] || '') &&
+        if (url === sceneImage(area) &&
             current === area + '-' + mode()) {
           view.style.setProperty('--museum-render', 'url("' + url + '")');
           view.classList.add('museum-has-render');
@@ -551,6 +558,8 @@
       ambienceGain.gain.setTargetAtTime(0, audioContext.currentTime, .15);
     else refreshLighting(darkMode());
   });
+  if (mobileScene.addEventListener) mobileScene.addEventListener('change', applyBackdrop);
+  else mobileScene.addListener?.(applyBackdrop);
   surface.hidden = false;
   document.body.classList.add('three-gallery-ready', 'scene-gallery-ready');
   syncGuide();
