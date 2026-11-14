@@ -863,7 +863,8 @@
     if(!hasEntered||portalTransition||paused())return;
     if(jumpHeight>.025||jumpVelocity>0)return;
     const time=performance.now();
-    const running=keys.has('ShiftLeft')||keys.has('ShiftRight');
+    const running=keys.has('ShiftLeft')||keys.has('ShiftRight')
+      ||(mobile&&Math.hypot(joyX,joyY)>.83);
     const fast=Math.hypot(moveVelX,moveVelZ)>2.0;
     const longJump=running&&fast;
     jumpCombo=time-lastLandingAt<660?(jumpCombo%3)+1:1;
@@ -1300,7 +1301,8 @@
     const inputLen=Math.hypot(forward,sideways);
     velocity=Math.min(1,inputLen);
     const boost=performance.now()<longJumpUntil;
-    const running=keys.has('ShiftLeft')||keys.has('ShiftRight');
+    const running=keys.has('ShiftLeft')||keys.has('ShiftRight')
+      ||(mobile&&Math.hypot(joyX,joyY)>.83);
     const speed=boost?7.8:running?5.7:3.7;
     const f=inputLen>.03?forward/inputLen:0;
     const r=inputLen>.03?sideways/inputLen:0;
