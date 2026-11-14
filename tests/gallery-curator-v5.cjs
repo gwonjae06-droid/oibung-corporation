@@ -58,6 +58,19 @@ const fs=require('node:fs/promises');
      await creature.evaluate(img=>img.decode());
      assert.equal(await creature.evaluate(img=>img.naturalHeight),512);
      assert.equal(await creature.evaluate(img=>getComputedStyle(img).imageRendering),'pixelated');
+     // A two-step night traversal puts the roaming curator in the same room.
+     // Verify the replacement monster is actually visible, not only loaded.
+     const count=await page.locator('.bk-list>div>button').count();
+     if(count>=4){
+       await page.locator('[data-act="next"]').click();
+       await page.locator('[data-act="next"]').click();
+       const danger=await stage.getAttribute('data-danger');
+       assert.equal(danger,'true','Two turns should trigger the scripted monster warning');
+       await creature.evaluate(img=>img.decode());
+       assert.equal(await page.locator('.bk-monster').isVisible(),true);
+       assert.match(await creature.getAttribute('src'),/curator-v5\/monster-lunge\.webp$/);
+       await page.screenshot({path:'artifacts/'+label+'-v5-monster.png',animations:'disabled'});
+     }
      const hud=page.locator('.bk-hud');
      assert.equal(await hud.isVisible(),true);
      await page.screenshot({path:'artifacts/'+label+'-v5-night.png',animations:'disabled'});
