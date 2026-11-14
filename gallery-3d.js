@@ -119,11 +119,12 @@
     let row='';
     for (const letter of String(text || '')) {
       if (ctx.measureText(row + letter).width > maxWidth && row) {
-        rows.push(row);row=letter;
-        if(rows.length === maxRows-1)break;
-      } else row+=letter;
+        rows.push(row);
+        row = letter;
+        if (rows.length >= maxRows) { row = ''; break; }
+      } else row += letter;
     }
-    if(row)rows.push(row);
+    if (row && rows.length < maxRows) rows.push(row);
     return rows;
   }
   function plaqueTexture(title,sub) {
@@ -210,7 +211,7 @@
     loader.load(url,texture=>{
       texture.colorSpace=THREE.SRGBColorSpace;
       guideTextures[key]=texture;
-      avatarSprites.forEach(({sprite,costume})=>{if(costume===key)sprite.material.map=texture,sprite.material.needsUpdate=true;});
+      avatarSprites.forEach(({sprite,costume})=>{if(costume===key){sprite.material.map=texture;sprite.material.opacity=darkness?.8:1;sprite.material.needsUpdate=true;}});
     },undefined,()=>{ /* Costumes are optional; artwork remains interactive. */ });
   }
 
@@ -338,7 +339,7 @@
       const costume=costumeKey(game);
       const sprite=new THREE.Sprite(new THREE.SpriteMaterial({
         map:guideTextures[costume] || null,transparent:true,depthWrite:false,
-        color:0xffffff,opacity:1
+        color:0xffffff,opacity:guideTextures[costume]?1:0
       }));
       sprite.position.set(side*3.65,1.42,z-2.55);
       sprite.scale.set(costume==='maid'?1.18:1.62,2.60,1);
@@ -374,7 +375,7 @@
     glowingFixtures.forEach(mat=>mat.emissiveIntensity=darkness?0:1.25);
     avatarSprites.forEach(({sprite})=>{
       sprite.material.color.set(darkness?0x3b2d2b:0xffffff);
-      sprite.material.opacity=darkness?.8:1;
+      sprite.material.opacity=sprite.material.map?(darkness?.8:1):0;
     });
     lightToggle.textContent=darkness?'☀ 불 켜기':'☾ 소등';
     flashlightButton.hidden=!darkness;
@@ -483,6 +484,7 @@
   function update(time){
     requestAnimationFrame(update);
     if(!document.body.classList.contains('three-gallery-ready') || paused()){
+      keys.clear(); joyX=0; joyY=0;
       if(document.pointerLockElement===renderer.domElement)document.exitPointerLock?.();
       lastTime=time;
       return;
@@ -508,7 +510,7 @@
     welcome.hidden=true;
     hint.textContent='WASD 이동 · 마우스로 둘러보기 · E 감상';
     if(!mobile && renderer.domElement.requestPointerLock)
-      renderer.domElement.requestPointerLock().catch?.(()=>{});
+      Promise.resolve(renderer.domElement.requestPointerLock()).catch(()=>{});
   }
   enter.addEventListener('click',start);
   action.addEventListener('click',()=>openArtwork(Number(action.dataset.index)));
@@ -549,7 +551,7 @@
     const hits=raycaster.intersectObjects(paintings,false);
     if(hits.length){openArtwork(hits[0].object.userData.galleryIndex);return;}
     if(document.pointerLockElement!==renderer.domElement)
-      renderer.domElement.requestPointerLock?.().catch?.(()=>{});
+      Promise.resolve(renderer.domElement.requestPointerLock?.()).catch(()=>{});
   });
 
   function joyUpdate(event){
