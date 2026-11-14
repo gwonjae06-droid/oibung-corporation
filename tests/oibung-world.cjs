@@ -82,7 +82,8 @@ const fs=require('node:fs/promises');
    assert.match(await page.locator('#detail-title').textContent(),/QA 신규 건물/);
    await page.locator('#close-detail').click();
 
-   await page.locator('#world-all-games').evaluate(el=>el.open=true);
+   await page.locator('.world-hint a').click();
+   assert.equal(await page.locator('#world-all-games').evaluate(el=>el.open),true,'Quick catalog link must expand original game list');
    assert.equal(await page.locator('#game-grid').isVisible(),true);
    await page.locator('#game-search').fill('오든링');
    assert.ok(await page.locator('#game-grid .game-card').count()>=1);
