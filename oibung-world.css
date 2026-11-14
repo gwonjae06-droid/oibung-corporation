@@ -230,3 +230,24 @@ html[data-gallery-mode="dark"] #games .world-all-games>summary{background:#34473
  #games .world-toolbar-button,.world-building-sign,
  .world-direction-pad button,.world-enter{transition:none!important}
 }
+
+
+/* On short landscape phones, keep the movement controls over the last
+   portion of the scene instead of forcing players to scroll them offscreen. */
+@media(max-height:470px) and (orientation:landscape){
+ #games .oibung-world{position:relative}
+ #games .world-controlbar{
+   position:absolute;left:9px;right:9px;bottom:53px;z-index:12;
+   border:0;background:transparent;padding:0;min-height:46px;
+   display:flex;flex-wrap:nowrap;justify-content:space-between;pointer-events:none
+ }
+ #games .world-controlbar button{
+   pointer-events:auto;min-height:44px;
+   color:#fff5d9;background:#253e48ed;
+   border-color:#e9ce9e;box-shadow:2px 2px 0 #233536af
+ }
+ #games .world-nearby{display:none}
+ #games .world-direction-pad{order:0}
+ #games .world-enter{order:1;flex:0 0 auto;min-width:113px}
+ #games .world-hint{display:none}
+}
