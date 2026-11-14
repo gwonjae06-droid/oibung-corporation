@@ -26,6 +26,19 @@ const fs=require('node:fs/promises');
    const moved=await page.evaluate(()=>window.OIBUNG_WORLD.getState());
    assert.ok(moved.playerX>init.playerX+25,'Movement should work '+JSON.stringify(moved));
    assert.ok(moved.curatorX>init.curatorX+3,'Guide follows the visitor');
+   if(name!=='desktop'){
+     const mobileRight=page.locator('[data-world-move="right"]');
+     await mobileRight.scrollIntoViewIfNeeded();
+     const bb=await mobileRight.boundingBox();
+     assert.ok(bb&&bb.y>=0&&bb.y+bb.height<=viewport.height+4,
+       'Mobile direction button must be in viewport: '+JSON.stringify(bb));
+     const from=await page.evaluate(()=>window.OIBUNG_WORLD.getState().playerX);
+     await page.mouse.move(bb.x+bb.width*.5,bb.y+bb.height*.5);
+     await page.mouse.down();await page.waitForTimeout(260);await page.mouse.up();
+     await page.waitForTimeout(90);
+     const after=await page.evaluate(()=>window.OIBUNG_WORLD.getState().playerX);
+     assert.ok(after>from+12,'Touch/joystick hold should advance player');
+   }
 
    const jump=page.locator('#world-jump-select');
    assert.equal(await jump.locator('option').count(),init.count+1);
