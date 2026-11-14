@@ -18,6 +18,7 @@
   const joystick = document.getElementById('gallery-3d-joystick');
   const joystickKnob = document.getElementById('gallery-3d-knob');
   const lookZone = document.getElementById('gallery-3d-lookzone');
+  const cameraToggle = document.getElementById('gallery-3d-camera');
   const jumpButton = document.getElementById('gallery-portal-jump');
   const backButton = document.getElementById('gallery-portal-back');
   const roomCard = document.getElementById('gallery-portal-room-card');
@@ -269,6 +270,13 @@
       target.y+1.25+Math.sin(pitch)*dist,
       target.z+Math.cos(yaw)*horizontal
     );
+    if(sceneMode==='inside'){
+      desired.x=THREE.MathUtils.clamp(desired.x,-7.20,7.20);
+      desired.z=THREE.MathUtils.clamp(desired.z,-8.2,8.2);
+      desired.y=THREE.MathUtils.clamp(desired.y,1.25,4.85);
+    }else{
+      desired.y=THREE.MathUtils.clamp(desired.y,1.4,7.0);
+    }
     // Prevent the trailing camera from clipping through wall geometry.
     const rayVector=desired.clone().sub(target);
     const fullLength=rayVector.length();
@@ -1283,6 +1291,13 @@
     moveVelZ=THREE.MathUtils.damp(moveVelZ,targetVZ,response,dt);
     const oldX=camera.position.x,oldZ=camera.position.z;
     moveWithCollision(moveVelX*dt,moveVelZ*dt);
+    if(sceneMode==='inside'){
+      const withinX=THREE.MathUtils.clamp(camera.position.x,-7.15,7.15);
+      const withinZ=THREE.MathUtils.clamp(camera.position.z,-7.3,7.50);
+      if(withinX!==camera.position.x)moveVelX=0;
+      if(withinZ!==camera.position.z)moveVelZ=0;
+      camera.position.x=withinX;camera.position.z=withinZ;
+    }
     const travelled=Math.hypot(camera.position.x-oldX,camera.position.z-oldZ);
     stride+=travelled;
     if(travelled>.003)lastMove=performance.now();
@@ -1434,11 +1449,23 @@
     enter.blur();
     welcome.hidden=true;
     jumpButton.hidden=false;
-    hint.textContent='WASD 이동 · 액자 앞 Space 점프 · E 정보 · R 귀환';
+    hint.textContent='WASD 이동 · Space 점프 · V 카메라 거리 · E 작품 정보';
     tryPointerLock();
   }
   enter.addEventListener('click',start);
   action.addEventListener('click',()=>openArtwork(Number(action.dataset.index)));
+  function cycleCamera(){
+    const distances=[3.6,5.5,7.6];
+    const i=distances.findIndex(d=>Math.abs(d-cameraDistance)<.15);
+    cameraDistance=distances[(i+1)%distances.length];
+    cameraSnap=false;
+    if(cameraToggle){
+      cameraToggle.textContent=cameraDistance<4?'시점: 가까이'
+        :cameraDistance<6?'시점: 보통':'시점: 멀리';
+      cameraToggle.blur();
+    }
+  }
+  cameraToggle?.addEventListener('click',cycleCamera);
   jumpButton.addEventListener('click',()=>{
     jumpButton.blur();
     doJump();
@@ -1458,12 +1485,14 @@
   document.addEventListener('keydown',event=>{
     if(!document.body.classList.contains('three-gallery-ready')||paused()||isUserTyping(event))return;
     if(['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowLeft','ArrowDown',
-      'ArrowRight','ShiftLeft','ShiftRight','KeyE','KeyF','KeyR','Space'].includes(event.code)){
+      'ArrowRight','ShiftLeft','ShiftRight','KeyE','KeyF','KeyR','KeyV','KeyQ','Space'].includes(event.code)){
       event.preventDefault();event.stopImmediatePropagation();
     }
     keys.add(event.code);
     if(event.repeat)return;
     if(event.code==='Space')doJump();
+    if(event.code==='KeyV')cycleCamera();
+    if(event.code==='KeyQ'){yaw=avatarFacing;pitch=.12;}
     if(event.code==='KeyR'&&sceneMode==='inside')startPortal('exit',activeExhibit);
     if(event.code==='KeyE'&&focused>=0)openArtwork(focused);
     if(event.code==='KeyF'&&darkness){flashlightOn=!flashlightOn;applyLighting();}
@@ -1499,7 +1528,9 @@
     if(mobile)return;
     const bounds=renderer.domElement.getBoundingClientRect();
     pointerRay.set(((event.clientX-bounds.left)/bounds.width)*2-1,-((event.clientY-bounds.top)/bounds.height)*2+1);
-    raycaster.setFromCamera(document.pointerLockElement===renderer.domElement?center:pointerRay,camera);
+    raycaster.setFromCamera(
+      document.pointerLockElement===renderer.domElement?center:pointerRay,
+      followCamera);
     if(sceneMode==='inside' && exitPortal && exitInReach()){
       if(raycaster.intersectObject(exitPortal,false).length){
         startPortal('exit',activeExhibit);return;
@@ -1555,7 +1586,7 @@
     if(!lookMoved){
       const rect=renderer.domElement.getBoundingClientRect();
       pointerRay.set(((event.clientX-rect.left)/rect.width)*2-1,-((event.clientY-rect.top)/rect.height)*2+1);
-      raycaster.setFromCamera(pointerRay,camera);
+      raycaster.setFromCamera(pointerRay,followCamera);
       if(sceneMode==='inside' && exitInReach() && exitPortal
         && raycaster.intersectObject(exitPortal,false).length){
         startPortal('exit',activeExhibit);
