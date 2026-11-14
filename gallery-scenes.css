@@ -679,3 +679,27 @@ html.motion-off #gallery-3d [data-gallery-mode="dark"] .museum-emergency-light{a
       #000d 0%,#0008 42%,transparent 92%);
   }
 }
+
+
+/* The 390px-high landscape viewport needs a real gallery composition:
+   reserve lower space for the name plaque and arrows, not overlay the canvas. */
+#gallery-3d .museum-movement button span{white-space:nowrap}
+@media(max-height:570px) and (orientation:landscape){
+  #gallery-3d [data-area="focus"] .museum-works{
+    inset:13% 24% 38%;
+    align-items:center;
+  }
+  #gallery-3d [data-area="focus"] .museum-painting,
+  #gallery-3d .museum-works.museum-single .museum-painting{
+    height:min(45vh,200px);
+    flex-basis:min(31vw,385px);
+  }
+  #gallery-3d [data-area="focus"] .museum-works.museum-close .museum-painting{
+    height:min(49vh,215px);
+    flex-basis:min(35vw,430px);
+  }
+  #gallery-3d .museum-plaque{top:calc(100% + 6px);padding:4px 7px}
+  #gallery-3d .museum-plaque strong{font-size:11px}
+  #gallery-3d .museum-curator-dialogue{display:none}
+  #gallery-3d .museum-movement button span{font-size:10px}
+}
