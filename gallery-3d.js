@@ -67,6 +67,11 @@
   camera.rotation.order = 'YXZ';
   camera.position.set(0, 1.68, 5.1);
   scene.add(camera);
+  // Keep this camera as an invisible player/aim transform, so existing portal
+  // targeting continues to work. Render through a separate trailing camera.
+  const followCamera=new THREE.PerspectiveCamera(mobile?68:72,1,.08,140);
+  followCamera.position.set(0,4.4,10.0);
+  scene.add(followCamera);
   const ambient = new THREE.AmbientLight(0xf5e7d0, .7);
   const hemisphere = new THREE.HemisphereLight(0xeaf3ff, 0x6e543d, 1.45);
   const sun = new THREE.DirectionalLight(0xffebcc, .95);
@@ -105,7 +110,13 @@
   let savedHallPose = null;
   let portalTransition = null;
   let jumpHeight = 0, jumpVelocity = 0, queuedJump = null;
-  let yaw = 0, pitch = 0, velocity = 0, stride = 0;
+  let yaw = 0, pitch = .12, velocity = 0, stride = 0;
+  let moveVelX=0,moveVelZ=0,avatarFacing=0;
+  let cameraDistance=5.5,cameraSnap=true,cameraShake=0;
+  let jumpCombo=0,lastLandingAt=0,longJumpUntil=0;
+  let groundY=0;
+  const walls=[];const cameraWalls=[];const exhibitPlacements=[];
+  const playerRadius=.41;
   let focused = -1, nearIndex = -1;
   let lastTime = 0, lastCount = 0, lastMove = 0;
   let hasEntered = false, flashlightOn = true;
@@ -136,6 +147,151 @@
     parent.add(obj);
     return obj;
   }
+  // Original platforming mascot: a soft seed-shaped museum explorer.
+  // Intentionally non-human; no attempts at an uncanny procedural face.
+  function createExplorer(){
+    const root=new THREE.Group();root.name='오이붕 · 탐험 마스코트';
+    const bodyPivot=new THREE.Group();root.add(bodyPivot);
+    const mint=new THREE.MeshStandardMaterial({color:0x8dd1bd,roughness:.82});
+    const pale=new THREE.MeshStandardMaterial({color:0xf4edd9,roughness:.86});
+    const gold=new THREE.MeshStandardMaterial({color:0xe9b75d,roughness:.58,metalness:.12});
+    const dark=new THREE.MeshStandardMaterial({color:0x263748,roughness:.74});
+    const blush=new THREE.MeshStandardMaterial({color:0xf2a5a9,roughness:.9});
+    const light=new THREE.MeshStandardMaterial({color:0xfff9e9,roughness:.68});
+    const sole=new THREE.MeshStandardMaterial({color:0x3b5262,roughness:.85});
+    const geometry=new THREE.LatheGeometry([
+      [0,.29],[.20,.29],[.34,.39],[.45,.70],[.50,.98],
+      [.47,1.27],[.37,1.51],[.20,1.67],[.04,1.71],[0,1.71]
+    ].map(p=>new THREE.Vector2(...p)),mobile?14:25);
+    const torso=new THREE.Mesh(geometry,mint);
+    bodyPivot.add(torso);
+    function sphere(parent,x,y,z,sx,sy,sz,mat){
+      const shape=new THREE.Mesh(new THREE.SphereGeometry(1,mobile?10:18,mobile?7:14),mat);
+      shape.position.set(x,y,z);shape.scale.set(sx,sy,sz);
+      parent.add(shape);return shape;
+    }
+    // Large readable eyes and a single little smile; the character faces -Z.
+    for(const side of [-1,1]){
+      sphere(bodyPivot,side*.196,1.237,-.427,.071,.109,.035,dark);
+      sphere(bodyPivot,side*.210,1.276,-.462,.023,.033,.008,light);
+      sphere(bodyPivot,side*.325,1.073,-.385,.081,.046,.021,blush);
+    }
+    const smile=new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-.10,.952,-.481),
+      new THREE.Vector3(0,.927,-.509),
+      new THREE.Vector3(.10,.952,-.481)]);
+    bodyPivot.add(new THREE.Mesh(
+      new THREE.TubeGeometry(smile,12,.013,6,false),dark));
+    // Neck scarf and glowing leaf crest distinguish this from any existing
+    // platform-game protagonist.
+    const scarf=new THREE.Mesh(new THREE.TorusGeometry(.385,.075,9,mobile?16:26),gold);
+    scarf.rotation.x=Math.PI/2;scarf.position.y=.93;
+    bodyPivot.add(scarf);
+    sphere(bodyPivot,0,.83,-.497,.12,.18,.065,gold);
+    const cap=sphere(bodyPivot,0,1.62,.0,.31,.13,.31,pale);
+    sphere(bodyPivot,.04,1.79,0,.11,.20,.09,gold).rotation.z=-.45;
+    const leaf=sphere(bodyPivot,-.13,1.87,-.04,.22,.071,.13,mint);
+    leaf.rotation.z=.38;leaf.rotation.y=.2;
+    const arms=[],legs=[];
+    for(const side of [-1,1]){
+      const arm=new THREE.Group();arm.position.set(side*.444,1.07,-.015);bodyPivot.add(arm);
+      sphere(arm,side*.085,-.19,-.013,.145,.237,.155,mint);
+      sphere(arm,side*.092,-.398,-.035,.136,.13,.138,pale);
+      arms.push({pivot:arm,side});
+      const leg=new THREE.Group();leg.position.set(side*.225,.355,0);bodyPivot.add(leg);
+      sphere(leg,0,-.07,0,.139,.23,.136,dark);
+      sphere(leg,0,-.233,-.10,.18,.11,.255,sole);
+      legs.push({pivot:leg,side});
+    }
+    // One compact explorer satchel on the back.
+    const satchel=new THREE.Mesh(new THREE.BoxGeometry(.46,.43,.17),gold);
+    satchel.position.set(0,.99,.48);bodyPivot.add(satchel);
+    const clasp=new THREE.Mesh(new THREE.BoxGeometry(.17,.07,.035),pale);
+    clasp.position.set(0,1.01,.578);bodyPivot.add(clasp);
+    const shadow=new THREE.Mesh(
+      new THREE.CircleGeometry(.66,24),
+      new THREE.MeshBasicMaterial({color:0x14211e,transparent:true,opacity:.22,depthWrite:false}));
+    shadow.rotation.x=-Math.PI/2;scene.add(shadow);
+    const landingRing=new THREE.Mesh(
+      new THREE.RingGeometry(.45,.53,32),
+      new THREE.MeshBasicMaterial({color:0xf1dcab,transparent:true,opacity:0,
+        side:THREE.DoubleSide,depthWrite:false}));
+    landingRing.rotation.x=-Math.PI/2;scene.add(landingRing);
+    const glow=new THREE.PointLight(0x98dfc8,0,2.7,2);
+    scene.add(glow);
+    scene.add(root);
+    return {root,bodyPivot,arms,legs,shadow,landingRing,glow};
+  }
+  const explorer=createExplorer();
+  function updateExplorer(time,dt){
+    const yFloor=groundY;
+    const px=camera.position.x,pz=camera.position.z;
+    const walking=Math.min(1,Math.hypot(moveVelX,moveVelZ)/4.2);
+    const airborne=jumpHeight>.04;
+    explorer.root.position.set(px,yFloor+jumpHeight,pz);
+    if(walking>.12){
+      const desired=Math.atan2(-moveVelX,-moveVelZ);
+      const delta=Math.atan2(Math.sin(desired-avatarFacing),Math.cos(desired-avatarFacing));
+      avatarFacing+=delta*Math.min(1,dt*11);
+    }
+    explorer.root.rotation.y=avatarFacing;
+    explorer.root.visible=hasEntered && !portalTransition;
+    explorer.bodyPivot.position.y=airborne?.05:Math.sin(time*.014)*.035*walking;
+    const breath=1+Math.sin(time*.002)*.018;
+    explorer.bodyPivot.scale.set(1,airborne?1.095:breath,airborne?.92:1);
+    explorer.bodyPivot.rotation.x=airborne?-.09:Math.min(.12,walking*.07);
+    explorer.arms.forEach(({pivot,side})=>{
+      pivot.rotation.z=side*(airborne?.52:walking*.14);
+      pivot.rotation.x=airborne?-.45:Math.sin(time*.014+(side===1?0:Math.PI))*.56*walking;
+    });
+    explorer.legs.forEach(({pivot,side})=>{
+      pivot.rotation.x=airborne?-.31:Math.sin(time*.014+(side===1?Math.PI:0))*.72*walking;
+    });
+    explorer.shadow.position.set(px,yFloor+.025,pz);
+    explorer.shadow.scale.setScalar(1+jumpHeight*.35);
+    explorer.shadow.material.opacity=Math.max(.08,.23-jumpHeight*.07);
+    explorer.shadow.visible=hasEntered;
+    explorer.landingRing.position.set(px,yFloor+.04,pz);
+    explorer.landingRing.material.opacity=Math.max(0,cameraShake*.46);
+    explorer.landingRing.scale.setScalar(1+(1-cameraShake)*1.5);
+    explorer.landingRing.visible=cameraShake>.001 && hasEntered;
+    cameraShake=Math.max(0,cameraShake-dt*2.5);
+    explorer.glow.position.set(px,groundY+1.35,pz);
+    explorer.glow.intensity=darkness && hasEntered?.42:0;
+  }
+  function followPlayer(dt){
+    const target=new THREE.Vector3(camera.position.x,
+      camera.position.y+.20,camera.position.z);
+    const dist=cameraDistance;
+    const horizontal=dist*Math.cos(pitch*.72);
+    const desired=new THREE.Vector3(
+      target.x+Math.sin(yaw)*horizontal,
+      target.y+1.25+Math.sin(pitch)*dist,
+      target.z+Math.cos(yaw)*horizontal
+    );
+    // Prevent the trailing camera from clipping through wall geometry.
+    const rayVector=desired.clone().sub(target);
+    const fullLength=rayVector.length();
+    if(fullLength>.01){
+      const dir=rayVector.normalize(),ray=new THREE.Ray(target,dir);
+      const intersection=new THREE.Vector3();
+      const obstacles=sceneMode==='hall'?cameraWalls:[]; 
+      for(const box of obstacles){
+        const hit=ray.intersectBox(box,intersection);
+        if(hit){
+          const d=target.distanceTo(hit);
+          if(d<fullLength)desired.copy(target).addScaledVector(dir,Math.max(.9,d-.35));
+        }
+      }
+    }
+    if(cameraSnap){
+      followCamera.position.copy(desired);cameraSnap=false;
+    }else{
+      followCamera.position.lerp(desired,1-Math.exp(-dt*8));
+    }
+    followCamera.lookAt(target.x,target.y+.3,target.z);
+  }
+
   function makeCanvas(w,h) {
     const canvas = document.createElement('canvas');
     canvas.width=w;canvas.height=h;return canvas;
