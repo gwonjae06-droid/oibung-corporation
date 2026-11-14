@@ -261,12 +261,15 @@
     if (scene.area === 'lobby') group = cards.slice(0, 1);
     else if (scene.area === 'focus') group = chosen ? [chosen] : [];
     else if (scene.area === 'left' || scene.area === 'right' || scene.area === 'special') {
-      group = areaItems(scene.area).slice(scene.page * 3, scene.page * 3 + 3);
+      const list = areaItems(scene.area);
+      // Centre the visitor's current artwork; neighbours recede in perspective.
+      group = list.slice(Math.max(0, scene.selected - 1), scene.selected + 2);
     }
     group.forEach((card, index) => {
       const selectedIndex = group.findIndex(node => node.dataset.gameId === chosen?.dataset.gameId);
+      const distance = index - selectedIndex;
       const place = scene.area === 'focus' || scene.area === 'lobby' || group.length === 1
-        ? 'center' : ['left', 'center', 'right'][index];
+        ? 'center' : distance < 0 ? 'left' : distance > 0 ? 'right' : 'center';
       const frame = makeFrame(card, cards.indexOf(card), place);
       if (index === selectedIndex) frame.classList.add('is-selected');
       works.append(frame);
