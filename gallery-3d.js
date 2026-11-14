@@ -854,8 +854,17 @@
   function doJump(hintIndex=null){
     if(!hasEntered||portalTransition||paused())return;
     if(jumpHeight>.025||jumpVelocity>0)return;
-    jumpVelocity=5.25;
+    const time=performance.now();
+    const running=keys.has('ShiftLeft')||keys.has('ShiftRight');
+    const fast=Math.hypot(moveVelX,moveVelZ)>2.0;
+    const longJump=running&&fast;
+    jumpCombo=time-lastLandingAt<660?(jumpCombo%3)+1:1;
+    jumpVelocity=longJump?5.10:[0,5.65,6.48,7.48][jumpCombo];
     jumpHeight=.025;
+    if(longJump){
+      longJumpUntil=time+540;
+      moveVelX*=1.22;moveVelZ*=1.22;
+    }
     const candidate=Number.isInteger(hintIndex)?hintIndex:aimedPortalIndex();
     if(sceneMode==='hall' && candidate>=0 && isNearEntry(candidate)){
       queuedJump={kind:'enter',index:candidate,start:performance.now()};
@@ -1257,33 +1266,46 @@
       -(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-joyY;
     const sideways=(keys.has('KeyD')||keys.has('ArrowRight')?1:0)
       -(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)+joyX;
-    const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')?5.4:3.3);
-    const len=Math.hypot(forward,sideways);
-    velocity=Math.min(1,len);
-    if(len>.03){
-      const f=forward/len,r=sideways/len;
-      const dx=(-Math.sin(yaw)*f+Math.cos(yaw)*r)*dt*speed;
-      const dz=(-Math.cos(yaw)*f-Math.sin(yaw)*r)*dt*speed;
-      const room=sceneMode==='inside';
-      camera.position.x=THREE.MathUtils.clamp(
-        camera.position.x+dx,room?-7.2:-4.5,room?7.2:4.5);
-      camera.position.z=THREE.MathUtils.clamp(
-        camera.position.z+dz,room?-7.35:roomEnd+1.1,
-        room?7.55:6.35);
-      stride+=dt*speed;
-      lastMove=performance.now();
+    const inputLen=Math.hypot(forward,sideways);
+    velocity=Math.min(1,inputLen);
+    const boost=performance.now()<longJumpUntil;
+    const running=keys.has('ShiftLeft')||keys.has('ShiftRight');
+    const speed=boost?7.8:running?5.7:3.7;
+    const f=inputLen>.03?forward/inputLen:0;
+    const r=inputLen>.03?sideways/inputLen:0;
+    // Momentum produces acceleration, drifting and air control rather than
+    // first-person free-camera instant displacement.
+    const targetVX=(-Math.sin(yaw)*f+Math.cos(yaw)*r)*speed;
+    const targetVZ=(-Math.cos(yaw)*f-Math.sin(yaw)*r)*speed;
+    const air=jumpHeight>.03;
+    const response=air?(boost?2.3:4.6):inputLen>.03?9.5:13.5;
+    moveVelX=THREE.MathUtils.damp(moveVelX,targetVX,response,dt);
+    moveVelZ=THREE.MathUtils.damp(moveVelZ,targetVZ,response,dt);
+    const oldX=camera.position.x,oldZ=camera.position.z;
+    moveWithCollision(moveVelX*dt,moveVelZ*dt);
+    const travelled=Math.hypot(camera.position.x-oldX,camera.position.z-oldZ);
+    stride+=travelled;
+    if(travelled>.003)lastMove=performance.now();
+
+    const newGround=floorHeightAt(camera.position.x,camera.position.z);
+    if(newGround<groundY-.25 && jumpHeight<.04){
+      // Walking off a ledge must initiate a fall, not teleport vertically.
+      jumpHeight=groundY-newGround;
+      jumpVelocity=-.18;
+    } else if(newGround>groundY && jumpHeight>.02){
+      jumpHeight=Math.max(0,jumpHeight-(newGround-groundY));
     }
-    // Jump is genuine camera height physics: impulse, gravity, landing.
-    // Never alter the global gallery coordinate frame to fake a jump.
-    if(jumpHeight>0 || jumpVelocity>0){
+    groundY=newGround;
+    if(jumpHeight>0||jumpVelocity>0){
       jumpHeight+=jumpVelocity*dt;
-      jumpVelocity-=14.2*dt;
+      jumpVelocity-=15.6*dt;
       if(jumpHeight<=0){
         jumpHeight=0;jumpVelocity=0;queuedJump=null;
+        lastLandingAt=performance.now();
+        cameraShake=.92;
       }
     }
-    const bob=reduced()?0:Math.sin(stride*8)*.012*velocity;
-    camera.position.y=1.68+jumpHeight+bob;
+    camera.position.y=1.68+groundY+jumpHeight;
   }
   function targetedArt(){
     if(sceneMode!=='hall')return -1;
@@ -1384,6 +1406,8 @@
     }
     updateNearbyLights(time);
     setOrientation();
+    updateExplorer(time,dt);
+    followPlayer(dt);
     if(hasEntered && !inTransition && time-lastCount>90){
       updateFocus();lastCount=time;
     }
@@ -1394,7 +1418,7 @@
       const targetWarp=globalWarp?1.6:highlighted?.26:.015;
       uniforms.uWarp.value+=(targetWarp-uniforms.uWarp.value)*Math.min(1,dt*11);
     });
-    renderer.render(scene,camera);
+    renderer.render(scene,followCamera);
   }
   function isUserTyping(event){
     return !!event.target.closest?.('input,textarea,select,[contenteditable="true"],dialog,[role="dialog"],.gallery-room-map,#mobile-nav,.gallery-3d-hud,.page-switcher');
@@ -1406,6 +1430,7 @@
   }
   function start(){
     hasEntered=true;surface.classList.add('gallery-3d-entered');
+    cameraSnap=true;
     enter.blur();
     welcome.hidden=true;
     jumpButton.hidden=false;
