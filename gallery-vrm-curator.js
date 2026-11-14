@@ -18,7 +18,10 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { clone as cloneSkeleton } from 'three/addons/utils/SkeletonUtils.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 
-const SOURCE = 'https://gy19a.github.io/jev-stage/static/vrm/anime_girl.vrm';
+const SOURCES = [
+  'https://gy19a.github.io/jev-stage/static/vrm/anime_girl.vrm',
+  'https://raw.githubusercontent.com/GY19A/jev-stage/main/static/vrm/anime_girl.vrm'
+];
 const MODEL_HEIGHT = 2.60; // The floor-level display height of the curator, metres.
 let sourcePromise;
 const dyedCache = new Map();
@@ -81,7 +84,12 @@ async function loadBase() {
     sourcePromise=(async()=>{
       const loader=new GLTFLoader();
       loader.register(parser=>new VRMLoaderPlugin(parser));
-      const gltf=await loader.loadAsync(SOURCE);
+      let gltf,lastError;
+      for(const url of SOURCES){
+        try{gltf=await loader.loadAsync(url);break;}
+        catch(error){lastError=error;console.warn('[3D Curator] Source unavailable:',url,error);}
+      }
+      if(!gltf)throw lastError||new Error('No VRM source accessible');
       const vrm=gltf.userData.vrm;
       if(!vrm?.scene)throw new Error('VRM did not contain a humanoid scene');
       // VRM0 models face the opposite direction to newer VRM1 models.
@@ -161,7 +169,14 @@ function makeClone(base,costume) {
     if(found)bones[key]={node:found,base:found.rotation.clone()};
   }
   const texturePalette=makePalette(model,costume);
-  return {root,model,bones,texturePalette,costume};
+  const blinkTargets=[];
+  model.traverse(node=>{
+    if(!node.isMesh || !node.morphTargetDictionary)return;
+    const found=Object.entries(node.morphTargetDictionary).find(([name])=>
+      /^(blink|fcl_eye_close|eye_close|blinkboth)$/i.test(name));
+    if(found)blinkTargets.push({mesh:node,index:found[1]});
+  });
+  return {root,model,bones,texturePalette,blinkTargets,costume};
 }
 function animateRig(rig,time,phase=0){
   const t=time*.001+phase,breath=Math.sin(t*1.48);
@@ -176,7 +191,15 @@ function animateRig(rig,time,phase=0){
   }
   for(const key of ['left','right']){
     const bone=bones[key];if(!bone)continue;
-    bone.node.rotation.z=bone.base.z+Math.sin(t*.63+(key==='left'?0:1.4))*.018;
+    // Natural relaxed gallery guide posture: lower T/A-pose shoulders.
+    const down=key==='left'?-.72:.72;
+    bone.node.rotation.z=bone.base.z+down+Math.sin(t*.63+(key==='left'?0:1.4))*.018;
+  }
+  for(const {mesh,index} of rig.blinkTargets){
+    if(!mesh.morphTargetInfluences)continue;
+    const phase=(t*.81)%4.8;
+    const closed=phase>4.60?Math.max(0,Math.sin((phase-4.60)/.20*Math.PI)):0;
+    mesh.morphTargetInfluences[index]=closed;
   }
 }
 export async function getVRMCuratorFactory(){
