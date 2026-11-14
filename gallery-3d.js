@@ -424,6 +424,9 @@
       lightArt.position.set(side*3.9,3.7,z);
       world.add(lightArt);exhibitionLights.push(lightArt);
     });
+    // Obey the existing "hide guide" setting in both 2D and 3D.
+    const showGuides=!document.getElementById('gallery-guide')?.hidden;
+    avatarSprites.forEach(({sprite})=>{sprite.visible=showGuides;});
     const keep=next.findIndex(g=>g.id===previous);
     if(keep>=0){camera.position.z=Math.min(6,Math.max(roomEnd+1.2,camera.position.z));}
     else {camera.position.set(0,1.68,5.1);yaw=0;pitch=0;nearIndex=-1;}
@@ -701,6 +704,13 @@
     if(event.detail?.from3d)return;
     if(Number.isInteger(event.detail?.index))teleport(event.detail.index);
   });
+  const guidePreference=document.getElementById('gallery-guide');
+  if(guidePreference){
+    new MutationObserver(()=>{
+      const visible=!guidePreference.hidden;
+      avatarSprites.forEach(({sprite})=>{sprite.visible=visible;});
+    }).observe(guidePreference,{attributes:true,attributeFilter:['hidden']});
+  }
   new MutationObserver(()=>build()).observe(grid,{childList:true});
   new MutationObserver(()=>applyLighting()).observe(document.documentElement,{
     attributes:true,attributeFilter:['data-gallery-mode']
