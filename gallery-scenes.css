@@ -160,3 +160,54 @@ html.motion-off #gallery-3d .bk-monster-sprite {animation:none!important;transit
   #gallery-3d .bk-human{left:3%!important}
   #gallery-3d [data-side="right"] .bk-human{left:auto!important;right:3%!important}
 }
+
+
+/* New 384px illustrated pixel-art secretary. Keep the museum rendered at
+   normal resolution and the game's text/images free of pixelation. */
+#gallery-3d [data-curator-art="v3"] .bk-human {
+  image-rendering:pixelated!important;
+  filter:drop-shadow(4px 8px 0 #1a121c99)!important;
+}
+#gallery-3d [data-curator-art="v3"][data-transformation="true"] .bk-human {
+  filter:drop-shadow(-5px 0 0 #7a1836e0) drop-shadow(5px 0 0 #130911)!important;
+}
+#gallery-3d [data-curator-art="v3"] .bk-monster {
+  opacity:.95;
+  filter:drop-shadow(3px 8px 0 #070509) drop-shadow(0 0 14px #a52c60a9);
+}
+#gallery-3d [data-curator-art="v3"] .bk-monster-sprite {
+  image-rendering:pixelated!important;
+}
+
+
+/* v3 portrait-specific composition: make the character a present museum guide,
+   not a tiny figure hidden entirely under the captions. */
+@media (max-width:700px) and (orientation:portrait) {
+  #gallery-3d [data-curator-art="v3"] .bk-human{
+    width:55%!important;
+    height:91%!important;
+    bottom:5%!important;
+    left:-2%!important;
+    right:auto!important;
+    object-position:center bottom!important;
+  }
+  #gallery-3d [data-curator-art="v3"][data-side="right"] .bk-human{
+    left:auto!important;
+    right:-2%!important;
+  }
+  #gallery-3d [data-curator-art="v3"] .bk-monster{
+    width:60%!important;
+    height:86%!important;
+    bottom:6%!important;
+    left:-4%!important;
+    right:auto!important;
+  }
+  #gallery-3d [data-curator-art="v3"][data-side="right"] .bk-monster{
+    left:auto!important;
+    right:-4%!important;
+  }
+}
+
+/* Avoid one-frame flash of obsolete pixel guide before the two new atlases decode. */
+#gallery-3d [data-curator-art="loading"] .bk-human,
+#gallery-3d [data-curator-art="loading"] .bk-monster-sprite{visibility:hidden!important}
