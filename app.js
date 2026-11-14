@@ -472,6 +472,8 @@
       event.preventDefault();
       const filters = document.getElementById('walk-filter-drawer');
       if (filters) filters.open = true;
+      const worldList = document.getElementById('world-all-games');
+      if (worldList) worldList.open = true;
       searchInput.focus();
       document.querySelector('#games').scrollIntoView({behavior:'smooth'});
     }
@@ -497,6 +499,9 @@
     showPage('games', true);
     const filters = document.getElementById('walk-filter-drawer');
     if (filters) filters.open = true;
+    const listPanel = document.getElementById('world-all-games');
+    if (listPanel) listPanel.open = true;
+    listPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     searchInput.focus({ preventScroll: true });
   });
   document.querySelector('#close-reviews-overlay').addEventListener('click', () => {
