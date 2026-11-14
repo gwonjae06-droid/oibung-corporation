@@ -348,3 +348,11 @@ html.motion-off #gallery-3d .bk-monster-sprite {animation:none!important;transit
     mask-image:radial-gradient(circle 215px at var(--x,50%) var(--y,48%),#000 0%,#000e 52%,transparent 86%);
   }
 }
+
+
+/* Portrait composition: keep the larger curator beside, not over, the artwork. */
+@media(max-width:700px) and (orientation:portrait){
+ #gallery-3d .bk-frame{left:38%!important;width:55%!important;top:20%!important;height:35%!important}
+ #gallery-3d [data-side="right"] .bk-frame{left:7%!important;width:55%!important}
+ #gallery-3d .bk-plaque{left:0;right:0;font-size:12px}
+}
