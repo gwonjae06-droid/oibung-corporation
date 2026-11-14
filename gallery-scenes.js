@@ -360,6 +360,12 @@
     // If Blender renders are added later, a matching scene/lighting file wins.
     // The architectural CSS fallback works fully offline, even without assets.
     const area = scene.area === 'focus' ? 'focus' : scene.area;
+    const daylightUrl = sceneImage(area, 'light');
+    if (darkMode() && daylightUrl.startsWith('assets/museum/') && daylightUrl.endsWith('.avif')) {
+      view.style.setProperty('--museum-day-render', 'url("' + daylightUrl + '")');
+    } else {
+      view.style.removeProperty('--museum-day-render');
+    }
     const url = sceneImage(area);
     // Do not request missing renders. An explicit manifest opts in each scene.
     if (!/^assets\/museum\/[a-z0-9/_-]+\.avif$/.test(url)) {
