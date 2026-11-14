@@ -37,7 +37,7 @@
   let createAnimeCurator = null;
   let vrmCuratorModule;
   try {
-    vrmCuratorModule = await import('./gallery-vrm-curator.js?v=vrm-sculpt-2');
+    vrmCuratorModule = await import('./gallery-vrm-curator.js?v=vrm-sculpt-3');
   } catch (error) {
     console.warn('[3D Gallery] Licensed VRoid loader unavailable; retaining illustrated fallback.',error);
   }
@@ -316,12 +316,27 @@
   }
   function clearWorld(){
     if(!world)return;
+    // SkeletonUtils clones share geometry and many original VRM materials.
+    // Disposing them here permanently invalidates subsequent curator copies.
+    // Ask the rig to dispose only genuinely owned material clones, and skip
+    // all shared VRM descendants in the generic gallery cleanup.
+    const rigRoots=new Set(avatarSprites.filter(a=>a.rig).map(a=>a.sprite));
+    for(const actor of avatarSprites){
+      if(actor.rig){
+        try { actor.rig.dispose?.(); }
+        catch(error){console.warn('[3D Gallery] Curator cleanup:',error);}
+      }
+    }
     scene.remove(world);
-    world.traverse(node=>{
+    const disposeGalleryObject=node=>{
+      if(rigRoots.has(node))return;
+      for(const child of node.children)disposeGalleryObject(child);
       node.geometry?.dispose?.();
-      if(Array.isArray(node.material))node.material.forEach(m=>m?.dispose?.());
-      else if(node.material && !Object.values(materials).includes(node.material))node.material.dispose?.();
-    });
+      const own=m=>{if(m && !Object.values(materials).includes(m))m.dispose?.();};
+      if(Array.isArray(node.material))node.material.forEach(own);
+      else own(node.material);
+    };
+    disposeGalleryObject(world);
     allTextures.forEach(t=>t.dispose());allTextures=[];
     paintings.length=0;exhibitionLights.length=0;emergencyLights.length=0;
     glowingFixtures.length=0;avatarSprites.length=0;
@@ -427,16 +442,30 @@
       if(createAnimeCurator){
         // Every exhibit has its own real three-dimensional adult-proportioned
         // anime curator, positioned beside the artwork and facing the aisle.
-        const rig=createAnimeCurator(THREE,{costume,mobile});
-        const model=rig.group;
-        model.position.set(side*3.67,0,z-2.42);
-        model.rotation.y=side>0?-Math.PI/2+.17:Math.PI/2-.17;
-        model.scale.setScalar(.97);
-        world.add(model);
-        avatarSprites.push({sprite:model,rig,costume,phase:i*1.17,y:0});
+        let rig;
+        try { rig=createAnimeCurator(THREE,{costume,mobile}); }
+        catch(error){console.warn('[3D Gallery] Sculpted curator creation failed; falling back to artwork.',error);}
+        if(rig){
+          const model=rig.group;
+          model.position.set(side*3.62,0,z-1.73);
+          model.rotation.y=side>0?-Math.PI/2+.15:Math.PI/2-.15;
+          model.scale.setScalar(.96);
+          model.userData.galleryCurator=true;
+          world.add(model);
+          avatarSprites.push({sprite:model,rig,costume,phase:i*1.17,y:0});
+        }else{
+          const sprite=new THREE.Sprite(new THREE.SpriteMaterial({
+            map:guideTextures[costume] || null,transparent:true,depthWrite:false,
+            color:0xffffff,opacity:guideTextures[costume]?1:0
+          }));
+          sprite.position.set(side*3.62,1.45,z-1.73);
+          sprite.scale.set(1.70,2.73,1);
+          world.add(sprite);
+          avatarSprites.push({sprite,costume,y:sprite.position.y,phase:i*1.17});
+        }
         const characterSpot=new THREE.SpotLight(0xffead0,0,6.7,Math.PI/6.8,.68,1.8);
-        characterSpot.position.set(side*2.7,4.55,z-1.45);
-        characterSpot.target.position.set(side*3.67,1.43,z-2.42);
+        characterSpot.position.set(side*2.82,4.55,z-1.05);
+        characterSpot.target.position.set(side*3.62,1.48,z-1.73);
         world.add(characterSpot,characterSpot.target);
         exhibitionLights.push(characterSpot);
       }else{
@@ -444,8 +473,8 @@
           map:guideTextures[costume] || null,transparent:true,depthWrite:false,
           color:0xffffff,opacity:guideTextures[costume]?1:0
         }));
-        sprite.position.set(side*3.65,1.42,z-2.55);
-        sprite.scale.set(costume==='maid'?1.18:1.62,2.60,1);
+        sprite.position.set(side*3.62,1.45,z-1.73);
+        sprite.scale.set(costume==='maid'?1.42:1.68,2.70,1);
         world.add(sprite);
         avatarSprites.push({sprite,costume,y:sprite.position.y,phase:i*1.17});
       }
@@ -462,7 +491,13 @@
     avatarSprites.forEach(({sprite})=>{sprite.visible=showGuides;});
     const keep=next.findIndex(g=>g.id===previous);
     if(keep>=0){camera.position.z=Math.min(6,Math.max(roomEnd+1.2,camera.position.z));}
-    else {camera.position.set(0,1.68,5.1);yaw=0;pitch=0;nearIndex=-1;}
+    else {
+      // Start at the entrance facing the FIRST framed painting and curator.
+      // Previously the camera spawned over 12m away looking down an empty hall.
+      camera.position.set(.18,1.68,-.95);
+      yaw=-.55;pitch=.055;nearIndex=-1;
+      setOrientation();
+    }
     applyLighting();
     resize();
     rebuilding=false;
@@ -754,15 +789,54 @@
     }).observe(guidePreference,{attributes:true,attributeFilter:['hidden']});
   }
   new MutationObserver(()=>build()).observe(grid,{childList:true});
-  // Load the model once asynchronously, then re-stage the display actors.
-  if(vrmCuratorModule?.getVRMCuratorFactory){
-    vrmCuratorModule.getVRMCuratorFactory().then(factory=>{
+  // A failure must never leave invisible characters. The 2D stand-ins are
+  // present immediately, and are replaced atomically only when the VRM is ready.
+  const curatorStatus=document.createElement('div');
+  curatorStatus.className='gallery-3d-curator-status';
+  curatorStatus.setAttribute('role','status');
+  curatorStatus.hidden=true;
+  curatorStatus.innerHTML='<span class="gallery-3d-curator-message"></span><button type="button" hidden>다시 시도</button>';
+  surface.appendChild(curatorStatus);
+  const curatorMessage=curatorStatus.querySelector('.gallery-3d-curator-message');
+  const curatorRetry=curatorStatus.querySelector('button');
+  let curatorAttempt=0;
+  async function loadRealCurator(){
+    const attempt=++curatorAttempt;
+    if(!vrmCuratorModule?.getVRMCuratorFactory){
+      curatorStatus.hidden=false;
+      curatorMessage.textContent='3D 비서 모듈을 불러오지 못했습니다. 일러스트로 표시합니다.';
+      curatorRetry.hidden=false;
+      return;
+    }
+    curatorStatus.hidden=false;
+    curatorRetry.hidden=true;
+    curatorMessage.textContent='3D 비서 모델을 불러오는 중 · 일러스트 안내는 계속 볼 수 있어요';
+    try{
+      const factory=await vrmCuratorModule.getVRMCuratorFactory();
+      if(attempt!==curatorAttempt)return;
+      // Create one clone in advance. Bad source material/skeleton must not
+      // replace a functioning illustrated exhibition.
+      const probe=factory({costume:'knight'});
+      if(!probe?.group)throw new Error('VRM factory returned no visible model');
+      probe.dispose?.();
       createAnimeCurator=(_THREE,opts)=>factory(opts);
       build();
-    }).catch(error=>{
-      console.warn('[3D Gallery] VRoid model unavailable: keeping illustrated curators.',error);
-    });
+      curatorStatus.hidden=true;
+    }catch(error){
+      console.warn('[3D Gallery] VRoid unavailable. Keeping illustrated curators:',error);
+      createAnimeCurator=null;
+      curatorMessage.textContent='3D 비서 로딩 실패 · 일러스트로 표시 중';
+      curatorRetry.hidden=false;
+    }
   }
+  curatorRetry.addEventListener('click',async()=>{
+    if(!vrmCuratorModule){
+      try{vrmCuratorModule=await import('./gallery-vrm-curator.js?v=vrm-sculpt-3');}
+      catch(error){console.warn('[3D Gallery] Retry import failed:',error);}
+    }
+    loadRealCurator();
+  });
+  loadRealCurator();
   new MutationObserver(()=>applyLighting()).observe(document.documentElement,{
     attributes:true,attributeFilter:['data-gallery-mode']
   });
