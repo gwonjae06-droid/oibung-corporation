@@ -37,7 +37,7 @@
   let createAnimeCurator = null;
   let vrmCuratorModule;
   try {
-    vrmCuratorModule = await import('./gallery-vrm-curator.js?v=vrm-sculpt-3');
+    vrmCuratorModule = await import('./gallery-vrm-curator.js?v=vrm-sculpt-4');
   } catch (error) {
     console.warn('[3D Gallery] Licensed VRoid loader unavailable; retaining illustrated fallback.',error);
   }
@@ -344,8 +344,9 @@
   }
 
   function build(){
-    if(rebuilding)return;
+    if(rebuilding)return false;
     rebuilding=true;
+    try{
     const previous=exhibits[nearIndex]?.id || '';
     const next=fromCatalog();
     clearWorld();
@@ -353,7 +354,7 @@
     if (!next.length){
       surface.classList.add('gallery-3d-empty');
       focusLabel.textContent='전시 중인 작품이 없습니다';
-      rebuilding=false;return;
+      return true;
     }
     surface.classList.remove('gallery-3d-empty');
     const total=next.length;
@@ -501,7 +502,22 @@
     }
     applyLighting();
     resize();
-    rebuilding=false;
+    return true;
+    }catch(error){
+      console.error('[3D Gallery] Scene rebuild failed:',error);
+      // A failed 3D rig must not make the whole museum unusable.
+      const failedWithVRM=!!createAnimeCurator;
+      createAnimeCurator=null;
+      if(failedWithVRM){
+        queueMicrotask(()=>build()); // retry ONCE with illustrated stand-ins
+      }else{
+        document.body.classList.remove('three-gallery-ready');
+        surface.hidden=true; // preserve the accessible original gallery
+      }
+      return false;
+    }finally{
+      rebuilding=false;
+    }
   }
 
   function applyLighting(){
@@ -819,7 +835,7 @@
       probe.dispose?.();
       if(!actualGeometry)throw new Error('VRM model contained no renderable mesh');
       createAnimeCurator=(_THREE,opts)=>factory(opts);
-      build();
+      if(!build())throw new Error('VRM world reconstruction failed');
       curatorStatus.hidden=true;
     }catch(error){
       console.warn('[3D Gallery] VRoid unavailable. Keeping illustrated curators:',error);
@@ -830,7 +846,7 @@
   }
   curatorRetry.addEventListener('click',async()=>{
     if(!vrmCuratorModule){
-      try{vrmCuratorModule=await import('./gallery-vrm-curator.js?v=vrm-sculpt-3');}
+      try{vrmCuratorModule=await import('./gallery-vrm-curator.js?v=vrm-sculpt-4&retry='+Date.now());}
       catch(error){console.warn('[3D Gallery] Retry import failed:',error);}
     }
     loadRealCurator();
