@@ -199,6 +199,7 @@
   }
 
   function wheelMove(event) {
+    if (document.body.classList.contains('three-gallery-ready')) return;
     if (room.hidden || !cards.length || document.querySelector('dialog[open]')) return;
     const scrollArea = event.target.closest('.game-card-body');
     if (scrollArea && scrollArea.scrollHeight > scrollArea.clientHeight + 3) return;
@@ -224,6 +225,7 @@
   }
 
   function isGalleryVisible() {
+    if (document.body.classList.contains('three-gallery-ready')) return false;
     if (room.hidden || window.OIBUNG_CURRENT_VIEW !== 'games' || document.querySelector('dialog[open]')) return false;
     const bounds = viewport.getBoundingClientRect();
     const visible = Math.min(bounds.bottom, window.innerHeight) - Math.max(bounds.top, 0);
