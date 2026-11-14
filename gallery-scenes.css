@@ -160,3 +160,21 @@ html.motion-off #gallery-3d .bk-monster-sprite {animation:none!important;transit
   #gallery-3d .bk-human{left:3%!important}
   #gallery-3d [data-side="right"] .bk-human{left:auto!important;right:3%!important}
 }
+
+
+/* New 384px illustrated pixel-art secretary. Keep the museum rendered at
+   normal resolution and the game's text/images free of pixelation. */
+#gallery-3d [data-curator-art="v3"] .bk-human {
+  image-rendering:pixelated!important;
+  filter:drop-shadow(4px 8px 0 #1a121c99)!important;
+}
+#gallery-3d [data-curator-art="v3"][data-transformation="true"] .bk-human {
+  filter:drop-shadow(-5px 0 0 #7a1836e0) drop-shadow(5px 0 0 #130911)!important;
+}
+#gallery-3d [data-curator-art="v3"] .bk-monster {
+  opacity:.95;
+  filter:drop-shadow(3px 8px 0 #070509) drop-shadow(0 0 14px #a52c60a9);
+}
+#gallery-3d [data-curator-art="v3"] .bk-monster-sprite {
+  image-rendering:pixelated!important;
+}
