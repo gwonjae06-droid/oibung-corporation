@@ -172,12 +172,13 @@
     camera=Math.max(0,Math.min(camera,Math.max(0,worldEnd-W)));
     updateSigns();
   }
+  function buildingScale(b){return Math.min(1,Math.max(.34,(groundY-19)/(b.height+36)));}
   function updateSigns(){
     signs.style.pointerEvents='none';
     for(let i=0;i<signButtons.length;i++){
       const b=buildings[i],button=signButtons[i];
       const sx=(b.x+b.width*.5-camera)*LOGICAL_PIXEL_SIZE;
-      const sy=(groundY-b.height+33)*LOGICAL_PIXEL_SIZE;
+      const sy=(groundY-(b.height-33)*buildingScale(b))*LOGICAL_PIXEL_SIZE;
       const visible=sx>-90&&sx<stage.clientWidth+90;
       button.hidden=!visible;
       if(visible){
@@ -530,8 +531,11 @@
     }
   }
   function drawBuilding(b){
-    const x=b.x-camera;
-    if(x>W+65||x+b.width<-75)return;
+    const x=b.x-camera,scale=buildingScale(b);
+    if(x>W+85||x+b.width<-85)return;
+    ctx.save();
+    const anchor=x+b.width*.5;
+    ctx.translate(anchor,groundY);ctx.scale(scale,scale);ctx.translate(-anchor,-groundY);
     const y=groundY-b.height;
     // Museum-scale structures dwarf the wandering avatar.
     rect(x-17,groundY-5,b.width+34,8,'#333c3e');
@@ -552,6 +556,7 @@
       rect(bx-3,groundY-15-(i%2)*3,10,9,b.style==='cat'?'#f5b6d6':'#7dbd8a');
       rect(bx,groundY-19-(i%2)*3,4,4,b.style==='castle'?'#d17b87':'#c4d5a0');
     }
+    ctx.restore();
   }
   function avatar(x,ground,direction,walk,guide=false,yOffset=0){
     const sx=Math.round(x-camera), sy=Math.round(ground+yOffset);
@@ -606,8 +611,8 @@
     // Guide stays visible with a caption at stops, without blocking entrances.
     const guideX=(curator.x-camera)*LOGICAL_PIXEL_SIZE;
     guideBubble.style.left=Math.round(Math.min(stage.clientWidth-90,Math.max(90,guideX)))+'px';
-    const bubbleY=(groundY-85)*LOGICAL_PIXEL_SIZE;
-    guideBubble.style.top=Math.round(Math.max(8,bubbleY-82))+'px';
+    const bubbleY=(groundY-30)*LOGICAL_PIXEL_SIZE;
+    guideBubble.style.top=Math.round(Math.max(8,bubbleY-75))+'px';
     if(guideTextUntil<elapsed&&nearest<0&&Math.abs(player.vx)<1){
       announce('게임 건물 앞에 서서 E를 누르면 작품 설명을 볼 수 있어요.',5.5);
     }
