@@ -1,0 +1,109 @@
+{
+  "description": "v4 pixel curator edge improvement and ten-frame identity-linked morph",
+  "source": {
+    "guide": "9b24e182396769f75c5df38f8a6e2db5d79e8f3eaf586af8a7896153811c7496",
+    "monster": "e36b1fc5c3c480660d64eb70968fea39406723cf2928d8f315af2188c4fec045"
+  },
+  "original_frame": [
+    228,
+    408
+  ],
+  "output_frame": [
+    288,
+    512
+  ],
+  "color": "Full original source colors retained; not down-quantized to 32 or 64 colors",
+  "caveat": "Upscale and sharpening cannot add real hand-painted features or replace custom animation drawings",
+  "files": {
+    "guide-neutral.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 68938
+    },
+    "guide-present.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 78880
+    },
+    "guide-explain.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 77896
+    },
+    "guide-alert.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 72812
+    },
+    "monster-disturbed.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 73410
+    },
+    "monster-approach.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 114404
+    },
+    "monster-lunge.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 125660
+    },
+    "monster-watch.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 93764
+    },
+    "morph-00.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 72812
+    },
+    "morph-01.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 96718
+    },
+    "morph-02.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 99062
+    },
+    "morph-03.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 100370
+    },
+    "morph-04.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 99624
+    },
+    "morph-05.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 98898
+    },
+    "morph-06.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 97222
+    },
+    "morph-07.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 95108
+    },
+    "morph-08.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 93106
+    },
+    "morph-09.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 73410
+    }
+  }
+}
