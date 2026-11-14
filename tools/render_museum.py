@@ -17,6 +17,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--out", default="build/museum")
     parser.add_argument("--quality", choices=("preview", "final"), default="final")
+    parser.add_argument("--engine", choices=("eevee", "cycles"), default="eevee")
     return parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
 
 
@@ -293,13 +294,20 @@ def set_lighting(is_dark, ceiling_lights, emergency_lights):
         obj.data.energy = 80 if is_dark else 0
 
 
-def configure_render(quality):
+def configure_render(quality, engine):
     scene = bpy.context.scene
     # Eevee rasterization is fast; this is *offline* and requires no runtime 3D.
     engines = {item.identifier for item in scene.render.bl_rna.properties["engine"].enum_items}
-    scene.render.engine = "BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in engines else "BLENDER_EEVEE"
-    if hasattr(scene, "eevee") and hasattr(scene.eevee, "taa_render_samples"):
-        scene.eevee.taa_render_samples = 24 if quality == "final" else 8
+    if engine == "cycles":
+        scene.render.engine = "CYCLES"
+        scene.cycles.samples = 16 if quality == "final" else 4
+        scene.cycles.device = "CPU"
+        if hasattr(bpy.context.view_layer.cycles, "use_denoising"):
+            bpy.context.view_layer.cycles.use_denoising = True
+    else:
+        scene.render.engine = "BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in engines else "BLENDER_EEVEE"
+        if hasattr(scene, "eevee") and hasattr(scene.eevee, "taa_render_samples"):
+            scene.eevee.taa_render_samples = 24 if quality == "final" else 8
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGBA"
     scene.render.film_transparent = False
@@ -312,7 +320,7 @@ def configure_render(quality):
 def main():
     args = parse_args()
     os.makedirs(args.out, exist_ok=True)
-    configure_render(args.quality)
+    configure_render(args.quality, args.engine)
     lights, emergency = build()
     camera = make_camera()
     scene = bpy.context.scene
