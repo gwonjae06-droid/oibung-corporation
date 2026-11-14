@@ -1,0 +1,91 @@
+name: Crisp curator v5 sprite QA
+on:
+  push:
+    branches: ["feat/crisp-curator-v5-pixel-art"]
+    paths:
+      - "assets/curator-v5/curator-atlas.webp"
+      - "tools/build_curator_v5.py"
+      - "gallery-scenes.js"
+      - "gallery-scenes.css"
+      - "index.html"
+      - "tests/gallery-curator-v5.cjs"
+      - ".github/workflows/curator-v5.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: curator-v5-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  generate-and-verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Extract brand-new 1:1 pixel sprites and 12 sharp morph frames
+        run: |
+          python -m pip install Pillow
+          python tools/build_curator_v5.py
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          directory=Path('assets/curator-v5')
+          source=Image.open(directory/'curator-atlas.webp').convert('RGBA')
+          assert source.size==(1536,1024),source.size
+          assert source.getchannel('A').getextrema()[0]==0
+          output=list(directory.glob('guide-*.webp'))+list(directory.glob('monster-*.webp'))+list(directory.glob('morph-*.webp'))
+          assert len(output)==20,output
+          assert len(list(directory.glob('morph-*.webp')))==12
+          for path in output:
+              im=Image.open(path).convert('RGBA')
+              assert im.height==512 and 80<=im.width<=384,(path,im.size)
+              assert im.getchannel('A').getextrema()[0]==0,path
+          print('PASS all 20 original-grid-based crisp sprites')
+          PY
+      - name: Check JavaScript and deterministic gameplay unit tests
+        run: |
+          node --check gallery-scenes.js
+          node --check gallery-blackout-rules.js
+          node tests/blackout-rules-v2.cjs
+      - name: Set up responsive Chromium browser
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Check new pixel graphics and transition in real browser
+        run: |
+          python -m http.server 8000 --bind 127.0.0.1 >/tmp/gallery-curator-v5.log 2>&1 &
+          sleep 2
+          node tests/gallery-curator-v5.cjs
+      - name: Upload day, morph and night visual QA snapshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: curator-v5-sharpness-${{ github.run_number }}
+          path: |
+            artifacts/*.png
+            docs/CURATOR_V5_RENDER_AUDIT.json
+          retention-days: 14
+          if-no-files-found: warn
+      - name: Commit only the image assets that passed browser QA
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/curator-v5/guide-*.webp assets/curator-v5/monster-*.webp assets/curator-v5/morph-*.webp docs/CURATOR_V5_RENDER_AUDIT.json
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: add tested hand-illustrated crisp curator sprites and morph [skip ci]"
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME"
+            git push origin HEAD:"$GITHUB_REF_NAME"
+          fi
