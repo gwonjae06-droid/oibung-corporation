@@ -1,0 +1,88 @@
+name: Curator V4 art and blackout gameplay QA
+on:
+  push:
+    branches: ["feat/blackout-v2-quality-gameplay"]
+    paths:
+      - "gallery-scenes.js"
+      - "gallery-scenes.css"
+      - "gallery-blackout-rules.js"
+      - "index.html"
+      - "tools/build_curator_v4.py"
+      - "tests/blackout-rules-v2.cjs"
+      - "tests/gallery-blackout-v2.cjs"
+      - ".github/workflows/gallery-blackout-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gallery-blackout-v2-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  sprite-gameplay-and-browser-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Render 512px lossless curator and 10-step transformation
+        run: |
+          python -m pip install Pillow
+          python tools/build_curator_v4.py
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          root=Path('assets/curator-v4')
+          sprites=list(root.glob('*.webp'))
+          assert len(sprites)==18, (len(sprites), sprites)
+          for f in sprites:
+              im=Image.open(f).convert('RGBA')
+              assert im.size==(288,512), (f, im.size)
+              assert im.getchannel('A').getextrema()[0]==0, f
+          print('PASS',len(sprites),'512px transparent sprites')
+          PY
+      - name: JavaScript parser and gameplay state-machine unit tests
+        run: |
+          node --check gallery-scenes.js
+          node --check gallery-blackout-rules.js
+          node tests/blackout-rules-v2.cjs
+      - name: Install Chromium for viewport validation
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Run browser tests at desktop, phone portrait, phone landscape
+        run: |
+          python -m http.server 8000 --bind 127.0.0.1 >/tmp/gallery-blackout-v2.log 2>&1 &
+          sleep 2
+          node tests/gallery-blackout-v2.cjs
+      - name: Upload browser screenshots and render audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blackout-v2-qa-${{ github.run_number }}
+          path: |
+            artifacts/*.png
+            docs/CURATOR_V4_RENDER_AUDIT.json
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Commit high-resolution art only after all tests pass
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/curator-v4 docs/CURATOR_V4_RENDER_AUDIT.json
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: ship verified 512px portraits and smooth morph sequence [skip ci]"
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME"
+            git push origin HEAD:"$GITHUB_REF_NAME"
+          fi
