@@ -703,3 +703,16 @@ html.motion-off #gallery-3d [data-gallery-mode="dark"] .museum-emergency-light{a
   #gallery-3d .museum-curator-dialogue{display:none}
   #gallery-3d .museum-movement button span{font-size:10px}
 }
+
+
+/* Uploaded images replace a themed poster only when fully decoded/loaded.
+   Slow Supabase and mobile network requests never expose an empty black frame. */
+#gallery-3d .museum-art{position:relative}
+#gallery-3d .museum-art .museum-cover{position:absolute;inset:0;width:100%;height:100%}
+#gallery-3d .museum-art .museum-cover[hidden]{display:none!important}
+#gallery-3d .museum-art .museum-image{
+  position:absolute!important;inset:0;width:100%!important;height:100%!important;
+  object-fit:contain!important;opacity:0!important;transform:none!important;
+  filter:none!important;image-rendering:auto!important;
+}
+#gallery-3d .museum-art .museum-image.is-ready{opacity:1!important}
