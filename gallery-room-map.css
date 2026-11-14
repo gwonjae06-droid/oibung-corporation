@@ -67,3 +67,19 @@
   .gallery-room-map-toggle{padding:7px 11px;min-height:36px;font-size:12px}
   .gallery-room-map-panel{max-height:62dvh}
 }
+
+
+/* Top-down castle hub plan, drawn from live 3D placement coordinates. */
+.gallery-room-map-panel .gallery-hub-schematic{
+  display:block;width:100%;height:auto;aspect-ratio:320/218;
+  margin:0 0 14px;
+  border:1px solid #c6a97a8a;border-radius:3px;
+  background:#141a21;
+  image-rendering:auto;
+}
+.gallery-room-map-panel .gallery-hub-schematic[hidden]{display:none!important}
+.gallery-room-map-list{max-height:215px;overflow:auto;overscroll-behavior:contain}
+@media(max-width:760px){
+  .gallery-room-map-panel .gallery-hub-schematic{max-height:170px;object-fit:contain}
+  .gallery-room-map-list{max-height:170px}
+}
