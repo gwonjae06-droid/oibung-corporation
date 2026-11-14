@@ -58,6 +58,9 @@ const fs=require('node:fs/promises');
      const danger=await page.locator('.bk-stage').getAttribute('data-danger');
      if(danger==='true'){
        assert.equal(await page.locator('.bk-monster').isVisible(),true);
+       await monster.evaluate(img=>img.decode());
+       assert.ok(await monster.evaluate(img=>img.naturalWidth>30&&img.naturalHeight>100),
+         'Encounter monster must have actual image pixels, not only visible container');
        const creatureDebug=await monster.evaluate(img=>{
          const cs=getComputedStyle(img),host=getComputedStyle(img.parentElement);
          const r=img.getBoundingClientRect(),p=img.parentElement.getBoundingClientRect();
