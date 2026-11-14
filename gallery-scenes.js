@@ -336,22 +336,38 @@
     // If Blender renders are added later, a matching scene/lighting file wins.
     // The architectural CSS fallback works fully offline, even without assets.
     const area = scene.area === 'focus' ? 'focus' : scene.area;
-    const url = 'assets/museum/' + area + '-' + mode() + '.avif';
+    const url = window.OIBUNG_SCENE_ASSETS?.[area]?.[mode()] || '';
+    // Do not request missing renders. An explicit manifest opts in each scene.
+    if (!/^assets\/museum\/[a-z0-9/_-]+\.avif$/.test(url)) {
+      view.style.removeProperty('--museum-render');
+      view.classList.remove('museum-has-render');
+      return;
+    }
     const cached = imageChecks.get(url);
     if (cached === true) {
       view.style.setProperty('--museum-render', 'url("' + url + '")');
+      view.classList.add('museum-has-render');
     } else if (cached === false) {
       view.style.removeProperty('--museum-render');
+      view.classList.remove('museum-has-render');
     } else {
       view.style.removeProperty('--museum-render');
+      view.classList.remove('museum-has-render');
       const image = new Image();
       image.decoding = 'async';
       image.onload = () => {
         imageChecks.set(url, true);
         const current = (scene.area === 'focus' ? 'focus' : scene.area) + '-' + mode();
-        if (url.endsWith(current + '.avif')) view.style.setProperty('--museum-render', 'url("' + url + '")');
+        if (url === (window.OIBUNG_SCENE_ASSETS?.[area]?.[mode()] || '') &&
+            current === area + '-' + mode()) {
+          view.style.setProperty('--museum-render', 'url("' + url + '")');
+          view.classList.add('museum-has-render');
+        }
       };
-      image.onerror = () => imageChecks.set(url, false);
+      image.onerror = () => {
+        imageChecks.set(url, false);
+        view.classList.remove('museum-has-render');
+      };
       image.src = url;
     }
   }
@@ -480,7 +496,7 @@
   document.addEventListener('keydown', event => {
     if (!isFreeToNavigate(event)) return;
     if (!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Enter','e','E','Escape','m','M','f','F'].includes(event.key)) return;
-    if (event.target.closest('button, a') && !surface.contains(event.target)) return;
+    if (event.target.closest?.('button, a') && !surface.contains(event.target)) return;
     if (event.key === 'ArrowLeft') move(-1);
     else if (event.key === 'ArrowRight') move(1);
     else if (event.key === 'ArrowUp' || event.key === 'Enter') approach();
