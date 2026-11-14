@@ -38,3 +38,41 @@ body.scene-gallery-ready #gallery-3d{display:block!important;position:absolute!i
 @media(max-width:700px){body.scene-gallery-ready #walk-gallery{min-height:620px;height:calc(100dvh - 110px)}#gallery-3d .bk-top{align-items:flex-start;padding:10px}#gallery-3d .bk-top>span{display:none}#gallery-3d .bk-frame,#gallery-3d [data-side=right] .bk-frame{left:22%;width:61%;top:20%;height:37%}#gallery-3d .bk-human{height:72%;width:53%;bottom:-12%;left:-10%}#gallery-3d [data-side=right] .bk-human{right:-10%}#gallery-3d .bk-caption{left:12px;right:12px;bottom:10px}#gallery-3d .bk-caption p{font-size:12px}}
 @media(max-height:520px) and (orientation:landscape){body.scene-gallery-ready #walk-gallery{min-height:360px}#gallery-3d .bk-frame{top:18%;height:43%}#gallery-3d .bk-caption{left:25%;right:15%;padding:8px}}
 @media(prefers-reduced-motion:reduce){#gallery-3d *{transition:none!important;animation:none!important}}
+
+
+/* Curator v2 QA fixes: preserve the full head/pony-tail on narrow screens and
+   avoid clicking through a legacy global menu that overlaps exhibition controls. */
+#gallery-3d .bk-top{padding-right:86px}
+@media(max-width:700px){
+  #gallery-3d .bk-top{padding-right:76px}
+  #gallery-3d .bk-top>div{gap:6px}
+  #gallery-3d .bk-top button{font-size:11px;padding:8px 10px;min-height:42px}
+  #gallery-3d .bk-human{
+    left:0!important;right:auto!important;
+    width:49%!important;bottom:-8%!important;
+    object-fit:contain;object-position:center bottom;
+  }
+  #gallery-3d [data-side=right] .bk-human{
+    left:auto!important;right:0!important;
+    object-position:center bottom;
+  }
+}
+@media(max-width:700px) and (orientation:portrait){
+  #gallery-3d .bk-human{bottom:-6%!important}
+}
+@media(max-height:520px) and (orientation:landscape){
+  #gallery-3d .bk-human{left:1%!important;width:28%!important;height:84%!important;bottom:-18%!important}
+  #gallery-3d [data-side=right] .bk-human{left:auto!important;right:1%!important}
+  #gallery-3d .bk-frame{top:17%;height:40%}
+  #gallery-3d .bk-plaque{top:calc(100% + 5px);padding:4px 7px;font-size:10px}
+  #gallery-3d .bk-caption{left:31%;right:9%;bottom:5px;padding:6px 10px}
+  #gallery-3d .bk-caption p{font-size:11px;line-height:1.35;margin:3px 0}
+}
+
+
+/* Final visual QA: keep previous-room arrow away from the curator's face,
+   and avoid painting the old site's brand under the gallery's top actions. */
+body.blackout-rebuild .site-header .brand{visibility:hidden!important;pointer-events:none!important}
+@media(max-width:700px) and (orientation:portrait){
+  #gallery-3d .bk-nav{inset:30% 9px auto}
+}
