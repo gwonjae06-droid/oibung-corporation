@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#c6c0b8">
-  <meta name="description" content="친구들이 만든 게임을 3D 1인칭 전시관에서 직접 탐험하세요. 작품 감상과 플레이어 후기, 소등형 공포 전시관을 경험할 수 있습니다.">
+  <meta name="description" content="친구들이 만든 게임을 고정 카메라 미술관에서 감상하세요. 고해상도 2D 작품, 안내 비서와 소등형 공포 전시관을 만나보세요.">
   <meta property="og:title" content="오이붕 갤러리">
-  <meta property="og:description" content="친구들의 게임을 직접 걸어 다니며 감상하는 3D 오이붕 갤러리입니다.">
+  <meta property="og:description" content="친구들의 게임을 장면형 전시관에서 감상하는 오이붕 갤러리입니다.">
   <meta property="og:type" content="website">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <title>오이붕 갤러리</title>
@@ -33,6 +33,7 @@
   <link rel="stylesheet" href="gallery-room-map.css?v=castle-map-2">
   <link rel="stylesheet" href="gallery-3d.css?v=stickman-camera-performance-1">
   <link rel="stylesheet" href="gallery-portal.css?v=platformer-castle-2">
+  <link rel="stylesheet" href="gallery-scenes.css?v=hybrid-museum-v1">
   <!-- 3D actor meshes are now local; only the 3D engine loads externally. -->
   <script src="gallery-display-mode.js?v=blackout-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
@@ -43,7 +44,7 @@
   <script src="motion.js?v=museum-daylight-1" defer></script>
   <script src="gallery-walk.js?v=explore-4" defer></script>
   <script src="gallery-room-map.js?v=castle-map-2" defer></script>
-  <script src="gallery-3d.js?v=stickman-camera-performance-1" defer></script>
+  <script src="gallery-scenes.js?v=hybrid-museum-v1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -146,8 +147,8 @@
           </div>
         </details>
         <p class="catalog-count" id="catalog-count" aria-live="polite"></p>
-        <section class="walk-gallery" id="walk-gallery" aria-label="오이붕 갤러리 3D 플랫폼 탐험 전시관">
-          <div id="gallery-3d" class="gallery-3d" aria-label="작은 3D 졸라맨을 조작하는 3인칭 전시관" hidden>
+        <section class="walk-gallery" id="walk-gallery" aria-label="오이붕 갤러리 고정 시점 탐험 전시관">
+          <div id="gallery-3d" class="gallery-3d" aria-label="실사풍 건축 배경과 2D 작품이 결합된 고정 시점 전시관" hidden>
             <div id="gallery-3d-canvas" class="gallery-3d-canvas"></div>
             <div class="gallery-3d-reticle" aria-hidden="true"></div>
             <div class="gallery-3d-hud">
