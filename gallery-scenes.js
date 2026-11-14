@@ -72,7 +72,7 @@
           '<button type="button" id="museum-right" aria-label="오른쪽으로 이동">→<span>다음</span></button>',
         '</nav>',
         '<div class="museum-curator" id="museum-curator">',
-          '<img id="museum-curator-image" src="assets/museum-curator-black-hair.png" width="822" height="1914" alt="검은 포니테일에 흰 셔츠와 조끼를 입은 오이붕 갤러리 안내 비서" decoding="async">',
+          '<img id="museum-curator-image" src="assets/museum-curator-low-ponytail.png" width="724" height="2172" alt="낮게 묶은 검은 포니테일에 흰 셔츠와 조끼를 입은 오이붕 갤러리 안내 비서" decoding="async">',
           '<div class="museum-curator-dialogue" id="museum-curator-dialogue">어서 오세요. 작품을 둘러보세요.</div>',
           '<button type="button" id="museum-guide-toggle" aria-label="안내 비서 숨기기">×</button>',
         '</div>',
