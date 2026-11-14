@@ -1,0 +1,120 @@
+{
+  "source": "assets/curator-v5/curator-atlas.webp",
+  "source_sha256": "5262dab772a57de70436a398e0560c2ec338eae3107563444890a47df6e1cbb0",
+  "source_grid": [
+    4,
+    2
+  ],
+  "source_frame": [
+    384,
+    512
+  ],
+  "method": "new 1:1 source pixels + alpha crop, lossless WebP; ordered-dither 12-step morph",
+  "never_pixelated": "Blender backgrounds, game art, labels, HTML text",
+  "generated": {
+    "guide-neutral.webp": {
+      "width": 154,
+      "height": 512,
+      "bytes": 42902
+    },
+    "guide-present.webp": {
+      "width": 249,
+      "height": 512,
+      "bytes": 48068
+    },
+    "guide-explain.webp": {
+      "width": 183,
+      "height": 512,
+      "bytes": 48784
+    },
+    "guide-alert.webp": {
+      "width": 187,
+      "height": 512,
+      "bytes": 55668
+    },
+    "monster-disturbed.webp": {
+      "width": 162,
+      "height": 512,
+      "bytes": 51262
+    },
+    "monster-approach.webp": {
+      "width": 249,
+      "height": 512,
+      "bytes": 71358
+    },
+    "monster-lunge.webp": {
+      "width": 288,
+      "height": 512,
+      "bytes": 97766
+    },
+    "monster-watch.webp": {
+      "width": 248,
+      "height": 512,
+      "bytes": 85490
+    },
+    "morph-00.webp": {
+      "width": 191,
+      "height": 512,
+      "bytes": 55788
+    },
+    "morph-01.webp": {
+      "width": 191,
+      "height": 512,
+      "bytes": 58372
+    },
+    "morph-02.webp": {
+      "width": 191,
+      "height": 512,
+      "bytes": 60880
+    },
+    "morph-03.webp": {
+      "width": 191,
+      "height": 512,
+      "bytes": 62496
+    },
+    "morph-04.webp": {
+      "width": 191,
+      "height": 512,
+      "bytes": 66376
+    },
+    "morph-05.webp": {
+      "width": 191,
+      "height": 512,
+      "bytes": 69066
+    },
+    "morph-06.webp": {
+      "width": 191,
+      "height": 512,
+      "bytes": 66980
+    },
+    "morph-07.webp": {
+      "width": 189,
+      "height": 512,
+      "bytes": 62982
+    },
+    "morph-08.webp": {
+      "width": 189,
+      "height": 512,
+      "bytes": 57826
+    },
+    "morph-09.webp": {
+      "width": 177,
+      "height": 512,
+      "bytes": 55058
+    },
+    "morph-10.webp": {
+      "width": 166,
+      "height": 512,
+      "bytes": 51206
+    },
+    "morph-11.webp": {
+      "width": 166,
+      "height": 512,
+      "bytes": 51206
+    }
+  },
+  "limitations": [
+    "One 1536x1024 illustration sheet; no bone-rigged animation",
+    "Morph uses ordered-dither frame transition, not drawn in-betweens"
+  ]
+}
