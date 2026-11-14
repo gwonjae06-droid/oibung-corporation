@@ -674,7 +674,11 @@
     rebuilding=true;
     try{
     const previous=exhibits[nearIndex]?.id || '';
+    const previousRoomId=sceneMode==='inside'?exhibits[activeExhibit]?.id:null;
+    const priorRoomPose=previousRoomId
+      ?{x:camera.position.x,z:camera.position.z,yaw,pitch}:null;
     const next=fromCatalog();
+    if(pocketWorld)disposePocket();
     clearWorld();
     exhibits=next;
     if (!next.length){
@@ -767,14 +771,27 @@
       world.add(lightArt);exhibitionLights.push(lightArt);
     });
     const keep=next.findIndex(g=>g.id===previous);
-    if(keep>=0){camera.position.z=Math.min(6,Math.max(roomEnd+1.2,camera.position.z));}
-    else {
-      // Start at the entrance facing the FIRST framed painting and curator.
-      // Previously the camera spawned over 12m away looking down an empty hall.
-      camera.position.set(.18,1.68,-.95);
-      yaw=-.55;pitch=.055;nearIndex=-1;
-      setOrientation();
+    const roomIndex=previousRoomId
+      ?next.findIndex(g=>g.id===previousRoomId):-1;
+    if(roomIndex>=0 && buildPocket(roomIndex)){
+      sceneMode='inside';activeExhibit=roomIndex;
+      world.visible=false;pocketWorld.visible=true;
+      if(priorRoomPose){
+        camera.position.set(priorRoomPose.x,1.68,priorRoomPose.z);
+        yaw=priorRoomPose.yaw;pitch=priorRoomPose.pitch;
+      }
+    }else{
+      sceneMode='hall';activeExhibit=-1;
+      if(keep>=0){
+        camera.position.z=Math.min(6,Math.max(roomEnd+1.2,camera.position.z));
+      }else{
+        camera.position.set(.18,1.68,-.95);
+        yaw=-.55;pitch=.055;nearIndex=-1;
+      }
     }
+    jumpHeight=0;jumpVelocity=0;queuedJump=null;
+    reflectRoomUI();
+    setOrientation();
     applyLighting();
     resize();
     return true;
@@ -790,9 +807,11 @@
 
   function applyLighting(){
     darkness=document.documentElement.dataset.galleryMode==='dark';
-    scene.background.set(darkness?0x020305:0xa8a59d);
-    scene.fog.color.set(darkness?0x020306:0xa8a59d);
-    scene.fog.density=darkness?.061:.012;
+    const theme=sceneMode==='inside' && exhibits[activeExhibit]
+      ?roomTheme(exhibits[activeExhibit]):null;
+    scene.background.set(darkness?0x020305:(theme?.wall??0xa8a59d));
+    scene.fog.color.set(darkness?0x020306:(theme?.wall??0xa8a59d));
+    scene.fog.density=darkness?.061:(theme?.020:.012);
     ambient.intensity=darkness?.008:.7;
     hemisphere.intensity=darkness?.018:1.45;
     sun.intensity=darkness?0:.95;
@@ -801,6 +820,9 @@
     renderer.toneMappingExposure=darkness?.80:1.12;
     exhibitionLights.forEach(light=>light.intensity=0);
     emergencyLights.forEach(light=>light.intensity=0);
+    pocketLights.forEach(({light,strength})=>{
+      light.intensity=sceneMode==='inside'?(darkness?strength*.025:strength):0;
+    });
     glowingFixtures.forEach(mat=>mat.emissiveIntensity=darkness?0:1.25);
     portalSurfaces.forEach(({uniforms})=>{
       uniforms.uDim.value=darkness?.45:1;
@@ -811,6 +833,18 @@
     surface.classList.toggle('gallery-3d-dark',darkness);
   }
   function updateNearbyLights(time){
+    if(sceneMode==='inside'){
+      exhibitionLights.forEach(light=>{light.intensity=0;});
+      emergencyLights.forEach(light=>{light.intensity=0;});
+      pocketLights.forEach(({light,strength})=>{
+        light.intensity=darkness?strength*.025:strength;
+      });
+      if(darkness){
+        torch.intensity=flashlightOn
+          ?16.5+.45*Math.sin(time*.0038)+.12*Math.sin(time*.041):0;
+      }else torch.intensity=0;
+      return;
+    }
     if(darkness) {
       exhibitionLights.forEach(light=>{light.intensity=0});
       emergencyLights.forEach(light=>{
