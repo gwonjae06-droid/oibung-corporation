@@ -207,3 +207,7 @@ html.motion-off #gallery-3d .bk-monster-sprite {animation:none!important;transit
     right:-4%!important;
   }
 }
+
+/* Avoid one-frame flash of obsolete pixel guide before the two new atlases decode. */
+#gallery-3d [data-curator-art="loading"] .bk-human,
+#gallery-3d [data-curator-art="loading"] .bk-monster-sprite{visibility:hidden!important}
