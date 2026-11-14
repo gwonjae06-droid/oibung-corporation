@@ -1,0 +1,45 @@
+name: Direct gallery UX smoke test
+on:
+  push:
+    branches: ["feat/direct-game-gallery-home"]
+    paths:
+      - "index.html"
+      - "direct-gallery.css"
+      - "direct-gallery.js"
+      - "app.js"
+      - "tests/direct-gallery.cjs"
+      - ".github/workflows/direct-gallery.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: |
+          node --check app.js
+          node --check direct-gallery.js
+          node --check tests/direct-gallery.cjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Run responsive direct-gallery browser checks
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/oibung-direct.log 2>&1 &
+          sleep 2
+          node tests/direct-gallery.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: direct-gallery-screenshots-${{ github.run_number }}
+          path: artifacts/*.png
+          if-no-files-found: ignore
+          retention-days: 14
