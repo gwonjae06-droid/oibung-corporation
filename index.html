@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="gallery-outfits.css?v=costumes-1">
   <link rel="stylesheet" href="gallery-clarity.css?v=explore-3">
   <link rel="stylesheet" href="gallery-room-map.css?v=room-map-1">
+  <link rel="stylesheet" href="gallery-3d.css?v=first-person-1">
   <link rel="preload" as="image" type="image/svg+xml" href="assets/guide-costume-knight.svg">
   <script src="gallery-display-mode.js?v=two-modes-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
@@ -43,6 +44,7 @@
   <script src="gallery-guide.js?v=curator-poses-2" defer></script>
   <script src="gallery-curator.js?v=explore-3" defer></script>
   <script src="gallery-room-map.js?v=room-map-1" defer></script>
+  <script src="gallery-3d.js?v=first-person-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -146,7 +148,32 @@
           </div>
         </details>
         <p class="catalog-count" id="catalog-count" aria-live="polite"></p>
-        <section class="walk-gallery" id="walk-gallery" aria-label="가로 이동형 작품 전시관">
+        <section class="walk-gallery" id="walk-gallery" aria-label="오이붕 갤러리 3D 1인칭 전시관">
+          <div id="gallery-3d" class="gallery-3d" aria-label="자유 이동형 3D 오이붕 미술관" hidden>
+            <div id="gallery-3d-canvas" class="gallery-3d-canvas"></div>
+            <div class="gallery-3d-reticle" aria-hidden="true"></div>
+            <div class="gallery-3d-hud">
+              <button id="gallery-3d-lights" type="button" title="전시관 조명 켜기 또는 끄기">☾ 소등</button>
+              <button id="gallery-3d-torch" type="button" title="손전등 조작" hidden>손전등 끄기 [F]</button>
+            </div>
+            <div class="gallery-3d-location" aria-live="off">
+              <strong id="gallery-3d-focus" class="gallery-3d-location-title">오이붕 갤러리</strong>
+              <span id="gallery-3d-hint" class="gallery-3d-location-hint">작품을 찾아 가까이 다가가세요</span>
+            </div>
+            <button type="button" id="gallery-3d-action" class="gallery-3d-action" hidden>작품 감상하기 · E</button>
+            <div id="gallery-3d-joystick" class="gallery-3d-joystick" aria-label="이동 조이스틱">
+              <span id="gallery-3d-knob" class="gallery-3d-knob"></span>
+            </div>
+            <div id="gallery-3d-lookzone" class="gallery-3d-lookzone" aria-label="터치하여 시점 회전"></div>
+            <div class="gallery-3d-help">W A S D 이동　·　마우스 시점　·　Shift 달리기　·　E 감상　·　F 손전등　·　ESC 커서</div>
+            <div id="gallery-3d-welcome" class="gallery-3d-welcome">
+              <span class="museum-overline">OIBUNG GALLERY · IMMERSIVE EXHIBITION</span>
+              <h2>작품 속으로 들어가세요</h2>
+              <p>이제 액자를 넘기는 화면이 아니라, 작품이 걸린 전시관을 직접 걷습니다. 다크모드에서는 조명이 꺼지고 손전등만이 작품을 비춥니다.</p>
+              <p>PC: WASD · 마우스 · E 감상　 /　 모바일: 왼쪽 이동 · 오른쪽 둘러보기</p>
+              <button id="gallery-3d-enter" class="gallery-3d-start" type="button">전시관 입장하기</button>
+            </div>
+          </div>
           <div class="walk-gallery-viewport" id="walk-gallery-viewport" tabindex="0" role="region" aria-label="작품 한 점씩 감상. 휠이나 트랙패드로 이동하고, 좌우 방향키 또는 모바일 스와이프도 사용할 수 있습니다.">
             <div class="hall-continuum" id="hall-continuum" aria-hidden="true">
               <div class="hall-back-wall"></div><div class="hall-corridor-left"></div>
