@@ -125,7 +125,7 @@
   let jumpCombo=0,lastLandingAt=0,longJumpUntil=0,jumpStartedAt=0;
   let groundY=0;
   const walls=[];const cameraWalls=[];const exhibitPlacements=[];
-  const playerRadius=.41;
+  const playerRadius=.32;
   let focused = -1, nearIndex = -1;
   let lastTime = 0, lastCount = 0, lastMove = 0,lastMapTick=0;
   let lastLightCheck=0,lastResolutionCheck=0,resolutionSamples=0,resolutionTime=0;
@@ -163,6 +163,7 @@
   function createExplorer(){
     const root=new THREE.Group();
     root.name='오이붕 갤러리 · 작은 3D 졸라맨';
+    root.scale.setScalar(.85);
     const bodyPivot=new THREE.Group();
     root.add(bodyPivot);
     const ink=new THREE.MeshLambertMaterial({color:0x29333b});
@@ -531,7 +532,7 @@
     '  vUv=uv;',
     '  vec3 p=position;',
     '  float radius=distance(uv,vec2(.5));',
-    '  p.z += uWarp*.14*sin(radius*44.0-uTime*7.0)*exp(-radius*5.0);',
+    '  if(uWarp>.03)p.z += uWarp*.14*sin(radius*44.0-uTime*7.0)*exp(-radius*5.0);',
     '  gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);',
     '}'
   ].join('\n');
@@ -542,6 +543,7 @@
     'uniform float uDim;',
     'varying vec2 vUv;',
     'void main(){',
+    '  if(uWarp<.04){gl_FragColor=vec4(texture2D(uMap,vUv).rgb*uDim,1.0);return;}',
     '  vec2 toCenter=vUv-vec2(.5);',
     '  float radius=length(toCenter);',
     '  float wave=sin(radius*57.0-uTime*8.0);',
