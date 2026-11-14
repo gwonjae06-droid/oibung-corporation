@@ -18,7 +18,14 @@
   const joystick = document.getElementById('gallery-3d-joystick');
   const joystickKnob = document.getElementById('gallery-3d-knob');
   const lookZone = document.getElementById('gallery-3d-lookzone');
-  if (!surface || !mount || !grid || !action) return;
+  const jumpButton = document.getElementById('gallery-portal-jump');
+  const backButton = document.getElementById('gallery-portal-back');
+  const roomCard = document.getElementById('gallery-portal-room-card');
+  const roomTitle = document.getElementById('gallery-portal-room-title');
+  const roomDescription = document.getElementById('gallery-portal-room-description');
+  const portalOverlay = document.getElementById('gallery-portal-transition');
+  const portalCaption = document.getElementById('gallery-portal-caption');
+  if (!surface || !mount || !grid || !action || !jumpButton || !backButton || !portalOverlay) return;
 
   let THREE;
   for (const url of [
@@ -84,9 +91,20 @@
   const exhibitionLights = [];
   const emergencyLights = [];
   const glowingFixtures = [];
-  const avatarSprites = [];
+  // Portal paintings are the only "characters" the gallery needs.
+  const portalSurfaces = [];
   let world = null;
+  let pocketWorld = null;
+  let pocketResources = [];
+  let pocketTextures = [];
+  let pocketLights = [];
+  let exitPortal = null;
   let exhibits = [];
+  let sceneMode = 'hall';
+  let activeExhibit = -1;
+  let savedHallPose = null;
+  let portalTransition = null;
+  let jumpHeight = 0, jumpVelocity = 0, queuedJump = null;
   let yaw = 0, pitch = 0, velocity = 0, stride = 0;
   let focused = -1, nearIndex = -1;
   let lastTime = 0, lastCount = 0, lastMove = 0;
@@ -332,6 +350,208 @@
     paintings.length=0;exhibitionLights.length=0;emergencyLights.length=0;
     glowingFixtures.length=0;avatarSprites.length=0;
     world=null;
+  }
+
+
+  // Paintings bend at the edges when a visitor approaches, then ripple like
+  // liquid in the short jump transition. 3D vertices move, not just CSS.
+  const portalVertex = [
+    'uniform float uTime;',
+    'uniform float uWarp;',
+    'varying vec2 vUv;',
+    'void main(){',
+    '  vUv=uv;',
+    '  vec3 p=position;',
+    '  float radius=distance(uv,vec2(.5));',
+    '  p.z += uWarp*.14*sin(radius*44.0-uTime*7.0)*exp(-radius*5.0);',
+    '  gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.0);',
+    '}'
+  ].join('\n');
+  const portalFragment = [
+    'uniform sampler2D uMap;',
+    'uniform float uTime;',
+    'uniform float uWarp;',
+    'uniform float uDim;',
+    'varying vec2 vUv;',
+    'void main(){',
+    '  vec2 toCenter=vUv-vec2(.5);',
+    '  float radius=length(toCenter);',
+    '  float wave=sin(radius*57.0-uTime*8.0);',
+    '  vec2 shift=toCenter/(radius+.001)*wave*uWarp*.013;',
+    '  vec2 uv=clamp(vUv+shift,vec2(.001),vec2(.999));',
+    '  vec4 pixel=texture2D(uMap,uv);',
+    '  float halo=pow(1.0-smoothstep(.10,.62,radius),2.0)*uWarp;',
+    '  vec3 color=pixel.rgb*uDim+vec3(.20,.16,.27)*halo;',
+    '  gl_FragColor=vec4(color,1.0);',
+    '}'
+  ].join('\n');
+  function portalPainting(texture,index){
+    const uniforms={
+      uMap:{value:texture},uTime:{value:0},uWarp:{value:0},
+      uDim:{value:1}
+    };
+    const mat=new THREE.ShaderMaterial({
+      uniforms,vertexShader:portalVertex,fragmentShader:portalFragment,
+      side:THREE.DoubleSide,transparent:false,depthWrite:true
+    });
+    const art=new THREE.Mesh(
+      new THREE.PlaneGeometry(3.74,2.31,mobile?14:24,mobile?8:16),mat);
+    art.position.z=.075;
+    art.userData.galleryIndex=index;
+    portalSurfaces.push({mesh:art,uniforms,index});
+    return art;
+  }
+
+  const portalThemes = {
+    knight:{name:'검은 성채',description:'무너진 왕좌와 검의 기억이 남은 어두운 전시실.',
+      wall:0x25212a,floor:0x342f31,accent:0xb88e52,light:0xffc995},
+    maid:{name:'달빛 살롱',description:'리본과 부드러운 빛이 비치는 고양이 테마 전시실.',
+      wall:0xa98da6,floor:0x8e7e99,accent:0xe5c7db,light:0xffd6f1},
+    arena:{name:'별빛 경기장',description:'빛나는 구체와 충돌의 궤적이 남은 전시실.',
+      wall:0x1a3b44,floor:0x18343a,accent:0x67d9cd,light:0x8ff9e8},
+    duelist:{name:'결투의 회랑',description:'마주 선 두 검과 긴장감이 감도는 무도장.',
+      wall:0x2c3048,floor:0x323042,accent:0xb9c5fa,light:0xcbd4ff},
+    commander:{name:'전략의 방',description:'고요한 작전실과 전장 지도가 펼쳐진 공간.',
+      wall:0x2c403c,floor:0x33443a,accent:0xbed1a2,light:0xd6ecc1},
+    egypt:{name:'잊힌 유물실',description:'고대의 기둥과 황금빛 유물이 있는 전시실.',
+      wall:0x6e5847,floor:0x675442,accent:0xe0b87a,light:0xffdfab}
+  };
+  function roomTheme(game){
+    return portalThemes[costumeKey(game)]||portalThemes.egypt;
+  }
+  function disposePocket(){
+    if(!pocketWorld)return;
+    scene.remove(pocketWorld);
+    pocketWorld.traverse(obj=>{
+      obj.geometry?.dispose?.();
+      const disposeMaterial=mat=>{
+        if(mat && !Object.values(materials).includes(mat))mat.dispose?.();
+      };
+      if(Array.isArray(obj.material))obj.material.forEach(disposeMaterial);
+      else disposeMaterial(obj.material);
+    });
+    for(const tex of pocketTextures){
+      tex.dispose();
+      const idx=allTextures.indexOf(tex);
+      if(idx>=0)allTextures.splice(idx,1);
+    }
+    pocketWorld=null; pocketTextures=[];pocketResources=[];pocketLights=[];
+    exitPortal=null;
+  }
+  function pocketPalette(color,metalness=.08,roughness=.75){
+    const mat=material(color,metalness,roughness);
+    pocketResources.push(mat);
+    return mat;
+  }
+  function buildPocket(index){
+    disposePocket();
+    const game=exhibits[index];
+    if(!game)return false;
+    const theme=roomTheme(game);
+    const textureStart=allTextures.length;
+    pocketWorld=new THREE.Group();pocketWorld.name='Painting world: '+game.title;
+    scene.add(pocketWorld);
+    const G=pocketWorld;
+    const wall=pocketPalette(theme.wall),floor=pocketPalette(theme.floor);
+    const gold=pocketPalette(theme.accent,.52,.4);
+    const dark=pocketPalette(0x161920,.09,.83);
+    const panel=pocketPalette(0x22252b,.12,.72);
+    const stone=pocketPalette(0xbcb7a8);
+    elBox(G,0,-.24,0,16,.48,18,floor);
+    elBox(G,0,5.1,0,16,.24,18,wall);
+    elBox(G,-8,2.5,0,.34,5.1,18,wall);
+    elBox(G,8,2.5,0,.34,5.1,18,wall);
+    elBox(G,0,2.5,-8.95,16,5.2,.32,wall);
+    elBox(G,0,2.5,8.95,16,5.2,.32,wall);
+    // Every destination has a grand central painting, crisp original title
+    // plaque and its existing registered thumbnail if available.
+    elBox(G,0,2.65,-8.68,7.7,4.28,.20,dark);
+    const framedArt=new THREE.Mesh(new THREE.PlaneGeometry(7.1,3.85),
+      new THREE.MeshStandardMaterial({
+        map:artworkTexture(game,index),roughness:.66,side:THREE.DoubleSide
+      }));
+    framedArt.position.set(0,2.73,-8.54);
+    G.add(framedArt);
+    [-1,1].forEach(sign=>{
+      elBox(G,sign*3.80,2.72,-8.48,.23,4.53,.24,gold);
+      elBox(G,sign*7.73,2.50,0,.21,4.65,16.7,gold);
+    });
+    elBox(G,0,4.83,-8.48,7.7,.24,.24,gold);
+    elBox(G,0,.55,-8.48,7.7,.24,.24,gold);
+    const label=new THREE.Mesh(new THREE.PlaneGeometry(4.6,.85),
+      new THREE.MeshStandardMaterial({map:plaqueTexture(game.title,game.developer||theme.name),
+        emissive:theme.accent,emissiveIntensity:.06,roughness:.65}));
+    label.position.set(0,.47,-8.32);G.add(label);
+    // Architecture is thematic, but uses cheap batched-ish standard meshes.
+    for(const side of [-1,1]){
+      for(const z of [-5.9,-2.5,1.0,4.5]){
+        elCylinder(G,side*6.5,2.45,z,.32,.43,4.9,gold,mobile?8:13);
+        elBox(G,side*6.5,4.80,z,.93,.33,.94,wall);
+        elBox(G,side*6.5,.34,z,.87,.68,.87,stone);
+      }
+    }
+    const key=costumeKey(game);
+    if(key==='arena'){
+      for(const side of [-1,1])for(let i=0;i<3;i++){
+        const obj=new THREE.Mesh(new THREE.SphereGeometry(.50+i*.14,16,11),gold);
+        obj.position.set(side*(4.8-i*.22),1.12+i*.18,-4.4+i*3.15);
+        G.add(obj);
+      }
+    }else if(key==='knight'||key==='duelist'){
+      for(const side of [-1,1]){
+        const sword=new THREE.Group();sword.position.set(side*5.2,1.2,-2.5);
+        sword.rotation.z=side*.24;G.add(sword);
+        elBox(sword,0,1.15,0,.16,2.45,.16,stone);
+        elBox(sword,0,-.12,0,.90,.12,.17,gold);
+        elBox(sword,0,-.41,0,.13,.50,.15,dark);
+        const point=new THREE.Mesh(new THREE.ConeGeometry(.13,.45,4),stone);
+        point.position.y=2.58;sword.add(point);
+      }
+    }else if(key==='maid'){
+      for(const side of [-1,1]){
+        const decor=new THREE.Mesh(new THREE.TorusGeometry(.94,.085,10,44),gold);
+        decor.position.set(side*5.1,3.0,-3.5);
+        decor.rotation.y=Math.PI/2;G.add(decor);
+        elBox(G,side*5.2,.70,-3.4,1.80,1.4,1.35,panel);
+      }
+    }else if(key==='commander'){
+      elBox(G,0,.96,-2.9,3.6,.2,2.1,stone);
+      elBox(G,0,.50,-2.9,2.3,.95,1.4,dark);
+      for(const side of [-1,1]){
+        elBox(G,side*2.65,.22,-2.2,.17,.44,3.9,gold);
+      }
+    }else{
+      for(const side of [-1,1]){
+        elBox(G,side*5.3,1.15,-3.5,.78,2.3,.78,gold);
+        const tip=new THREE.Mesh(new THREE.ConeGeometry(.68,1.05,4),gold);
+        tip.position.set(side*5.3,2.78,-3.5);tip.rotation.y=Math.PI/4;G.add(tip);
+      }
+    }
+    // Door behind the visitor is a real world object and a real jump portal.
+    const exitMat=new THREE.MeshBasicMaterial({color:theme.accent,side:THREE.DoubleSide,
+      transparent:true,opacity:.70});
+    const exit=new THREE.Mesh(new THREE.PlaneGeometry(2.30,3.42),exitMat);
+    exit.position.set(0,2.00,8.73);
+    exit.rotation.y=Math.PI;
+    exit.userData.exitPortal=true;
+    G.add(exit);exitPortal=exit;
+    elBox(G,0,4.01,8.68,2.70,.35,.45,gold);
+    elBox(G,-1.32,2.0,8.68,.28,3.9,.45,gold);
+    elBox(G,1.32,2.0,8.68,.28,3.9,.45,gold);
+    const sign=plaqueTexture('복도로 돌아가기','출구 / RETURN TO THE GALLERY');
+    const signObj=new THREE.Mesh(new THREE.PlaneGeometry(2.3,.64),
+      new THREE.MeshBasicMaterial({map:sign,side:THREE.DoubleSide}));
+    signObj.position.set(0,4.49,8.57);signObj.rotation.y=Math.PI;
+    G.add(signObj);
+    const illumination=new THREE.PointLight(theme.light,8.2,12,1.7);
+    illumination.position.set(0,4.3,-4);G.add(illumination);
+    const portalGlow=new THREE.PointLight(theme.accent,4.5,7,2);
+    portalGlow.position.set(0,2.5,7.15);G.add(portalGlow);
+    pocketLights=[{light:illumination,strength:8.2},
+      {light:portalGlow,strength:4.5}];
+    pocketTextures=allTextures.slice(textureStart);
+    pocketWorld.visible=false;
+    return true;
   }
 
   function build(){
