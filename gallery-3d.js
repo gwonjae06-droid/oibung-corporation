@@ -32,6 +32,12 @@
     console.warn('[3D Gallery] Three.js could not load. Using the original exhibition.');
     return;
   }
+  let createAnimeCurator = null;
+  try {
+    ({ createAnimeCurator } = await import('./gallery-anime-curator.js?v=anime-mesh-1'));
+  } catch (error) {
+    console.warn('[3D Gallery] Detailed 3D curator unavailable; retaining 2D fallback.', error);
+  }
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: !matchMedia('(pointer:coarse)').matches, powerPreference:'high-performance' });
@@ -283,7 +289,13 @@
     loader.load(url,texture=>{
       texture.colorSpace=THREE.SRGBColorSpace;
       guideTextures[key]=texture;
-      avatarSprites.forEach(({sprite,costume})=>{if(costume===key){sprite.material.map=texture;sprite.material.opacity=darkness?.8:1;sprite.material.needsUpdate=true;}});
+      avatarSprites.forEach(({sprite,costume})=>{
+        if(costume===key && sprite.isSprite){
+          sprite.material.map=texture;
+          sprite.material.opacity=darkness?.8:1;
+          sprite.material.needsUpdate=true;
+        }
+      });
     },undefined,()=>{ /* Costumes are optional; artwork remains interactive. */ });
   }
 
@@ -409,13 +421,31 @@
       world.add(spot,spot.target);exhibitionLights.push(spot);
       // A themed curator is physically stationed alongside this artwork.
       const costume=costumeKey(game);
-      const sprite=new THREE.Sprite(new THREE.SpriteMaterial({
-        map:guideTextures[costume] || null,transparent:true,depthWrite:false,
-        color:0xffffff,opacity:guideTextures[costume]?1:0
-      }));
-      sprite.position.set(side*3.65,1.42,z-2.55);
-      sprite.scale.set(costume==='maid'?1.18:1.62,2.60,1);
-      world.add(sprite);avatarSprites.push({sprite,costume,y:sprite.position.y,phase:i*1.17});
+      if(createAnimeCurator){
+        // Every exhibit has its own real three-dimensional adult-proportioned
+        // anime curator, positioned beside the artwork and facing the aisle.
+        const rig=createAnimeCurator(THREE,{costume,mobile});
+        const model=rig.group;
+        model.position.set(side*3.67,0,z-2.42);
+        model.rotation.y=side>0?-Math.PI/2+.17:Math.PI/2-.17;
+        model.scale.setScalar(1.055);
+        world.add(model);
+        avatarSprites.push({sprite:model,rig,costume,phase:i*1.17,y:0});
+        const characterSpot=new THREE.SpotLight(0xffead0,0,6.7,Math.PI/6.8,.68,1.8);
+        characterSpot.position.set(side*2.7,4.55,z-1.45);
+        characterSpot.target.position.set(side*3.67,1.43,z-2.42);
+        world.add(characterSpot,characterSpot.target);
+        exhibitionLights.push(characterSpot);
+      }else{
+        const sprite=new THREE.Sprite(new THREE.SpriteMaterial({
+          map:guideTextures[costume] || null,transparent:true,depthWrite:false,
+          color:0xffffff,opacity:guideTextures[costume]?1:0
+        }));
+        sprite.position.set(side*3.65,1.42,z-2.55);
+        sprite.scale.set(costume==='maid'?1.18:1.62,2.60,1);
+        world.add(sprite);
+        avatarSprites.push({sprite,costume,y:sprite.position.y,phase:i*1.17});
+      }
       const ropeZ=z+3.0;
       [-1,1].forEach(offset=>{
         elCylinder(world,side*3.85,.42,ropeZ+offset*1.75,.07,.09,.84,materials.gold);
@@ -449,6 +479,9 @@
     emergencyLights.forEach(light=>light.intensity=0);
     glowingFixtures.forEach(mat=>mat.emissiveIntensity=darkness?0:1.25);
     avatarSprites.forEach(({sprite})=>{
+      // Real sculpted meshes receive the scene's actual lights and flashlight.
+      // Only legacy sprite fallback needs artificial darkening.
+      if(!sprite.isSprite)return;
       sprite.material.color.set(darkness?0x3b2d2b:0xffffff);
       sprite.material.opacity=sprite.material.map?(darkness?.8:1):0;
     });
@@ -572,8 +605,15 @@
     if(hasEntered && time-lastCount>90){
       updateFocus();lastCount=time;
     }
-    if(!reduced()){
-      avatarSprites.forEach(({sprite,y,phase})=>{sprite.position.y=y+Math.sin(time*.0015+phase)*.028;});
+    if(true){
+      avatarSprites.forEach(({sprite,y,phase,rig})=>{
+        const close = Math.abs(sprite.position.z-camera.position.z)<23;
+        const allowGuide = !document.getElementById('gallery-guide')?.hidden;
+        sprite.visible=close && allowGuide;
+        if(!sprite.visible)return;
+        if(rig && !reduced())rig.animate(time,phase,darkness);
+        else if(!rig && !reduced())sprite.position.y=y+Math.sin(time*.0015+phase)*.028;
+      });
     }
     renderer.render(scene,camera);
   }
