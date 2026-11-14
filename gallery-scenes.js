@@ -156,25 +156,33 @@
     art.className = 'museum-art';
     const source = card.querySelector('.artwork-image-window');
     const artwork = source?.querySelector('img.game-thumbnail');
+    // Show a fully painted fallback immediately. Switch to a real thumbnail
+    // ONLY after it has successfully loaded, avoiding blank black frames.
+    const fallback = document.createElement('div');
+    const visual = String(item(card).visual || 'custom');
+    fallback.className = 'museum-cover museum-cover-' +
+      (['eclipse','arena','duel','tactics'].includes(visual) ? visual : 'custom');
+    fallback.setAttribute('aria-hidden', 'true');
+    fallback.innerHTML = '<span class="museum-cover-orbit"></span>' +
+      '<span class="museum-cover-crest"></span>' +
+      '<span class="museum-cover-gleam"></span>';
+    art.appendChild(fallback);
     if (artwork?.getAttribute('src')) {
       const picture = artwork.cloneNode(true);
-      picture.loading = 'lazy';
+      picture.classList.add('museum-image');
+      picture.loading = 'eager';
       picture.decoding = 'async';
       picture.removeAttribute('width');
       picture.removeAttribute('height');
+      const reveal = () => {
+        if (!picture.naturalWidth) return;
+        picture.classList.add('is-ready');
+        fallback.hidden = true;
+      };
+      picture.addEventListener('load', reveal);
+      picture.addEventListener('error', () => picture.remove());
       art.appendChild(picture);
-    } else {
-      // Seed entries may not have thumbnails. Render a deliberate
-      // themed illustration instead of relying on legacy scoped CSS.
-      const fallback = document.createElement('div');
-      const visual = String(item(card).visual || 'custom');
-      fallback.className = 'museum-cover museum-cover-' +
-        (['eclipse','arena','duel','tactics'].includes(visual) ? visual : 'custom');
-      fallback.setAttribute('aria-hidden', 'true');
-      fallback.innerHTML = '<span class="museum-cover-orbit"></span>' +
-        '<span class="museum-cover-crest"></span>' +
-        '<span class="museum-cover-gleam"></span>';
-      art.appendChild(fallback);
+      if (picture.complete && picture.naturalWidth) reveal();
     }
     const plaque = document.createElement('span');
     plaque.className = 'museum-plaque';
