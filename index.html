@@ -31,7 +31,7 @@
   <link rel="stylesheet" href="gallery-outfits.css?v=costumes-1">
   <link rel="stylesheet" href="gallery-clarity.css?v=explore-3">
   <link rel="stylesheet" href="gallery-room-map.css?v=castle-map-2">
-  <link rel="stylesheet" href="gallery-3d.css?v=platformer-castle-2">
+  <link rel="stylesheet" href="gallery-3d.css?v=stickman-camera-performance-1">
   <link rel="stylesheet" href="gallery-portal.css?v=platformer-castle-2">
   <!-- 3D actor meshes are now local; only the 3D engine loads externally. -->
   <script src="gallery-display-mode.js?v=blackout-1"></script>
@@ -43,7 +43,7 @@
   <script src="motion.js?v=museum-daylight-1" defer></script>
   <script src="gallery-walk.js?v=explore-4" defer></script>
   <script src="gallery-room-map.js?v=castle-map-2" defer></script>
-  <script src="gallery-3d.js?v=platformer-castle-2" defer></script>
+  <script src="gallery-3d.js?v=stickman-camera-performance-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -147,7 +147,7 @@
         </details>
         <p class="catalog-count" id="catalog-count" aria-live="polite"></p>
         <section class="walk-gallery" id="walk-gallery" aria-label="오이붕 갤러리 3D 플랫폼 탐험 전시관">
-          <div id="gallery-3d" class="gallery-3d" aria-label="마스코트를 조작하며 탐험하는 3인칭 3D 오이붕 미술관" hidden>
+          <div id="gallery-3d" class="gallery-3d" aria-label="작은 3D 졸라맨을 조작하는 3인칭 전시관" hidden>
             <div id="gallery-3d-canvas" class="gallery-3d-canvas"></div>
             <div class="gallery-3d-reticle" aria-hidden="true"></div>
             <div class="gallery-3d-hud">
@@ -174,12 +174,12 @@
               <span id="gallery-3d-knob" class="gallery-3d-knob"></span>
             </div>
             <div id="gallery-3d-lookzone" class="gallery-3d-lookzone" aria-label="터치하여 시점 회전"></div>
-            <div class="gallery-3d-help">WASD 이동 · 마우스 카메라 · Space 점프 · Shift 달리기 · V 시점 · M 지도 · E 작품 정보</div>
+            <div class="gallery-3d-help">WASD 이동 · 마우스 드래그 시점 · 휠 확대/축소 · Space 점프 · V 시점 · M 지도</div>
             <div id="gallery-3d-welcome" class="gallery-3d-welcome">
               <span class="museum-overline">OIBUNG GALLERY · IMMERSIVE EXHIBITION</span>
               <h2>오이붕 성의 전시관에 오신 것을 환영합니다</h2>
-              <p>귀여운 오이붕 마스코트를 직접 움직여 보세요. 중앙 로비, 복도, 계단 위 갤러리를 탐험하며 벽에 걸린 액자 속으로 뛰어들 수 있습니다.</p>
-              <p>PC: WASD 이동 · 마우스 카메라 · Space 점프(연속 점프) · Shift+Space 멀리뛰기 · V 카메라 거리 · E 작품 정보 · R 귀환</p>
+              <p>작은 3D 졸라맨을 움직여 성처럼 꾸며진 전시관을 탐험하세요. 액자 앞에서 점프하면 작품 세계에 들어갈 수 있습니다.</p>
+              <p>PC: WASD 이동 · 마우스 드래그로 시점 회전 · 휠 또는 V로 거리 조절 · Space 점프 · Shift+Space 멀리뛰기 · E 작품 정보 · R 귀환</p>
               <p>모바일: 조이스틱 이동(끝까지 밀면 달리기) · 오른쪽 드래그 카메라 · 점프 · 시점 버튼. 다크모드는 손전등 탐험입니다.</p>
               <button id="gallery-3d-enter" class="gallery-3d-start" type="button">전시관 입장하기</button>
             </div>
