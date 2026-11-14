@@ -1,20 +1,4 @@
 
-/* Visual polish layer: appended last so it wins the cascade over gallery-scenes.css. */
-(function(){
-  if(document.querySelector('link[data-museum-polish]'))return;
-  var l=document.createElement('link');
-  l.rel='stylesheet';l.href='gallery-scenes-polish.css';l.setAttribute('data-museum-polish','');
-  (document.head||document.documentElement).appendChild(l);
-})();
-
-/* Layout layer: sketch-based minimal UI (side arrows, standing curator). */
-(function(){
-  if(document.querySelector('link[data-museum-layout]'))return;
-  var l=document.createElement('link');
-  l.rel='stylesheet';l.href='gallery-scenes-layout.css';l.setAttribute('data-museum-layout','');
-  (document.head||document.documentElement).appendChild(l);
-})();
-
 /* Clicking an artwork opens its detail directly (no walk-forward / close-up step). */
 (function(){
   function blocked(e){
