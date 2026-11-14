@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#c6c0b8">
-  <meta name="description" content="친구들이 만든 게임을 고정 카메라 미술관에서 감상하세요. 고해상도 2D 작품, 안내 비서와 소등형 공포 전시관을 만나보세요.">
+  <meta name="description" content="우리가 만든 게임을 한눈에 둘러보고 바로 플레이하세요. 친구들의 작품 소개, 스크린샷과 평가·후기를 모아 둔 오이붕 갤러리.">
   <meta property="og:title" content="오이붕 갤러리">
-  <meta property="og:description" content="친구들의 게임을 장면형 전시관에서 감상하는 오이붕 갤러리입니다.">
+  <meta property="og:description" content="친구들이 만든 게임을 한곳에 모아 직접 플레이하고 후기를 나누는 오이붕 갤러리.">
   <meta property="og:type" content="website">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <title>오이붕 갤러리</title>
@@ -20,20 +20,7 @@
   <link rel="stylesheet" href="gallery-museum.css?v=museum-room-3">
   <link rel="stylesheet" href="gallery-game-page.css?v=two-modes-1">
   <link rel="stylesheet" href="gallery-display-modes.css?v=two-modes-1">
-  <link rel="stylesheet" href="gallery-walk.css?v=gallery-walk-2">
-  <link rel="stylesheet" href="gallery-immersive.css?v=gallery-immersive-1">
-  <link rel="stylesheet" href="gallery-cinematic.css?v=cinematic-museum-1">
-  <link rel="stylesheet" href="gallery-atelier.css?v=gallery-atelier-2">
-  <link rel="stylesheet" href="gallery-premiere.css?v=gallery-premiere-2">
-  <link rel="stylesheet" href="gallery-live-scene.css?v=gallery-live-scene-1">
-  <link rel="stylesheet" href="gallery-continuum.css?v=continuous-hall-1">
-  <link rel="stylesheet" href="gallery-curator.css?v=curator-poses-2">
-  <link rel="stylesheet" href="gallery-outfits.css?v=costumes-1">
-  <link rel="stylesheet" href="gallery-clarity.css?v=explore-3">
-  <link rel="stylesheet" href="gallery-room-map.css?v=castle-map-2">
-  <link rel="stylesheet" href="gallery-3d.css?v=stickman-camera-performance-1">
-  <link rel="stylesheet" href="gallery-portal.css?v=platformer-castle-2">
-  <link rel="stylesheet" href="gallery-scenes.css?v=curator-v5-crisp-1">
+  <link rel="stylesheet" href="direct-gallery.css?v=direct-gallery-v1">
   <!-- 3D actor meshes are now local; only the 3D engine loads externally. -->
   <script src="gallery-display-mode.js?v=blackout-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
@@ -42,10 +29,6 @@
   <script type="module" src="community.js?v=gallery-polish-1"></script>
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
-  <script src="gallery-walk.js?v=explore-4" defer></script>
-  <script src="gallery-scene-assets.js?v=museum-curator-2" defer></script>
-  <script src="gallery-blackout-rules.js?v=blackout-stealth-v2" defer></script>
-  <script src="gallery-scenes.js?v=curator-v5-crisp-1" defer></script>
 </head>
 <body>
   <svg class="icons" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -69,20 +52,20 @@
         <span class="brand-copy">오이붕 갤러리<span lang="en">OIBUNG GALLERY</span></span>
       </a>
       <div class="header-actions">
-        <button type="button" class="menu-toggle icon-button" id="menu-toggle" aria-expanded="false" aria-controls="mobile-nav" aria-label="전시관 메뉴 열기" title="전시관 메뉴"><svg><use href="#i-menu"/></svg></button>
+        <button type="button" class="menu-toggle icon-button" id="menu-toggle" aria-expanded="false" aria-controls="mobile-nav" aria-label="사이트 메뉴 열기" title="사이트 메뉴"><svg><use href="#i-menu"/></svg></button>
       </div>
     </div>
     <nav class="mobile-nav container" id="mobile-nav" aria-label="전시관 메뉴" hidden>
-      <a href="#games">전시관</a>
+      <a href="#games">게임 둘러보기</a>
       <a href="#reviews">관람객 후기</a>
       <button type="button" data-open-editor>작품 등록</button>
-      <button type="button" id="menu-open-filters">작품 검색 · 분류</button>
+      <button type="button" id="menu-open-filters">게임 검색 · 분류</button>
       <div class="gallery-mode-switch" role="group" aria-label="전시관 밝기">
-        <button type="button" data-gallery-mode-choice="light" aria-pressed="true" aria-label="전시관 조명 켜기" title="일반 조명">
-          <span class="gallery-mode-icon" aria-hidden="true">☀</span><span class="gallery-mode-text">라이트</span>
+        <button type="button" data-gallery-mode-choice="light" aria-pressed="true" aria-label="밝은 테마" title="일반 조명">
+          <span class="gallery-mode-icon" aria-hidden="true">☀</span><span class="gallery-mode-text">밝게</span>
         </button>
-        <button type="button" data-gallery-mode-choice="dark" aria-pressed="false" aria-label="모든 조명 소등 · 공포 전시관" title="소등 · 공포 모드">
-          <span class="gallery-mode-icon" aria-hidden="true">☾</span><span class="gallery-mode-text">소등</span>
+        <button type="button" data-gallery-mode-choice="dark" aria-pressed="false" aria-label="어두운 테마" title="어두운 테마">
+          <span class="gallery-mode-icon" aria-hidden="true">☾</span><span class="gallery-mode-text">어둡게</span>
         </button>
       </div>
       <button id="motion-toggle" class="motion-control" type="button" aria-label="애니메이션 줄이기" aria-pressed="false">
@@ -93,14 +76,29 @@
 
   <main>
     <nav class="page-switcher container" role="tablist" aria-label="콘텐츠 선택">
-      <button id="tab-games" type="button" class="page-tab is-active" role="tab" aria-selected="true" aria-controls="games" data-page-tab="games">작품 전시</button>
+      <button id="tab-games" type="button" class="page-tab is-active" role="tab" aria-selected="true" aria-controls="games" data-page-tab="games">게임 둘러보기</button>
       <button id="tab-reviews" type="button" class="page-tab" role="tab" aria-selected="false" aria-controls="reviews" data-page-tab="reviews">평가 · 후기</button>
     </nav>
     <section class="library section-pad" id="games" role="tabpanel" aria-labelledby="tab-games">
       <div class="container">
         <div class="section-heading-row">
-          <div><h1 id="games-title">작품 전시</h1></div>
+          <div><h1 id="games-title">우리가 만든 게임들</h1><p>작품을 골라보고, 웃고, 플레이하고, 후기를 남기는 우리만의 갤러리.</p></div>
           <button class="button-primary" type="button" data-open-editor>게임 등록하기 <svg aria-hidden="true"><use href="#i-arrow"/></svg></button>
+        </div>
+        <div class="direct-intro" aria-label="오이붕 갤러리 소개">
+          <div class="direct-intro-copy">
+            <span class="direct-overline">WELCOME TO OIBUNG GALLERY</span>
+            <h2>우리가 만든 세계를 구경해 봐.</h2>
+            <p>장난으로 시작한 게임도 여기서는 당당한 작품! 게임을 눌러 제작 이야기와 스크린샷을 보고, 마음에 들면 바로 플레이해 봐.</p>
+            <div class="direct-intro-actions">
+              <a href="#catalog-items" class="button-primary">게임 둘러보기 <svg aria-hidden="true"><use href="#i-right"/></svg></a>
+              <button type="button" class="button-outline" id="direct-review-shortcut">친구들 후기 보기</button>
+            </div>
+          </div>
+          <div class="direct-mascot" aria-hidden="true">
+            <span class="direct-mascot-speech">어떤 게임부터 소개해 드릴까요?</span>
+            <img src="assets/curator-v5/guide-neutral.webp" alt="" loading="eager" decoding="async">
+          </div>
         </div>
         <section class="featured-exhibit" id="featured-exhibit" aria-label="대표 전시 작품" hidden>
           <div class="featured-cover" id="featured-cover" aria-hidden="true"></div>
@@ -123,8 +121,8 @@
             <span id="featured-progress-bar"></span>
           </div>
         </section>
-        <details class="walk-filter-drawer" id="walk-filter-drawer">
-          <summary>검색 및 분류</summary>
+        <details class="walk-filter-drawer" id="walk-filter-drawer" open>
+          <summary>게임 검색 · 필터</summary>
           <div class="library-toolbar">
           <div class="filter-viewport" id="filter-viewport">
             <div class="filter-tabs" id="filter-tabs" role="group" aria-label="게임 상태 필터">
@@ -143,65 +141,17 @@
               <option value="featured">기본 전시순</option><option value="newest">최신 등록순</option><option value="name">제목순</option>
               <option value="rating">평점순</option><option value="reviews">후기 많은 순</option>
             </select></label>
-            <label class="search-field"><svg aria-hidden="true"><use href="#i-search"/></svg><span class="sr-only">게임 이름 검색</span><input id="game-search" type="search" placeholder="작품 검색" autocomplete="off"><kbd>/</kbd></label>
+            <label class="search-field"><svg aria-hidden="true"><use href="#i-search"/></svg><span class="sr-only">게임 이름 검색</span><input id="game-search" type="search" placeholder="게임 이름 · 개발자 검색" autocomplete="off"><kbd>/</kbd></label>
           </div>
           </div>
         </details>
         <p class="catalog-count" id="catalog-count" aria-live="polite"></p>
-        <section class="walk-gallery" id="walk-gallery" aria-label="오이붕 갤러리 고정 시점 탐험 전시관">
-          <div id="gallery-3d" class="gallery-3d" aria-label="실사풍 건축 배경과 2D 작품이 결합된 고정 시점 전시관" hidden>
-            <div id="gallery-3d-canvas" class="gallery-3d-canvas"></div>
-            <div class="gallery-3d-reticle" aria-hidden="true"></div>
-            <div class="gallery-3d-hud">
-              <button id="gallery-3d-camera" type="button" title="3인칭 카메라 거리 변경 · V">시점: 보통</button>
-              <button id="gallery-3d-lights" type="button" title="전시관 조명 켜기 또는 끄기">☾ 소등</button>
-              <button id="gallery-3d-torch" type="button" title="손전등 조작" hidden>손전등 끄기 [F]</button>
-            </div>
-            <div class="gallery-3d-location" aria-live="off">
-              <strong id="gallery-3d-focus" class="gallery-3d-location-title">오이붕 갤러리</strong>
-              <span id="gallery-3d-hint" class="gallery-3d-location-hint">작품을 찾아 가까이 다가가세요</span>
-            </div>
-            <button type="button" id="gallery-3d-action" class="gallery-3d-action" hidden>작품 정보 · E</button>
-            <button type="button" id="gallery-portal-jump" class="gallery-portal-jump" title="액자에 뛰어들기" hidden>↟ 점프</button>
-            <button type="button" id="gallery-portal-back" class="gallery-portal-back" hidden>↩ 전시관 귀환</button>
-            <section id="gallery-portal-room-card" class="gallery-portal-room-card" aria-label="작품 속 전시실" hidden>
-              <strong id="gallery-portal-room-title"></strong>
-              <p id="gallery-portal-room-description"></p>
-            </section>
-            <div id="gallery-portal-transition" class="gallery-portal-transition" aria-hidden="true" hidden>
-              <span class="portal-waves" aria-hidden="true"></span>
-              <strong class="portal-caption" id="gallery-portal-caption"></strong>
-            </div>
-            <div id="gallery-3d-joystick" class="gallery-3d-joystick" aria-label="이동 조이스틱">
-              <span id="gallery-3d-knob" class="gallery-3d-knob"></span>
-            </div>
-            <div id="gallery-3d-lookzone" class="gallery-3d-lookzone" aria-label="터치하여 시점 회전"></div>
-            <div class="gallery-3d-help">WASD 이동 · 마우스 드래그 시점 · 휠 확대/축소 · Space 점프 · V 시점 · M 지도</div>
-            <div id="gallery-3d-welcome" class="gallery-3d-welcome">
-              <span class="museum-overline">OIBUNG GALLERY · IMMERSIVE EXHIBITION</span>
-              <h2>오이붕 성의 전시관에 오신 것을 환영합니다</h2>
-              <p>작은 3D 졸라맨을 움직여 성처럼 꾸며진 전시관을 탐험하세요. 액자 앞에서 점프하면 작품 세계에 들어갈 수 있습니다.</p>
-              <p>PC: WASD 이동 · 마우스 드래그로 시점 회전 · 휠 또는 V로 거리 조절 · Space 점프 · Shift+Space 멀리뛰기 · E 작품 정보 · R 귀환</p>
-              <p>모바일: 조이스틱 이동(끝까지 밀면 달리기) · 오른쪽 드래그 카메라 · 점프 · 시점 버튼. 다크모드는 손전등 탐험입니다.</p>
-              <button id="gallery-3d-enter" class="gallery-3d-start" type="button">전시관 입장하기</button>
-            </div>
+        <section class="direct-catalog" id="catalog-items" aria-labelledby="catalog-heading">
+          <div class="direct-catalog-heading">
+            <div><span class="direct-overline">THE COLLECTION · OIBUNG GALLERY</span><h2 id="catalog-heading">우리들의 게임</h2></div>
+            <p>마음에 드는 작품을 골라 소개를 보고, 바로 플레이해 보세요.</p>
           </div>
-          <div class="walk-gallery-viewport" id="walk-gallery-viewport" tabindex="0" role="region" aria-label="작품 한 점씩 감상. 휠이나 트랙패드로 이동하고, 좌우 방향키 또는 모바일 스와이프도 사용할 수 있습니다.">
-            <div class="hall-continuum" id="hall-continuum" aria-hidden="true">
-              <div class="hall-back-wall"></div><div class="hall-corridor-left"></div>
-              <div class="hall-corridor-right"></div><div class="hall-pillars"></div>
-              <div class="hall-ceiling"></div><div class="hall-light"></div>
-              <div class="hall-floor"></div><div class="hall-vignette"></div>
-            </div>
-            <div id="game-grid" class="game-grid" aria-live="polite"></div>
-          </div>
-          <div class="walk-rail-controls">
-            <button type="button" id="walk-prev" aria-label="이전 작품" title="이전 작품"><span aria-hidden="true">‹</span></button>
-            <span id="walk-index" class="walk-index" aria-live="polite">00 / 00</span>
-            <button type="button" id="walk-next" aria-label="다음 작품" title="다음 작품"><span aria-hidden="true">›</span></button>
-          </div>
-          <div class="walk-progress-track" aria-hidden="true"><span id="walk-progress-fill"></span></div>
-          <div class="walk-dots" id="walk-dots" role="group" aria-label="작품 선택"></div>
+          <div id="game-grid" class="game-grid" aria-live="polite"></div>
         </section>
         <div id="empty-state" class="empty-state" hidden><h3>조건에 맞는 작품이 없습니다.</h3><p>검색어나 필터를 바꿔 보세요.</p><button type="button" id="reset-filters" class="button-outline">전체 게임 보기 <svg><use href="#i-right"/></svg></button></div>
       </div>
