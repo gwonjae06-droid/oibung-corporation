@@ -452,6 +452,7 @@
       else games[index] = merged;
       byId.set(game.id, merged);
       render();
+      document.dispatchEvent(new Event('oibung-catalog-updated'));
       syncOpenDetail();
     },
     setSharedGames(shared) {
@@ -461,6 +462,7 @@
       byId.clear();
       next.forEach((game, id) => byId.set(id, game));
       render();
+      document.dispatchEvent(new Event('oibung-catalog-updated'));
       syncOpenDetail();
       if (pendingLinkedGame && byId.has(pendingLinkedGame) && !detailDialog.open) openDetail(pendingLinkedGame, { fromHistory: true });
     }
@@ -470,6 +472,8 @@
       event.preventDefault();
       const filters = document.getElementById('walk-filter-drawer');
       if (filters) filters.open = true;
+      const worldList = document.getElementById('world-all-games');
+      if (worldList) worldList.open = true;
       searchInput.focus();
       document.querySelector('#games').scrollIntoView({behavior:'smooth'});
     }
@@ -495,6 +499,9 @@
     showPage('games', true);
     const filters = document.getElementById('walk-filter-drawer');
     if (filters) filters.open = true;
+    const listPanel = document.getElementById('world-all-games');
+    if (listPanel) listPanel.open = true;
+    listPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     searchInput.focus({ preventScroll: true });
   });
   document.querySelector('#close-reviews-overlay').addEventListener('click', () => {

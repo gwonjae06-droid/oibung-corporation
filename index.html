@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#c6c0b8">
-  <meta name="description" content="우리가 만든 게임을 한눈에 둘러보고 바로 플레이하세요. 친구들의 작품 소개, 스크린샷과 평가·후기를 모아 둔 오이붕 갤러리.">
-  <meta property="og:title" content="오이붕 갤러리">
-  <meta property="og:description" content="친구들이 만든 게임을 한곳에 모아 직접 플레이하고 후기를 나누는 오이붕 갤러리.">
+  <meta name="description" content="2D 도트 횡스크롤 마을에서 친구들이 만든 게임을 발견해 보세요. 건물에 들어가면 게임 소개·스크린샷·후기·플레이 링크를 볼 수 있는 오이붕 월드!">
+  <meta property="og:title" content="오이붕 월드">
+  <meta property="og:description" content="친구들이 만든 게임이 거대한 도트 건물로 나타나는 횡스크롤 게임 소개 월드.">
   <meta property="og:type" content="website">
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
-  <title>오이붕 갤러리</title>
+  <title>오이붕 월드 | 친구들의 도트 게임 세계</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="gallery-game-page.css?v=two-modes-1">
   <link rel="stylesheet" href="gallery-display-modes.css?v=two-modes-1">
   <link rel="stylesheet" href="direct-gallery.css?v=direct-gallery-v1">
+  <link rel="stylesheet" href="oibung-world.css?v=world-pixel-v1">
   <!-- 3D actor meshes are now local; only the 3D engine loads externally. -->
   <script src="gallery-display-mode.js?v=blackout-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
@@ -29,6 +30,7 @@
   <script type="module" src="community.js?v=gallery-polish-1"></script>
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="direct-gallery.js?v=direct-gallery-v1" defer></script>
+  <script src="oibung-world.js?v=world-pixel-v1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
 </head>
 <body>
@@ -48,19 +50,19 @@
   </svg>
   <header class="site-header" id="top">
     <div class="header-inner container">
-      <a class="brand" href="#top" aria-label="오이붕 갤러리 처음으로">
+      <a class="brand" href="#top" aria-label="오이붕 월드 처음으로">
         <span class="brand-mark" aria-hidden="true"><span class="brand-core"></span></span>
-        <span class="brand-copy">오이붕 갤러리<span lang="en">OIBUNG GALLERY</span></span>
+        <span class="brand-copy">오이붕 월드<span lang="en">OIBUNG WORLD</span></span>
       </a>
       <div class="header-actions">
         <button type="button" class="menu-toggle icon-button" id="menu-toggle" aria-expanded="false" aria-controls="mobile-nav" aria-label="사이트 메뉴 열기" title="사이트 메뉴"><svg><use href="#i-menu"/></svg></button>
       </div>
     </div>
-    <nav class="mobile-nav container" id="mobile-nav" aria-label="전시관 메뉴" hidden>
-      <a href="#games">게임 둘러보기</a>
+    <nav class="mobile-nav container" id="mobile-nav" aria-label="월드 메뉴" hidden>
+      <a href="#games">오이붕 월드</a>
       <a href="#reviews">관람객 후기</a>
       <button type="button" data-open-editor>작품 등록</button>
-      <button type="button" id="menu-open-filters">게임 검색 · 분류</button>
+      <button type="button" id="menu-open-filters">게임 목록 펼치기</button>
       <div class="gallery-mode-switch" role="group" aria-label="전시관 밝기">
         <button type="button" data-gallery-mode-choice="light" aria-pressed="true" aria-label="밝은 테마" title="일반 조명">
           <span class="gallery-mode-icon" aria-hidden="true">☀</span><span class="gallery-mode-text">밝게</span>
@@ -77,30 +79,54 @@
 
   <main>
     <nav class="page-switcher container" role="tablist" aria-label="콘텐츠 선택">
-      <button id="tab-games" type="button" class="page-tab is-active" role="tab" aria-selected="true" aria-controls="games" data-page-tab="games">게임 둘러보기</button>
+      <button id="tab-games" type="button" class="page-tab is-active" role="tab" aria-selected="true" aria-controls="games" data-page-tab="games">월드 탐험</button>
       <button id="tab-reviews" type="button" class="page-tab" role="tab" aria-selected="false" aria-controls="reviews" data-page-tab="reviews">평가 · 후기</button>
     </nav>
     <section class="library section-pad" id="games" role="tabpanel" aria-labelledby="tab-games">
       <div class="container">
         <div class="section-heading-row">
-          <div><h1 id="games-title">우리가 만든 게임들</h1><p>작품을 골라보고, 웃고, 플레이하고, 후기를 남기는 우리만의 갤러리.</p></div>
+          <div><h1 id="games-title">오이붕 월드 <span class="world-head-english">OIBUNG WORLD</span></h1><p>친구들이 만든 게임들이 하나의 세계가 됐어. 직접 걸어가서 건물을 구경해 봐!</p></div>
           <button class="button-primary" type="button" data-open-editor>게임 등록하기 <svg aria-hidden="true"><use href="#i-arrow"/></svg></button>
         </div>
-        <div class="direct-intro" aria-label="오이붕 갤러리 소개">
-          <div class="direct-intro-copy">
-            <span class="direct-overline">WELCOME TO OIBUNG GALLERY</span>
-            <h2>우리가 만든 세계를 구경해 봐.</h2>
-            <p>장난으로 시작한 게임도 여기서는 당당한 작품! 게임을 눌러 제작 이야기와 스크린샷을 보고, 마음에 들면 바로 플레이해 봐.</p>
-            <div class="direct-intro-actions">
-              <a href="#catalog-items" class="button-primary">게임 둘러보기 <svg aria-hidden="true"><use href="#i-right"/></svg></a>
-              <button type="button" class="button-outline" id="direct-review-shortcut">친구들 후기 보기</button>
+        <section class="oibung-world" id="oibung-world" aria-labelledby="world-heading">
+          <div class="world-topbar">
+            <div class="world-heading">
+              <span class="world-kicker">PIXEL ADVENTURE · FRIENDS' GAMES</span>
+              <h2 id="world-heading">우리들의 게임이 사는 마을</h2>
+              <p>왼쪽·오른쪽으로 걸어가서 좋아하는 게임의 건물에 들어가 봐.</p>
+            </div>
+            <div class="world-toolbar">
+              <label class="world-select-label" for="world-jump-select">게임으로 바로 이동</label>
+              <select id="world-jump-select" aria-label="게임 건물 빠른 이동"><option value="">건물 바로 찾기</option></select>
+              <button type="button" class="world-toolbar-button" id="world-list-toggle" aria-expanded="false" aria-controls="world-directory">🗺️ 건물 목록</button>
+              <button type="button" class="world-toolbar-button world-review-button" id="direct-review-shortcut">후기 보기</button>
             </div>
           </div>
-          <div class="direct-mascot" aria-hidden="true">
-            <span class="direct-mascot-speech">어떤 게임부터 소개해 드릴까요?</span>
-            <img src="assets/curator-v5/guide-neutral.webp" alt="" loading="eager" decoding="async">
+          <div class="world-directory" id="world-directory" hidden aria-label="게임 건물 빠른 선택"></div>
+          <div class="world-stage" id="oibung-world-stage" tabindex="0" aria-label="오이붕 월드 횡스크롤 게임. 방향키 좌우 이동, E 건물 입장, 스페이스 점프">
+            <canvas id="oibung-world-canvas" role="img" aria-label="도트 그래픽 오이붕 월드 마을. 게임마다 고유한 거대한 건물이 있습니다."></canvas>
+            <div class="world-signs" id="world-signs"></div>
+            <div class="world-stage-stats">
+              <span class="world-stage-logo">OIBUNG <b>WORLD</b></span>
+              <span id="world-count">게임 월드를 여는 중…</span>
+            </div>
+            <div class="world-guide-bubble" id="world-guide-bubble" role="status">오이붕 월드에 어서 오세요!</div>
+            <div class="world-stage-help">A · D / ← → 이동　·　E 입장　·　SPACE 점프</div>
           </div>
-        </div>
+          <div class="world-controlbar">
+            <div class="world-direction-pad" aria-label="이동 조작">
+              <button type="button" data-world-move="left" aria-label="왼쪽으로 걷기" title="왼쪽으로 걷기">◀</button>
+              <button type="button" data-world-move="right" aria-label="오른쪽으로 걷기" title="오른쪽으로 걷기">▶</button>
+              <button type="button" data-world-jump aria-label="점프" title="점프">↥</button>
+            </div>
+            <div class="world-nearby" id="world-nearby" aria-live="polite">건물로 이동하면 작품을 소개해 드릴게요.</div>
+            <button type="button" id="world-enter" class="world-enter" disabled>입구에 가까이</button>
+          </div>
+          <div class="world-hint">
+            <span>🏠 건물 안에서는 게임 설명·스크린샷·플레이 링크·후기를 볼 수 있어요.</span>
+            <a href="#world-all-games">목록으로 바로 보기</a>
+          </div>
+        </section>
         <section class="featured-exhibit" id="featured-exhibit" aria-label="대표 전시 작품" hidden>
           <div class="featured-cover" id="featured-cover" aria-hidden="true"></div>
           <div class="featured-content">
@@ -122,6 +148,8 @@
             <span id="featured-progress-bar"></span>
           </div>
         </section>
+        <details id="world-all-games" class="world-all-games">
+          <summary>📜 전체 게임 카드로 보기 · 검색·정렬·찜</summary>
         <details class="walk-filter-drawer" id="walk-filter-drawer" open>
           <summary>게임 검색 · 필터</summary>
           <div class="library-toolbar">
@@ -155,6 +183,7 @@
           <div id="game-grid" class="game-grid" aria-live="polite"></div>
         </section>
         <div id="empty-state" class="empty-state" hidden><h3>조건에 맞는 작품이 없습니다.</h3><p>검색어나 필터를 바꿔 보세요.</p><button type="button" id="reset-filters" class="button-outline">전체 게임 보기 <svg><use href="#i-right"/></svg></button></div>
+        </details>
       </div>
     </section>
 
@@ -194,8 +223,9 @@
 
   <dialog class="detail-dialog" id="game-dialog" aria-labelledby="detail-title">
     <div class="dialog-inner">
-      <button type="button" class="dialog-close exhibit-back" id="close-detail" aria-label="갤러리로 돌아가기"><svg aria-hidden="true"><use href="#i-right"/></svg><span>전시관으로 돌아가기</span></button>
-      <div class="exhibition-page-heading"><span>OIBUNG GALLERY / EXHIBITION</span><span id="detail-room-label">전시관</span></div>
+      <button type="button" class="dialog-close exhibit-back" id="close-detail" aria-label="월드로 돌아가기"><svg aria-hidden="true"><use href="#i-right"/></svg><span>월드로 돌아가기</span></button>
+      <div class="exhibition-page-heading"><span>OIBUNG WORLD / GAME BUILDING</span><span id="detail-room-label">게임 소개</span></div>
+      <div class="world-interior-banner" aria-label="게임 건물 내부"><span class="world-interior-crest" aria-hidden="true">◆</span><div><small>WELCOME TO THE GAME WORLD</small><strong id="world-interior-name">게임의 세계</strong></div><span class="world-interior-pixels" aria-hidden="true">▦ ▦ ▦</span></div>
       <div class="dialog-body">
         <header class="detail-overview">
           <div class="detail-introduction">

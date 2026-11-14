@@ -1,0 +1,296 @@
+/*
+ * OIBUNG WORLD — crisp 2D pixel-world surface
+ * Canvas handles every world pixel; HTML handles readable Korean labels,
+ * real catalog details, accessible buttons and existing community forms.
+ */
+:root{--world-ink:#29322e;--world-paper:#f2e8d1;--world-edge:#a68c69;--world-deep:#233d44;--world-gold:#edc98a}
+html{scroll-padding-top:80px}
+#games #games-title{display:flex;gap:14px;flex-wrap:wrap;align-items:baseline}
+#games .world-head-english{font:700 11px/1.1 monospace;letter-spacing:.12em;color:#8d7556}
+#games #games-title+p{max-width:660px}
+#games .oibung-world{
+  --world-shadow:0 0 0 2px #392e39,5px 6px 0 #b9a68c;
+  position:relative;display:block;
+  background:#e9d8b9;border:3px solid #4b514d;
+  border-radius:4px;box-shadow:0 14px 28px #283d3626;
+  margin:0 0 19px;padding:0;overflow:visible
+}
+#games .world-topbar{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:15px;padding:17px 20px 18px;
+  background:linear-gradient(#fff4dc,#efe2c6);border-bottom:3px solid #6d756e
+}
+#games .world-heading{min-width:0;flex:1 1 340px}
+#games .world-kicker{
+  display:block;font:700 11px/1.4 monospace;
+  color:#9c7751;letter-spacing:.1em;margin-bottom:3px
+}
+#games .world-heading h2{
+  margin:0 0 6px!important;font:900 clamp(19px,2.1vw,26px)/1.25 'Noto Sans KR',system-ui,sans-serif!important;
+  color:#2d4540!important;letter-spacing:-.03em!important
+}
+#games .world-heading p{
+  margin:0;color:#647066!important;font-size:13px;line-height:1.5
+}
+#games .world-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#games .world-select-label{font:700 12px/1.2 'Noto Sans KR',system-ui,sans-serif;color:#4d635b}
+#games #world-jump-select,.world-toolbar-button{
+  min-height:42px;padding:9px 12px;max-width:240px;
+  border:2px solid #6d8071;border-radius:3px;
+  color:#2d4539;background:#fffdf4;
+  font:700 13px/1.3 'Noto Sans KR',system-ui,sans-serif;
+  cursor:pointer;box-shadow:2px 3px 0 #cbb899
+}
+.world-toolbar-button{background:#395446;color:#fff9e7;border-color:#294538}
+.world-toolbar-button:hover,.world-toolbar-button:focus-visible{background:#4e6955;color:#fff}
+.world-toolbar-button:focus-visible,#world-jump-select:focus-visible,.world-controlbar button:focus-visible,.world-building-sign:focus-visible,
+.world-directory-item:focus-visible,#games .world-all-games>summary:focus-visible{
+  outline:3px solid #eabe78;outline-offset:3px
+}
+#games .world-directory{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:8px;
+  padding:13px 18px;background:#f8f0dd;border-bottom:2px solid #ac9574
+}
+#games .world-directory[hidden]{display:none!important}
+.world-directory-item{
+  display:flex;align-items:center;gap:10px;text-align:left;
+  border:1px solid #b6a185;background:#fffdf6;color:#344137;
+  min-height:49px;padding:10px;font-size:12px;cursor:pointer;border-radius:3px
+}
+.world-directory-item:hover{background:#f3e2bd}
+.world-directory-item strong{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.world-directory-item small{display:block;font-size:10px;color:#6b756b;max-width:80px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}
+.world-directory-number{color:#a27650;font:700 13px monospace}
+#games .world-stage{
+  position:relative;isolation:isolate;
+  display:block;width:100%;height:clamp(300px,47vw,605px);
+  border:0;overflow:hidden;outline:none;
+  background:#6c89a0;touch-action:pan-y;
+  cursor:crosshair
+}
+#games .world-stage:focus-visible{outline:4px solid #f9d58e;outline-offset:-4px}
+#games #oibung-world-canvas{
+  position:absolute;inset:0;display:block;width:100%;height:100%;
+  image-rendering:pixelated;image-rendering:crisp-edges;
+  image-rendering:pixelated;object-fit:fill;
+  cursor:crosshair
+}
+.world-signs{position:absolute;inset:0;pointer-events:none;z-index:4}
+.world-building-sign{
+  position:absolute;transform:translateX(-50%);
+  background:#262e32e6;color:#ffefc5;
+  padding:5px 9px;min-width:85px;max-width:195px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  border:2px solid #e3c88f;border-radius:2px;
+  box-shadow:3px 3px 0 #1c28398f;
+  text-align:center;font:800 clamp(11px,1.2vw,15px)/1.35 'Noto Sans KR',system-ui,sans-serif;
+  letter-spacing:-.025em;
+  text-shadow:0 1px 0 #0006;cursor:pointer;pointer-events:auto
+}
+.world-building-sign:hover{background:#45564a;transform:translate(-50%,-3px)}
+.world-building-sign[hidden]{display:none!important}
+.world-stage-stats{
+  position:absolute;top:12px;left:13px;z-index:5;
+  display:flex;align-items:center;gap:11px;flex-wrap:wrap;
+  color:#fff8e6;font:800 12px/1.4 'Noto Sans KR',system-ui,sans-serif;
+  background:#243840c9;padding:6px 11px;
+  border:2px solid #f3d7a4;box-shadow:3px 3px 0 #172c35aa;
+  pointer-events:none
+}
+.world-stage-logo{font:900 13px/1.35 monospace;letter-spacing:.08em}
+.world-stage-logo b{color:#f7c986}
+.world-stage-help{
+  position:absolute;bottom:11px;right:12px;z-index:5;
+  background:#273b42df;color:#ffefcb;
+  border:1px solid #e2c69a;padding:7px 11px;font:700 11px/1.35 'Noto Sans KR',system-ui,sans-serif;
+  pointer-events:none
+}
+.world-guide-bubble{
+  position:absolute;z-index:5;transform:translateX(-48%);
+  min-width:100px;max-width:min(240px,52vw);
+  padding:7px 10px;border:2px solid #443c3e;
+  background:#fff6df;color:#34403b;
+  box-shadow:3px 4px 0 #3b414491;
+  font:700 12px/1.45 'Noto Sans KR',system-ui,sans-serif;
+  text-align:center;word-break:keep-all;
+  pointer-events:none
+}
+.world-guide-bubble::after{
+  content:"";position:absolute;left:42%;bottom:-10px;
+  width:10px;height:10px;background:#fff6df;
+  border-right:2px solid #443c3e;border-bottom:2px solid #443c3e;transform:rotate(45deg)
+}
+.world-controlbar{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 16px;background:#f3e4c4;border-top:3px solid #9a8a71
+}
+.world-direction-pad{display:flex;gap:9px;align-items:center;flex:0 0 auto}
+.world-direction-pad button,.world-enter{
+  -webkit-tap-highlight-color:transparent;touch-action:none;
+  border:2px solid #364d45;border-radius:3px;background:#425d51;color:#fff7df;
+  font:900 16px/1.2 monospace;min-width:50px;min-height:49px;
+  cursor:pointer;box-shadow:3px 3px 0 #b39e81;
+  transition:background-color .15s,transform .1s
+}
+.world-direction-pad button:hover,.world-direction-pad button:active,.world-enter:not(:disabled):hover{
+  background:#557568;transform:translateY(1px)
+}
+.world-direction-pad button:nth-child(3){background:#647887;border-color:#3e5863;font-size:23px}
+.world-nearby{
+  flex:1;min-width:150px;color:#344239;
+  font:700 13px/1.4 'Noto Sans KR',system-ui,sans-serif;
+  text-align:center;word-break:keep-all
+}
+.world-enter{font:900 13px/1.3 'Noto Sans KR',system-ui,sans-serif;padding:10px 14px;min-width:142px}
+.world-enter:disabled{opacity:.48;cursor:default;box-shadow:none}
+.world-hint{
+  padding:9px 16px 12px;background:#faf3e2;
+  color:#617365;font-size:12px;line-height:1.6;
+  display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap
+}
+.world-hint a{font-weight:800;color:#425d4a;text-decoration:underline;text-underline-offset:2px}
+#games .world-all-games{
+  background:#fff8e8;border:2px solid #cbbb9d;
+  border-radius:4px;padding:0;margin:18px 0 20px;overflow:visible
+}
+#games .world-all-games>summary{
+  display:list-item;list-style:disclosure-closed;
+  cursor:pointer;font:800 15px/1.4 'Noto Sans KR',system-ui,sans-serif;
+  color:#354c40;padding:17px 19px;min-height:53px;
+  background:#f8efdd;user-select:none
+}
+#games .world-all-games[open]>summary{
+  list-style:disclosure-open;border-bottom:2px solid #d8c9ab
+}
+#games .world-all-games .walk-filter-drawer,
+#games .world-all-games .catalog-count,
+#games .world-all-games .direct-catalog,
+#games .world-all-games #empty-state{
+  margin-left:16px!important;margin-right:16px!important
+}
+#games .world-all-games .walk-filter-drawer{margin-top:17px!important}
+#games .world-all-games .direct-catalog{margin-bottom:18px!important}
+#games #games-title+.world-head-english{font-size:11px}
+#games .direct-intro{display:none!important}
+#games .featured-exhibit{display:none!important}
+html[data-gallery-mode="dark"] #games .oibung-world{border-color:#1e313c;background:#30414d}
+html[data-gallery-mode="dark"] #games .world-topbar{background:#354443;border-color:#677a6f}
+html[data-gallery-mode="dark"] #games .world-heading h2{color:#fcf3dc!important}
+html[data-gallery-mode="dark"] #games .world-heading p,
+html[data-gallery-mode="dark"] #games .world-select-label{color:#d6ded0!important}
+html[data-gallery-mode="dark"] #games .world-controlbar{background:#35463d;border-color:#586755}
+html[data-gallery-mode="dark"] #games .world-nearby{color:#f7eacb}
+html[data-gallery-mode="dark"] #games .world-hint{background:#2b3b32;color:#d1ddcc}
+html[data-gallery-mode="dark"] #games .world-hint a{color:#f0d7a7}
+html[data-gallery-mode="dark"] #games .world-all-games{background:#2d4136;border-color:#6c7864}
+html[data-gallery-mode="dark"] #games .world-all-games>summary{background:#34473a;color:#f3e9d0}
+@media(max-width:850px){
+ #games .world-topbar{padding:13px 15px}
+ #games .world-toolbar{gap:6px}
+ #games .world-select-label{display:none}
+ #games .world-stage{height:clamp(325px,55vw,485px)}
+ #games #world-jump-select{max-width:155px}
+ .world-stage-help{display:none}
+ .world-nearby{font-size:12px}
+}
+@media(max-width:600px){
+ #games .world-head-english{display:none}
+ #games .world-heading h2{font-size:20px!important}
+ #games .world-heading p{font-size:12px}
+ #games .world-kicker{font-size:9px}
+ #games .world-toolbar{width:100%;display:flex}
+ #games #world-jump-select{flex:1;max-width:none;min-width:0}
+ #games .world-toolbar-button{flex:0 0 auto;font-size:11px;padding:7px 9px;min-height:40px}
+ #games .world-review-button{display:none}
+ #games .world-topbar{padding:12px}
+ #games .world-stage{height:342px}
+ .world-stage-stats{top:7px;left:7px;gap:6px;padding:4px 6px;font-size:10px}
+ .world-stage-logo{font-size:10px}
+ .world-building-sign{font-size:11px;max-width:120px;padding:4px 5px}
+ .world-guide-bubble{font-size:10px;max-width:145px;padding:5px 6px}
+ .world-controlbar{flex-wrap:wrap;padding:10px;gap:8px}
+ .world-direction-pad{order:1}
+ .world-direction-pad button{min-height:54px;min-width:53px}
+ .world-enter{order:2;flex:1;min-width:114px;min-height:54px}
+ .world-nearby{order:3;flex:0 0 100%;font-size:11px;text-align:center}
+ .world-hint{font-size:11px;gap:4px;padding:8px 10px}
+ .world-hint a{white-space:nowrap}
+ #games .world-directory{grid-template-columns:1fr;padding:8px}
+ #games .world-all-games>summary{font-size:13px;padding:14px}
+}
+@media(max-height:470px) and (orientation:landscape){
+ #games .world-topbar{padding:7px 12px;gap:4px}
+ #games .world-heading p{display:none}
+ #games .world-heading h2{font-size:16px!important;margin:0!important}
+ #games .world-stage{height:max(245px,66vh)}
+ .world-controlbar{padding:6px 12px}
+ .world-direction-pad button,.world-enter{min-height:43px;min-width:48px}
+ .world-guide-bubble{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ #games .world-toolbar-button,.world-building-sign,
+ .world-direction-pad button,.world-enter{transition:none!important}
+}
+
+
+/* On short landscape phones, keep the movement controls over the last
+   portion of the scene instead of forcing players to scroll them offscreen. */
+@media(max-height:470px) and (orientation:landscape){
+ #games .oibung-world{position:relative}
+ #games .world-controlbar{
+   position:absolute;left:9px;right:9px;bottom:53px;z-index:12;
+   border:0;background:transparent;padding:0;min-height:46px;
+   display:flex;flex-wrap:nowrap;justify-content:space-between;pointer-events:none
+ }
+ #games .world-controlbar button{
+   pointer-events:auto;min-height:44px;
+   color:#fff5d9;background:#253e48ed;
+   border-color:#e9ce9e;box-shadow:2px 2px 0 #233536af
+ }
+ #games .world-nearby{display:none}
+ #games .world-direction-pad{order:0}
+ #games .world-enter{order:1;flex:0 0 auto;min-width:113px}
+ #games .world-hint{display:none}
+}
+
+
+/* The original catalog detail dialog becomes a themed interior rather than a
+   second gameplay system. Actual screenshots, ratings and controls stay intact. */
+#game-dialog .world-interior-banner{display:none}
+#game-dialog[data-world-theme] .world-interior-banner{
+  --interior-ink:#f9e8d1;--interior-wall:#39464d;--interior-trim:#d6b284;
+  display:flex;align-items:center;gap:16px;
+  padding:17px clamp(14px,3vw,30px);
+  background:var(--interior-wall);color:var(--interior-ink);
+  border-top:4px solid var(--interior-trim);
+  border-bottom:4px solid var(--interior-trim);
+  box-shadow:inset 0 0 0 3px #11182450;
+  font-family:'Noto Sans KR',system-ui,sans-serif
+}
+#game-dialog[data-world-theme] .world-interior-crest{
+  display:grid;place-items:center;
+  width:50px;height:50px;flex:0 0 50px;
+  border:4px solid var(--interior-trim);background:#17283280;
+  color:var(--interior-trim);font:bold 25px monospace
+}
+#game-dialog[data-world-theme] .world-interior-banner>div{min-width:0;flex:1}
+#game-dialog[data-world-theme] .world-interior-banner small{
+  display:block;font:bold 10px/1.4 monospace;letter-spacing:.12em;color:var(--interior-trim)
+}
+#game-dialog[data-world-theme] .world-interior-banner strong{
+  display:block;margin-top:4px;
+  font:900 clamp(19px,2.6vw,30px)/1.3 'Noto Sans KR',system-ui,sans-serif;
+  color:var(--interior-ink);overflow-wrap:anywhere
+}
+#game-dialog .world-interior-pixels{font:bold 24px/1 monospace;opacity:.5;white-space:nowrap}
+#game-dialog[data-world-theme="castle"] .world-interior-banner{--interior-wall:#403248;--interior-trim:#d09191}
+#game-dialog[data-world-theme="arena"] .world-interior-banner{--interior-wall:#6a5044;--interior-trim:#f1d095}
+#game-dialog[data-world-theme="duel"] .world-interior-banner{--interior-wall:#343f69;--interior-trim:#f1b6b5}
+#game-dialog[data-world-theme="tactics"] .world-interior-banner{--interior-wall:#3a554c;--interior-trim:#a7cf9a}
+#game-dialog[data-world-theme="cat"] .world-interior-banner{--interior-wall:#865c7f;--interior-trim:#f9d6c2}
+#game-dialog[data-world-theme="studio"] .world-interior-banner{--interior-wall:#345968;--interior-trim:#edd09d}
+#game-dialog[data-world-theme="tower"] .world-interior-banner{--interior-wall:#625674;--interior-trim:#f3d6a2}
+@media(max-width:600px){
+ #game-dialog[data-world-theme] .world-interior-banner{gap:10px;padding:12px}
+ #game-dialog[data-world-theme] .world-interior-crest{width:35px;height:35px;flex-basis:35px;font-size:17px;border-width:2px}
+ #game-dialog .world-interior-pixels{display:none}
+}
