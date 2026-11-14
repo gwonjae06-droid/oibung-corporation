@@ -32,19 +32,10 @@
     console.warn('[3D Gallery] Three.js could not load. Using the original exhibition.');
     return;
   }
-  // Dedicated gallery-owned sculpt: no external VRM URL, no cross-origin
-  // model or duplicated Three.js runtime. A real organic BufferGeometry actor.
-  let createAnimeCurator = null;
-  let sculptImportError = null;
-  try {
-    const localSculpt = await import('./gallery-mint-curator.js?v=mint-sculpt-2');
-    if(typeof localSculpt.createMintCurator !== 'function')
-      throw new Error('Mint curator export is missing');
-    createAnimeCurator = (_three,opts)=>localSculpt.createMintCurator(_three,opts);
-  } catch(error){
-    sculptImportError=error;
-    console.error('[3D Gallery] Local sculpt import failed; illustrated fallback will remain:',error);
-  }
+  // A human-looking sculpt needs authored model/texture assets. The
+  // procedural mint character was visibly malformed, so it is no longer
+  // imported or shown. Exhibit guides use the existing illustrated artwork
+  // until a visually verified 3D asset can replace it.
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({ antialias: !matchMedia('(pointer:coarse)').matches, powerPreference:'high-performance' });
@@ -304,7 +295,8 @@
       avatarSprites.forEach(({sprite,costume})=>{
         if(costume===key && sprite.isSprite){
           sprite.material.map=texture;
-          sprite.material.opacity=darkness?.8:1;
+          sprite.material.opacity=1;
+          sprite.material.color.set(darkness?0x272326:0xffffff);
           sprite.material.needsUpdate=true;
         }
       });
@@ -325,27 +317,17 @@
   }
   function clearWorld(){
     if(!world)return;
-    // SkeletonUtils clones share geometry and many original VRM materials.
-    // Disposing them here permanently invalidates subsequent curator copies.
-    // Ask the rig to dispose only genuinely owned material clones, and skip
-    // all shared VRM descendants in the generic gallery cleanup.
-    const rigRoots=new Set(avatarSprites.filter(a=>a.rig).map(a=>a.sprite));
-    for(const actor of avatarSprites){
-      if(actor.rig){
-        try { actor.rig.dispose?.(); }
-        catch(error){console.warn('[3D Gallery] Curator cleanup:',error);}
-      }
-    }
+    // Dispose stage-only meshes and sprite materials; wardrobe textures are
+    // cached and reused by the next exhibit build.
     scene.remove(world);
-    const disposeGalleryObject=node=>{
-      if(rigRoots.has(node))return;
-      for(const child of node.children)disposeGalleryObject(child);
+    world.traverse(node=>{
       node.geometry?.dispose?.();
-      const own=m=>{if(m && !Object.values(materials).includes(m))m.dispose?.();};
-      if(Array.isArray(node.material))node.material.forEach(own);
-      else own(node.material);
-    };
-    disposeGalleryObject(world);
+      const disposeMat=m=>{
+        if(m && !Object.values(materials).includes(m))m.dispose?.();
+      };
+      if(Array.isArray(node.material))node.material.forEach(disposeMat);
+      else disposeMat(node.material);
+    });
     allTextures.forEach(t=>t.dispose());allTextures=[];
     paintings.length=0;exhibitionLights.length=0;emergencyLights.length=0;
     glowingFixtures.length=0;avatarSprites.length=0;
@@ -447,47 +429,24 @@
       spot.position.set(side*4.1,4.9,z);
       spot.target.position.set(side*5.0,2.7,z);
       world.add(spot,spot.target);exhibitionLights.push(spot);
-      // A themed curator is physically stationed alongside this artwork.
+      // Exhibited guide, intentionally illustrated rather than claiming that
+      // disjoint primitives constitute natural human 3D character modeling.
+      // Three.js Sprite keeps artwork facing the visitor from every angle.
       const costume=costumeKey(game);
-      if(createAnimeCurator){
-        // Each exhibit gets a locally sculpted mint-haired curator with real
-        // continuous face, body and hairstyle meshes (not a remote VRM).
-        let rig;
-        try { rig=createAnimeCurator(THREE,{costume,mobile}); }
-        catch(error){console.warn('[3D Gallery] Organic curator creation failed; showing illustrated stand-in.',error);}
-        if(rig){
-          const model=rig.group;
-          model.position.set(side*3.62,0,z-1.73);
-          model.rotation.y=side>0?-Math.PI/2+.15:Math.PI/2-.15;
-          model.scale.setScalar(.96);
-          model.userData.galleryCurator=true;
-          world.add(model);
-          avatarSprites.push({sprite:model,rig,costume,phase:i*1.17,y:0});
-        }else{
-          const sprite=new THREE.Sprite(new THREE.SpriteMaterial({
-            map:guideTextures[costume] || null,transparent:true,depthWrite:false,
-            color:0xffffff,opacity:guideTextures[costume]?1:0
-          }));
-          sprite.position.set(side*3.62,1.45,z-1.73);
-          sprite.scale.set(1.70,2.73,1);
-          world.add(sprite);
-          avatarSprites.push({sprite,costume,y:sprite.position.y,phase:i*1.17});
-        }
-        const characterSpot=new THREE.SpotLight(0xffead0,0,7.5,Math.PI/6.2,.71,1.75);
-        characterSpot.position.set(side*2.82,4.55,z-1.05);
-        characterSpot.target.position.set(side*3.62,1.48,z-1.73);
-        world.add(characterSpot,characterSpot.target);
-        exhibitionLights.push(characterSpot);
-      }else{
-        const sprite=new THREE.Sprite(new THREE.SpriteMaterial({
-          map:guideTextures[costume] || null,transparent:true,depthWrite:false,
-          color:0xffffff,opacity:guideTextures[costume]?1:0
-        }));
-        sprite.position.set(side*3.62,1.45,z-1.73);
-        sprite.scale.set(costume==='maid'?1.42:1.68,2.70,1);
-        world.add(sprite);
-        avatarSprites.push({sprite,costume,y:sprite.position.y,phase:i*1.17});
-      }
+      const spriteMat=new THREE.SpriteMaterial({
+        map:guideTextures[costume] || null,
+        transparent:true,depthWrite:false,
+        color:0xffffff,opacity:guideTextures[costume]?1:0
+      });
+      const sprite=new THREE.Sprite(spriteMat);
+      sprite.name='Gallery illustrated curator: '+costume;
+      sprite.userData.galleryCuratorIllustration=true;
+      sprite.position.set(side*3.64,1.47,z-1.67);
+      const artRatio=costume==='maid'?.53:costume==='knight'?.81:.65;
+      sprite.scale.set(2.76*artRatio,2.76,1);
+      sprite.renderOrder=5;
+      world.add(sprite);
+      avatarSprites.push({sprite,costume,y:sprite.position.y,phase:i*1.17});
       const ropeZ=z+3.0;
       [-1,1].forEach(offset=>{
         elCylinder(world,side*3.85,.42,ropeZ+offset*1.75,.07,.09,.84,materials.gold);
@@ -514,15 +473,8 @@
     return true;
     }catch(error){
       console.error('[3D Gallery] Scene rebuild failed:',error);
-      // A failed 3D rig must not make the whole museum unusable.
-      const failedWithVRM=!!createAnimeCurator;
-      createAnimeCurator=null;
-      if(failedWithVRM){
-        queueMicrotask(()=>build()); // retry ONCE with illustrated stand-ins
-      }else{
-        document.body.classList.remove('three-gallery-ready');
-        surface.hidden=true; // preserve the accessible original gallery
-      }
+      document.body.classList.remove('three-gallery-ready');
+      surface.hidden=true; // preserve the accessible original gallery
       return false;
     }finally{
       rebuilding=false;
@@ -544,11 +496,9 @@
     emergencyLights.forEach(light=>light.intensity=0);
     glowingFixtures.forEach(mat=>mat.emissiveIntensity=darkness?0:1.25);
     avatarSprites.forEach(({sprite})=>{
-      // Real sculpted meshes receive the scene's actual lights and flashlight.
-      // Only legacy sprite fallback needs artificial darkening.
       if(!sprite.isSprite)return;
-      sprite.material.color.set(darkness?0x3b2d2b:0xffffff);
-      sprite.material.opacity=sprite.material.map?(darkness?.8:1):0;
+      sprite.material.color.set(darkness?0x272326:0xffffff);
+      sprite.material.opacity=sprite.material.map?1:0;
     });
     lightToggle.textContent=darkness?'☀ 불 켜기':'☾ 소등';
     flashlightButton.hidden=!darkness;
@@ -563,12 +513,28 @@
         light.intensity=near?(.42 + Math.sin(time*.0017+light.position.z)*.06):0;
       });
       torch.intensity=flashlightOn?(16.5 + .45*Math.sin(time*.0038) + .12*Math.sin(time*.041)):0;
+      // Basic sprite shaders ignore real world lights. Light the illustrated
+      // guide ONLY when the visitor is nearby with their torch on.
+      avatarSprites.forEach(({sprite})=>{
+        if(!sprite.isSprite)return;
+        const dx=sprite.position.x-camera.position.x, dz=sprite.position.z-camera.position.z;
+        const distance=Math.hypot(dx,dz);
+        const look=new THREE.Vector3(dx,0,dz).normalize();
+        const facing=Math.max(0,-Math.sin(yaw)*look.x-Math.cos(yaw)*look.z);
+        const lightAmount=flashlightOn?Math.max(0,1-distance/9)*facing:0;
+        sprite.material.color.setRGB(
+          .105+lightAmount*.87,
+          .090+lightAmount*.86,
+          .100+lightAmount*.88
+        );
+      });
     } else {
       exhibitionLights.forEach(light=>{
         const dz=Math.abs(light.position.z-camera.position.z);
         light.intensity=dz<14 ? (light.isSpotLight?8.7:light.distance<=6?4.2:12.5) : 0;
       });
       emergencyLights.forEach(light=>light.intensity=0);
+      avatarSprites.forEach(({sprite})=>{if(sprite.isSprite)sprite.material.color.set(0xffffff)});
     }
   }
 
@@ -670,13 +636,11 @@
     if(hasEntered && time-lastCount>90){
       updateFocus();lastCount=time;
     }
-    // Nearby guide meshes animate; distant ones are culled on desktop and mobile.
-    avatarSprites.forEach(({sprite,y,phase,rig})=>{
-      const close = Math.abs(sprite.position.z-camera.position.z)<23;
-      sprite.visible=close;
-      if(!sprite.visible || reduced())return;
-      if(rig)rig.animate(time,phase);
-      else sprite.position.y=y+Math.sin(time*.0015+phase)*.028;
+    // Lightweight idle motion for artwork; this is *not* a 3D rig.
+    avatarSprites.forEach(({sprite,y,phase})=>{
+      sprite.visible=Math.abs(sprite.position.z-camera.position.z)<23;
+      if(sprite.visible && !reduced())
+        sprite.position.y=y+Math.sin(time*.00145+phase)*.023;
     });
     renderer.render(scene,camera);
   }
@@ -809,15 +773,8 @@
   });
   // The 2D guide panel visibility is deliberately independent of 3D NPCs.
   new MutationObserver(()=>build()).observe(grid,{childList:true});
-  // The new model ships with the site; there is no 18 MB remote model
-  // fetch and no perpetual "3D model loading failed" loop.
-  if(sculptImportError){
-    const note=document.createElement('div');
-    note.className='gallery-3d-curator-status';
-    note.setAttribute('role','status');
-    note.textContent='3D 비서를 표시하지 못해 기존 일러스트를 사용 중입니다.';
-    surface.appendChild(note);
-  }
+  // Procedural human models are disabled until a separately-authored,
+  // visually reviewed 3D asset is available. No misleading load failure UI.
   new MutationObserver(()=>applyLighting()).observe(document.documentElement,{
     attributes:true,attributeFilter:['data-gallery-mode']
   });
