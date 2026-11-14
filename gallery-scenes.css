@@ -153,3 +153,10 @@ html.motion-off #gallery-3d .bk-monster-sprite {animation:none!important;transit
   filter:drop-shadow(5px 8px 0 #100a16cb)
     drop-shadow(0 0 18px #b1234e9e);
 }
+
+
+/* Rotated/side-flipped pixel figure can extend 1-2% outside mobile bounds. */
+@media(max-width:700px){
+  #gallery-3d .bk-human{left:3%!important}
+  #gallery-3d [data-side="right"] .bk-human{left:auto!important;right:3%!important}
+}
