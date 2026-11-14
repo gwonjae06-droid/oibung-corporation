@@ -1416,6 +1416,7 @@
   }
   function paused(){
     return document.hidden || window.OIBUNG_CURRENT_VIEW==='reviews' ||
+      !!document.querySelector('#gallery-room-map-panel:not([hidden])') ||
       !!document.querySelector('dialog[open]') ||
       !!document.querySelector('#mobile-nav:not([hidden])') ||
       !!document.querySelector('#walk-filter-drawer[open]');
@@ -1461,7 +1462,9 @@
     renderer.render(scene,followCamera);
   }
   function isUserTyping(event){
-    return !!event.target.closest?.('input,textarea,select,[contenteditable="true"],dialog,[role="dialog"],.gallery-room-map,#mobile-nav,.gallery-3d-hud,.page-switcher');
+    const mapIsOpen=!document.getElementById('gallery-room-map-panel')?.hidden;
+    if(mapIsOpen&&event.target.closest?.('.gallery-room-map'))return true;
+    return !!event.target.closest?.('input,textarea,select,[contenteditable="true"],dialog,[role="dialog"],#mobile-nav,.gallery-3d-hud,.page-switcher');
   }
   function tryPointerLock(){
     if(mobile || !renderer.domElement.requestPointerLock)return;
