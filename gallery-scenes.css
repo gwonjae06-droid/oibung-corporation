@@ -309,3 +309,42 @@ html.motion-off #gallery-3d .bk-monster-sprite {animation:none!important;transit
   #gallery-3d [data-curator-art="v4"] .bk-human,
   #gallery-3d [data-curator-art="v4"] .bk-monster-sprite {animation:none!important}
 }
+
+
+/* Night visibility fix: reveal the exact same-camera daylight Blender render
+   only within the movable flashlight cone. The rest stays an eerie dark museum. */
+#gallery-3d .bk-room::before{
+  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:var(--museum-day-room,none);
+  background-size:cover;background-position:center;
+  opacity:0;
+}
+#gallery-3d [data-dark="true"][data-torch="true"] .bk-room::before{
+  opacity:.76;
+  -webkit-mask-image:radial-gradient(circle 265px at var(--x,50%) var(--y,46%),#000 0%,#000d 50%,transparent 83%);
+  mask-image:radial-gradient(circle 265px at var(--x,50%) var(--y,46%),#000 0%,#000d 50%,transparent 83%);
+}
+#gallery-3d [data-dark="true"][data-torch="true"] .bk-light{
+  background:radial-gradient(circle 270px at var(--x,50%) var(--y,46%),transparent 0%,#0002 42%,#0009 100%);
+}
+#gallery-3d [data-dark="true"][data-torch="false"] .bk-light{
+  background:#000b;
+}
+#gallery-3d [data-dark="true"][data-torch="true"] .bk-frame{
+  filter:brightness(1.2);
+}
+@media(max-width:700px) and (orientation:portrait){
+  /* Width was limiting the portrait sprite to ~360 visual pixels, despite
+     its 512px source. Use nearer-to-native 1:1 scaling without clipping. */
+  #gallery-3d [data-curator-art="v4"] .bk-human{
+    width:72%!important;height:min(89%,640px)!important;
+    left:0!important;right:auto!important;bottom:12%!important;
+  }
+  #gallery-3d [data-curator-art="v4"][data-side="right"] .bk-human{
+    left:auto!important;right:0!important;
+  }
+  #gallery-3d [data-dark="true"][data-torch="true"] .bk-room::before{
+    -webkit-mask-image:radial-gradient(circle 215px at var(--x,50%) var(--y,48%),#000 0%,#000e 52%,transparent 86%);
+    mask-image:radial-gradient(circle 215px at var(--x,50%) var(--y,48%),#000 0%,#000e 52%,transparent 86%);
+  }
+}
