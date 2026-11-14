@@ -902,8 +902,8 @@
 
   function paintingLocation(index){
     // Castle paintings are intentionally discoverable from several directions.
-    if(index===0)return {x:-4.28,y:2.72,z:-9.34,angle:0,nx:0,nz:1,upper:false};
-    if(index===1)return {x:4.28,y:2.72,z:-9.34,angle:0,nx:0,nz:1,upper:false};
+    if(index===0)return {x:-5.62,y:2.72,z:-9.34,angle:0,nx:0,nz:1,upper:false};
+    if(index===1)return {x:5.62,y:2.72,z:-9.34,angle:0,nx:0,nz:1,upper:false};
     if(index===2)return {x:-9.35,y:2.77,z:-3.50,angle:Math.PI/2,nx:1,nz:0,upper:false};
     if(index===3)return {x:-9.35,y:2.77,z:3.75,angle:Math.PI/2,nx:1,nz:0,upper:false};
     if(index===4)return {x:9.35,y:4.30,z:-3.30,angle:-Math.PI/2,nx:-1,nz:0,upper:true};
