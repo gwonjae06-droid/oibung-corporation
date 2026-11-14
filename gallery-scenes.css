@@ -140,3 +140,16 @@ body.blackout-rebuild .site-header .brand{visibility:hidden!important;pointer-ev
 }
 html.motion-off #gallery-3d .bk-human,
 html.motion-off #gallery-3d .bk-monster-sprite {animation:none!important;transition:none!important}
+
+
+/* Pixel QA: slight scene-safe inset prevents rotated large sprites from
+   clipping; make the creature perceptible as an ominous backlit silhouette. */
+@media(min-width:701px){
+  #gallery-3d .bk-human{left:1.7%}
+  #gallery-3d [data-side="right"] .bk-human{left:auto;right:1.7%}
+}
+#gallery-3d [data-danger="true"] .bk-monster{
+  z-index:4;opacity:.68;
+  filter:drop-shadow(5px 8px 0 #100a16cb)
+    drop-shadow(0 0 18px #b1234e9e);
+}
