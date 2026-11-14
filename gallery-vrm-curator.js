@@ -21,6 +21,13 @@ import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 const SOURCE = 'https://gy19a.github.io/jev-stage/static/vrm/anime_girl.vrm';
 const MODEL_HEIGHT = 2.60; // The floor-level display height of the curator, metres.
 let sourcePromise;
+const dyedCache = new Map();
+function sharedRecolor(texture,hex,options){
+  if(!texture)return null;
+  const key=texture.uuid+'|'+hex;
+  if(!dyedCache.has(key))dyedCache.set(key,recolorTexture(texture,hex,options));
+  return dyedCache.get(key);
+}
 const presets = {
   knight: {uniform:'#15161d', metal:'#c8a880', accent:'#958286'},
   maid: {uniform:'#161417', metal:'#dfc8c9', accent:'#e7d7dc'},
@@ -118,11 +125,11 @@ function makePalette(avatar,preset){
       if(!type)return material;
       const next=material.clone();
       if(type==='hair'){
-        const dyed=recolorTexture(material.map,'#f3c775',{depth:.49});
-        if(dyed){next.map=dyed;palette.push(dyed);next.color.set(0xffffff);}
+        const dyed=sharedRecolor(material.map,'#f3c775',{depth:.49});
+        if(dyed){next.map=dyed;next.color.set(0xffffff);}
         else next.color.set('#ffda80');
       } else if(type==='outfit'){
-        const dyed=recolorTexture(material.map,colors.uniform,{depth:.56});
+        const dyed=sharedRecolor(material.map,colors.uniform,{depth:.56});
         if(dyed){next.map=dyed;palette.push(dyed);next.color.set(0xffffff);}
         else next.color.set(colors.uniform);
       }
@@ -186,7 +193,7 @@ export async function getVRMCuratorFactory(){
             mats.forEach(mat=>{if(mat && mat!==base.group.material)mat.dispose?.()});
           }
         });
-        rig.texturePalette.forEach(texture=>texture.dispose());
+        // Recolored textures are shared across all copies of each costume.
       }
     };
   };
