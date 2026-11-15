@@ -24,7 +24,7 @@
   const LOGICAL_PIXEL_SIZE = 1;
   const MOVE_SPEED = 335;
   const BUILDING_WIDTH = 1490;
-  const BUILDING_SPACING = 1790;
+  const BUILDING_SPACING = 1580;
   const DISTRICT_GAP = 760;
   const GRAVITY = 720;
   const scenes = window.OIBUNG_PIXEL_SCENES;
