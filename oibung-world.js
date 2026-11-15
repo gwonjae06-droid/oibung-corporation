@@ -348,9 +348,19 @@
   });
   world.addEventListener('click',e=>{
     if(e.target!==canvas||!canRun())return;
-    if(inRoom())return; // Interiors are explored with real movement and nearby E interaction.
     const bounds=canvas.getBoundingClientRect();
     const x=(e.clientX-bounds.left)/LOGICAL_PIXEL_SIZE+camera;
+    if(inRoom()){
+      // Tapping an indoor exhibit places the visitor beside it. The action
+      // still requires E / the bottom button, preventing accidental launches.
+      const object=room().objects().find(obj=>Math.abs(obj.x-x)<72);
+      if(!object)return;
+      player.x=Math.max(25,Math.min(room().roomWidth()-45,object.x-68));
+      curator.x=player.x-55;player.vx=0;player.vy=0;player.y=0;keys.left=false;keys.right=false;
+      camera=Math.max(0,Math.min(room().roomWidth()-W,player.x-W*.49));
+      updateNearby(true);render();stage.focus({preventScroll:true});
+      return;
+    }
     const y=(e.clientY-bounds.top)/LOGICAL_PIXEL_SIZE;
     const idx=buildings.findIndex(b=>{
       const scale=buildingScale(b);
