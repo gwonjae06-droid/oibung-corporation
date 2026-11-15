@@ -109,6 +109,7 @@
   let guideText='환영합니다! 오른쪽으로 걸어가면 게임들이 있어요.';
   let guideTextUntil=0;
   let justWarped=false;
+  let didInitialSpawn=false;
   let inputIsActive=false;
 
   function canRun(){
@@ -134,10 +135,19 @@
       return {game,index:i,x:FIRST_BUILDING+i*BUILDING_SPACING,width,height,style,seed:hash(game.id)};
     });
     worldEnd=FIRST_BUILDING+next.length*BUILDING_SPACING+390;
-    if(justWarped&&oldId){
-      const b=buildings.find(item=>item.game.id===oldId);
-      if(b)player.x=b.x+b.width*.5;
-    }else if(previousX>worldEnd-60) player.x=Math.max(80,worldEnd-90);
+    // First visit should reveal an actual game landmark, not a blank sky.
+    if(!didInitialSpawn&&buildings.length){
+      player.x=buildings[0].x+65;
+      curator.x=player.x-64;
+      camera=Math.max(0,Math.min(worldEnd-W,player.x-W*.49));
+      didInitialSpawn=true;
+    }else if(justWarped&&oldId){
+      const selected=buildings.find(item=>item.game.id===oldId);
+      if(selected){
+        player.x=selected.x+selected.width*.5-105;
+        curator.x=player.x-65;
+      }
+    }else if(previousX>worldEnd-60)player.x=Math.max(80,worldEnd-90);
     nearest=-1;
     jumpSelect.replaceChildren(new Option('건물 바로 찾기',''));
     list.replaceChildren();
@@ -174,7 +184,7 @@
     groundY=H-Math.max(43,Math.min(83,Math.round(H*.092)));
     canvas.width=W;canvas.height=H;
     ctx.imageSmoothingEnabled=false;
-    camera=Math.max(0,Math.min(camera,Math.max(0,worldEnd-W)));
+    camera=Math.max(0,Math.min(Math.max(0,worldEnd-W),player.x-W*.49));
     updateSigns();
   }
   function buildingScale(b){return Math.min(1,Math.max(.24,(groundY-39)/(b.height+126)));}
@@ -874,7 +884,8 @@
   const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(resize):null;
   observer?.observe(stage);
   window.addEventListener('resize',resize,{passive:true});
-  rebuild();resize();
+  // The first spawn uses the real screen width, including mobile portrait.
+  resize();rebuild();
   frameId=requestAnimationFrame(frame);
   window.OIBUNG_WORLD={
     getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),skyColor:skyTransition().colors.sky,guideBubbleVisible:!guideBubble.hidden,renderDensity:LOGICAL_PIXEL_SIZE,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!guideImages.neutral}),
