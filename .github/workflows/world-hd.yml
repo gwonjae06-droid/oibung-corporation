@@ -1,0 +1,44 @@
+name: Monumental high-density pixel world QA
+on:
+  push:
+    branches: ["feat/monumental-hd-pixel-world"]
+    paths:
+      - "world-hd-architecture.js"
+      - "oibung-world.js"
+      - "index.html"
+      - "tests/world-hd.cjs"
+      - "tests/world-fullscreen.cjs"
+      - ".github/workflows/world-hd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+jobs:
+  world-hd-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: |
+          node --check world-hd-architecture.js
+          node --check oibung-world.js
+          node --check tests/world-hd.cjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Browser test and screenshots
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/world-hd.log 2>&1 &
+          sleep 2
+          node tests/world-hd.cjs
+          node tests/world-fullscreen.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: monumental-world-screenshots-${{ github.run_number }}
+          path: artifacts/*.png
+          retention-days: 14
+          if-no-files-found: ignore
