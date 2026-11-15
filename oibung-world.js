@@ -68,7 +68,7 @@
       !world.classList.contains('world-menu-open')&&
       !document.getElementById('world-all-games')?.open&&
       !document.querySelector('dialog[open]')&&
-      !room()?.isInfoOpen()&&world.isConnected;
+      !room()?.blocksMovement()&&world.isConnected;
   }
   function listCatalog(){
     const api=window.OIBUNG_CATALOG;
@@ -283,7 +283,9 @@
     const origin={playerX:player.x,curatorX:curator.x,camera};
     if(!room().enter(b.game,b.style,origin))return false;
     interiorOrigin=origin;
-    player.x=room().spawnX();curatorMotion.reset(curator,player.x-curatorGap());camera=0;
+    player.x=room().spawnX();
+    curatorMotion.reset(curator,player.x-curatorGap());
+    camera=clamp(player.x-W*.49,0,Math.max(0,room().roomWidth()-W));
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
     keys.left=false;keys.right=false;previousInteriorObject=null;
     signs.hidden=true;

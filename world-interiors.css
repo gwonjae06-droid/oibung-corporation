@@ -24,10 +24,10 @@
 #games .world-interior-info{
  --roomAccent:#d9b88d;--roomInk:#202d34;--roomButton:#435d60;
  position:absolute;z-index:48;
- top:50%;left:50%;transform:translate(-50%,-50%);
- box-sizing:border-box;width:min(732px,calc(100% - 28px));
- max-height:min(78dvh,670px);overflow-y:auto;
- padding:clamp(20px,4vw,36px);
+ top:50%;right:calc(24px + env(safe-area-inset-right,0px));transform:translateY(-50%);
+ box-sizing:border-box;width:clamp(328px,32vw,480px);
+ max-height:min(74dvh,620px);overflow-y:auto;
+ padding:22px;
  background:var(--roomInk);color:#f8eeda;
  border:2px solid var(--roomAccent);
  border-radius:0;
@@ -36,6 +36,7 @@
  overscroll-behavior:contain;
 }
 #games .world-interior-info[hidden]{display:none!important}
+#games .world-menu-open .world-interior-info{visibility:hidden}
 #games .world-info-close{
  position:absolute;right:11px;top:11px;
  display:grid;place-items:center;min-height:44px;min-width:44px;
@@ -48,15 +49,16 @@
  text-shadow:1px 1px var(--roomInk),2px 2px var(--roomInk);
 }
 #games .world-info-nav{display:flex;gap:5px;border-bottom:1px solid var(--roomAccent);margin-bottom:16px}
+#games .world-info-nav[hidden],#games .world-info-cover[hidden]{display:none!important}
 #games .world-info-nav button{
  flex:1;min-height:42px;cursor:pointer;padding:5px;border:1px solid var(--roomAccent);
  border-bottom:0;color:#fff4e0;background:transparent;font:800 12px/1.35 'Noto Sans KR',system-ui,sans-serif;
 }
 #games .world-info-nav button[aria-pressed="true"]{color:var(--roomInk);background:var(--roomAccent)}
 #games .world-info-nav button:focus-visible,#games .world-room-sign:focus-visible{outline:2px solid #fff5df;outline-offset:3px}
-#games .world-info-body{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:18px;align-items:start}
+#games .world-info-body{display:grid;gap:10px}
 #games .world-info-cover{margin:0;border:1px solid var(--roomAccent);background:var(--roomButton)}
-#games .world-info-cover img{display:block;width:100%;aspect-ratio:2/1;object-fit:cover}
+#games .world-info-cover img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#151821}
 #games .world-info-cover figcaption{padding:6px 8px;color:#fff4e0;font:700 11px/1.45 'Noto Sans KR',system-ui,sans-serif}
 #games .world-interior-info h2{
  margin:9px 55px 15px 0!important;
@@ -65,19 +67,14 @@
  text-shadow:2px 2px var(--roomInk),3px 3px var(--roomInk);
 }
 #games .world-info-description{
- margin:0 0 15px!important;white-space:pre-line;
- color:#ebdfce!important;font:600 15px/1.85 'Noto Sans KR',system-ui,sans-serif!important;
+ margin:0!important;white-space:pre-line;
+ color:#f7eee1!important;font:600 15px/1.65 'Noto Sans KR',system-ui,sans-serif!important;
  word-break:keep-all;
 }
-#games .world-info-meta{
- margin:0;padding:0;border-top:1px solid #9b927770;
- color:#eee1cf;font:600 12px/1.5 'Noto Sans KR',system-ui,sans-serif;
-}
-#games .world-info-meta div,#games .world-info-route li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #9b92774f}
-#games .world-info-meta dt,#games .world-info-route strong{color:var(--roomAccent)}
-#games .world-info-meta dd{margin:0;text-align:right;overflow-wrap:anywhere}
-#games .world-info-route{margin:0;padding:0;list-style:none;font:700 12px/1.5 'Noto Sans KR',system-ui,sans-serif}
-#games .world-info-meta[hidden],#games .world-info-route[hidden]{display:none!important}
+#games .world-info-route li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #9b92774f}
+#games .world-info-route strong{color:var(--roomAccent)}
+#games .world-info-route{margin:8px 0 0;padding:0;list-style:none;font:700 12px/1.5 'Noto Sans KR',system-ui,sans-serif}
+#games .world-info-route[hidden]{display:none!important}
 #games .world-info-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 #games .world-info-actions button,#games .world-info-actions a{
  min-height:46px;display:flex;align-items:center;justify-content:center;
@@ -88,7 +85,7 @@
 }
 #games .world-info-actions a{background:var(--roomAccent);color:var(--roomInk)}
 #games .world-info-actions button:hover,#games .world-info-actions a:hover{filter:brightness(1.1)}
-#games [data-room-theme="castle"],#games .world-interior-info[data-theme="castle"]{--roomAccent:#efa6a2;--roomInk:#2e1927;--roomButton:#713746}
+#games [data-room-theme="castle"],#games .world-interior-info[data-theme="castle"]{--roomAccent:#eac289;--roomInk:#242734;--roomButton:#4a4250}
 #games [data-room-theme="arena"],#games .world-interior-info[data-theme="arena"]{--roomAccent:#f3d591;--roomInk:#192d30;--roomButton:#26616a}
 #games [data-room-theme="duel"],#games .world-interior-info[data-theme="duel"]{--roomAccent:#d0b8ed;--roomInk:#20243d;--roomButton:#494879}
 #games [data-room-theme="tactics"],#games .world-interior-info[data-theme="tactics"]{--roomAccent:#c8d4a4;--roomInk:#223127;--roomButton:#475734}
@@ -116,6 +113,17 @@
 #games .world-room-sign-icon{font:800 14px/1 system-ui,sans-serif;color:var(--roomAccent,#d9b88d)}
 #games .world-room-sign:is(.is-nearby,:hover){background:var(--roomButton,#435d60)}
 #games .world-room-sign.is-nearby{z-index:1;box-shadow:0 0 0 2px var(--roomAccent,#d9b88d),2px 4px 0 #15132297}
+#games .world-featured-exhibit{
+ position:absolute;z-index:11;transform:translate(-50%,-50%);pointer-events:auto;cursor:pointer;
+ box-sizing:border-box;display:grid;width:var(--exhibit-width,clamp(146px,23vw,315px));padding:4px;
+ background:var(--roomInk,#202d34);border:2px solid var(--roomAccent,#e2bf82);
+ box-shadow:0 0 0 3px var(--roomInk,#202d34),3px 6px 0 #171b27a3;
+ color:#fff6e6;
+}
+#games .world-featured-exhibit[hidden],#games .world-featured-exhibit img[hidden]{display:none!important}
+#games .world-featured-exhibit:is(:hover,:focus-visible){outline:2px solid #fff3d7;outline-offset:4px}
+#games .world-featured-exhibit img{width:100%;aspect-ratio:16/9;object-fit:contain;background:#151821}
+#games .world-featured-name{padding:5px 4px;font:850 clamp(11px,1.5vw,15px)/1.35 'Noto Sans KR',system-ui,sans-serif}
 #games .world-district-directory{grid-column:1/-1;display:grid;gap:6px}
 #games .world-district-directory h3{margin:5px 0 2px;font-size:12px;color:#efcf9e;letter-spacing:.04em}
 #games .world-district-directory .world-directory-item{grid-template-columns:minmax(0,1fr) auto}
@@ -164,18 +172,28 @@ html[data-gallery-mode="dark"] #games #world-guide-bubble{--guide-paper:#efe5dd}
  }
  #games .world-interior-location{max-width:48vw}
  #games #world-interior-return{min-height:34px;font-size:10px;padding:5px 8px}
- #games .world-interior-info{max-height:calc(100dvh - 55px);padding:21px 15px}
- #games .world-info-body{grid-template-columns:1fr;gap:9px}
- #games .world-info-cover{max-width:100%}
- #games .world-info-cover img{aspect-ratio:3/1}
+ #games .world-interior-info{
+  top:auto;right:9px;left:9px;bottom:calc(78px + env(safe-area-inset-bottom,0px));
+  width:auto;transform:none;max-height:min(52dvh,360px);padding:13px;
+  animation:world-exhibit-rise .2s ease-out both
+ }
+ #games .world-info-cover img{max-height:124px}
  #games .world-room-sign{max-width:116px;gap:4px;padding:4px 6px}
  #games .world-info-description{font-size:13px!important}
  #games .world-info-actions button,#games .world-info-actions a{font-size:12px;flex:1}
+}
+@keyframes world-exhibit-rise{from{transform:translateY(16px);opacity:.5}to{transform:translateY(0);opacity:1}}
+@media(prefers-reduced-motion:reduce){
+ #games .world-interior-info{animation:none}
 }
 @media(max-height:470px) and (orientation:landscape){
  #games .world-interior-hud{
   top:7px;left:calc(50% - 130px);transform:translateX(-20%);
   max-width:calc(100% - 175px);
  }
- #games .world-interior-info{max-height:calc(100dvh - 20px)}
+ #games .world-interior-info{
+  top:50%;bottom:auto;left:auto;right:12px;transform:translateY(-50%);
+  width:clamp(260px,41vw,366px);max-height:calc(100dvh - 112px);padding:12px;animation:none
+ }
+ #games .world-info-cover img{max-height:110px}
 }

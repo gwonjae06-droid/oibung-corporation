@@ -5,8 +5,8 @@
   if(!stage)return;
 
   const layouts={
-    castle:['황혼의 왕좌 홀','붉은 깃발 아래, 오든링의 보스와 여정을 만나 보세요.',[
-      [.066,.25,'서쪽 현관'],[.23,.27,'왕좌와 붉은 깃발'],[.58,.31,'스테인드글라스 전시'],[.78,.24,'촛불 옆 서가'],[.94,.27,'황혼의 관문']]],
+    castle:['고대의 던전','석벽에 걸린 전투 기록을 살펴보세요. 저 안쪽 봉인문 너머가 오든링이에요.',[
+      [.066,.24,'무너진 입구'],[.268,.22,'석벽의 전투 기록'],[.51,.24,'망자의 석관'],[.69,.25,'유물 보관대'],[.89,.28,'봉인문']]],
     arena:['황금 콜로세움 로비','우승컵 진열대를 지나 중앙 경기장으로 들어가 보세요.',[
       [.07,.26,'선수 출입구'],[.20,.28,'황금 우승컵'],[.34,.24,'경기 기록대'],[.83,.25,'관람석 안내대'],[.55,.35,'중앙 경기장']]],
     duel:['검격의 회랑','청색 깃발과 교차한 검을 따라 결투장의 기록을 살펴보세요.',[
@@ -30,7 +30,17 @@
     ['portal','게임 실행','게임 플레이하기','여기에서 작품을 실행할 수 있어요.','▶']
   ];
   const statusLabels={finished:'완결',released:'정식 출시',live_service:'라이브 서비스',in_development:'개발 중',unknown:'상태 미정'};
-  const state={active:false,game:null,style:'studio',origin:null,nearest:null,selected:null};
+  const featuredLocations={castle:[.268,.39],arena:[.24,.43],duel:[.30,.41],tactics:[.34,.41],
+    cat:[.26,.41],studio:[.26,.41],tower:[.30,.44],corp:[.46,.45]};
+  const introductions={
+    odenring:'개성 강한 보스들과 맞서는 3D 액션. 공격을 읽고, 피하고, 반격하세요.',
+    'oibung-arena':'공이 부딪히며 승부가 뒤집히는 핀볼 자동 배틀.',
+    ochams:'기술을 골라 턴마다 승부를 겨루는 3D 대전.',
+    'campus-frontier':'대학을 고르고 부대를 지휘해 거점을 차지하는 턴제 전략 게임.'
+  };
+  const state={active:false,game:null,style:'studio',origin:null,nearest:null,selected:null,media:null};
+  const curatedScenes={odenring:'assets/world-snow/preview-odenring.webp'};
+  let mediaRevision=0;
   let width=1850;
   let stations=[];
   const safeUrl=url=>{try{const u=new URL(url);return /^https?:$/.test(u.protocol)?u.href:null;}catch{return null;}};
@@ -74,6 +84,14 @@
     return {control,place,role};
   });
   stage.append(markers);
+  const feature=button('world-featured-exhibit');
+  const featureImage=element('img');
+  const featureName=element('strong','world-featured-name');
+  featureImage.alt='';
+  feature.append(featureImage,featureName);
+  feature.hidden=true;
+  feature.addEventListener('click',()=>showInfo('intro',{focus:true}));
+  stage.append(feature);
 
   const sheet=element('section','world-interior-info');sheet.id='world-interior-info';sheet.hidden=true;
   sheet.setAttribute('role','dialog');sheet.setAttribute('aria-modal','false');
@@ -92,12 +110,11 @@
   }));
   const body=element('div','world-info-body');
   const desc=element('p','world-info-description');
-  const meta=element('dl','world-info-meta');
   const cover=element('figure','world-info-cover');
   const coverImage=element('img');coverImage.loading='lazy';
   const coverCaption=element('figcaption');
   cover.append(coverImage,coverCaption);
-  const details=element('div','world-info-details');details.append(desc,meta);
+  const details=element('div','world-info-details');details.append(desc);
   const route=element('ol','world-info-route');details.append(route);
   body.append(details,cover);
   const actions=element('div','world-info-actions');
@@ -128,28 +145,50 @@
       });
     }
   }
-  function showInfo(kind){
+  function setMedia(url,label){
+    state.media=url?{url,label}:null;
+    featureImage.hidden=!url;
+    if(url&&featureImage.getAttribute('src')!==url)featureImage.src=url;
+    if(!url)featureImage.removeAttribute('src');
+    cover.hidden=!url;
+    if(url&&coverImage.getAttribute('src')!==url)coverImage.src=url;
+    if(!url)coverImage.removeAttribute('src');
+    coverCaption.textContent=label||'';
+  }
+  featureImage.addEventListener('error',()=>{
+    if(!state.media)return;
+    const fallback=safeUrl(state.game?.thumbnailUrl);
+    if(fallback&&fallback!==state.media.url)setMedia(fallback,'등록된 작품 표지');
+    else setMedia(null);
+  });
+  async function loadMedia(game){
+    const revision=++mediaRevision;
+    const curated=Object.hasOwn(curatedScenes,game.id)?curatedScenes[game.id]:null;
+    if(curated){setMedia(curated,'실제 플레이 화면');return;}
+    setMedia(safeUrl(game.thumbnailUrl),'등록된 작품 표지');
+    try{
+      const scene=safeUrl(await window.OIBUNG_EXHIBIT_MEDIA?.getScene(game.id));
+      if(revision===mediaRevision&&scene)setMedia(scene,'등록된 스크린샷');
+    }catch{
+      // The registered cover remains available when the gallery is offline.
+    }
+  }
+  function showInfo(kind,{focus=true}={}){
     const game=state.game;
     if(!game||!tabs.has(kind))return false;
     const opening=sheet.hidden;
     const [roomName,welcome]=layout();
     const currentStop=stations.find(stop=>stop.id===kind);
     sheet.dataset.theme=state.style;
-    kicker.textContent=currentStop.label+' · '+roomName;
+    sheet.dataset.view=kind;
+    const status=Object.hasOwn(statusLabels,game.developmentStatus)?statusLabels[game.developmentStatus]:null;
+    const intro=Object.hasOwn(introductions,game.id)?introductions[game.id]:game.tagline||game.description;
+    kicker.textContent=kind==='intro'?[game.genre||roomName,status].filter(Boolean).join(' · '):currentStop.label+' · '+roomName;
     title.textContent=game.title;
+    nav.hidden=kind==='intro';
     for(const [id,tab] of tabs)tab.setAttribute('aria-pressed',String(id===kind));
-    desc.textContent=kind==='intro'?(game.description||welcome):kind==='guide'?welcome
+    desc.textContent=kind==='intro'?(intro||welcome):kind==='guide'?welcome
       :'등록된 스크린샷과 플레이 후기는 작품 기록에서 볼 수 있어요.';
-    meta.hidden=kind!=='intro';
-    meta.replaceChildren();
-    if(kind==='intro'){
-      const fields=[['장르',game.genre],['제작',game.developer],
-        ['상태',statusLabels[game.developmentStatus]||statusLabels.unknown],['플랫폼',game.platform]];
-      for(const [key,value] of fields){
-        if(!value)continue;
-        const row=element('div');row.append(element('dt','',key),element('dd','',value));meta.append(row);
-      }
-    }
     route.hidden=kind!=='guide';
     route.replaceChildren();
     if(kind==='guide'){
@@ -158,21 +197,18 @@
         const item=element('li');item.append(element('strong','',stop.label),element('span','',stop.role));route.append(item);
       }
     }
-    const thumbnail=kind==='gallery'&&safeUrl(game.thumbnailUrl);
-    coverImage.src=thumbnail||window.OIBUNG_PIXEL_SCENES.roomArt(state.style);
-    coverImage.alt='';
-    coverCaption.textContent=thumbnail?'등록된 작품 표지':roomName;
     actions.replaceChildren();
-    const detailButton=button('',kind==='gallery'?'스크린샷·후기 열기':'전체 작품 소개 보기');
-    detailButton.addEventListener('click',()=>openOriginal(kind));actions.append(detailButton);
     const url=safeUrl(game.playUrl);
     if(url){
-      const launch=element('a','','게임 실행');launch.href=url;launch.target='_blank';launch.rel='noopener noreferrer';
+      const launch=element('a','','게임 시작');launch.href=url;launch.target='_blank';launch.rel='noopener noreferrer';
       actions.append(launch);
     }
+    const detailButton=button('',kind==='gallery'?'스크린샷·후기 열기':'자세히 보기');
+    detailButton.addEventListener('click',()=>openOriginal(kind));actions.append(detailButton);
     state.selected=kind;
     sheet.hidden=false;
-    if(opening){sheet.scrollTop=0;close.focus({preventScroll:true});}
+    if(opening)sheet.scrollTop=0;
+    if(focus&&(opening||!sheet.contains(document.activeElement)))close.focus({preventScroll:true});
     return true;
   }
   function resize(w,h){
@@ -205,13 +241,18 @@
     locationTitle.textContent=state.style==='corp'?roomName:game.title+' · '+roomName;
     locationStop.textContent='';
     stage.classList.add('is-world-interior');
+    featureName.textContent=game.title;
+    feature.setAttribute('aria-label',game.title+' 대표 전시 열기');
+    void loadMedia(game);
+    showInfo('intro',{focus:false});
     return true;
   }
   function leave(){
     if(!state.active)return null;
     const origin=state.origin;
+    mediaRevision++;
     state.active=false;state.game=null;state.origin=null;state.nearest=null;
-    closeInfo();hud.hidden=true;markers.hidden=true;
+    closeInfo();hud.hidden=true;markers.hidden=true;feature.hidden=true;
     delete stage.dataset.roomTheme;
     stage.classList.remove('is-world-interior');
     return origin;
@@ -246,6 +287,15 @@
   }
   function drawForeground(ctx,{W,H,groundY,camera}){
     if(!state.active)return;
+    const [ratio,elevation]=featuredLocations[state.style];
+    const featureX=Math.round(width*ratio-camera);
+    feature.hidden=featureX<35||featureX>W-35;
+    if(!feature.hidden){
+      feature.style.left=featureX+'px';
+      feature.style.top=Math.round(groundY-H*elevation)+'px';
+      feature.style.setProperty('--exhibit-width',state.style==='castle'
+        ?Math.round(Math.min(width*.161,W*.65,300))+'px':'');
+    }
     for(const [i,stop] of stations.entries()){
       const {control}=markerControls[i];
       const x=Math.round(stop.x-camera);
@@ -265,9 +315,10 @@
   window.OIBUNG_INTERIORS={
     enter,leave,interact,nearest,resize,draw:drawArt,drawForeground,showInfo,
     isActive:()=>state.active,isInfoOpen:()=>!sheet.hidden,
+    blocksMovement:()=>!sheet.hidden&&state.selected!=='intro',
     currentGame:()=>state.game,theme:()=>state.style,
     roomWidth:()=>width,objects:()=>stations,
-    spawnX:()=>stations[0].x+68,welcome:()=>layout()[1],
+    spawnX:()=>Math.round(featuredLocations[state.style][0]*width)-96,welcome:()=>layout()[1],
     state:()=>({active:state.active,gameId:state.game?.id||null,nearest:state.nearest?.id||null,
       infoOpen:!sheet.hidden,objectCount:stations.length})
   };

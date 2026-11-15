@@ -4,7 +4,7 @@
   const pixelDirectory = 'assets/world-pixel/';
   const snowDirectory = 'assets/world-snow/';
   const themes = ['castle', 'arena', 'duel', 'tactics', 'cat', 'studio', 'tower', 'corp'];
-  const roomFloor = {castle:.885,arena:.885,duel:.858,tactics:.858,cat:.854,studio:.855,tower:.828,corp:.892};
+  const roomFloor = {castle:.826,arena:.885,duel:.858,tactics:.858,cat:.854,studio:.855,tower:.828,corp:.892};
   const images = new Map();
   const artPath = key => (key.startsWith('player-') ? pixelDirectory : snowDirectory) + key + '.webp';
   const load = key => {
@@ -18,8 +18,9 @@
     return image.complete && image.naturalWidth ? image : null;
   };
   const theme = style => themes.includes(style) ? style : 'studio';
-  const outside = style => 'outside-' + theme(style);
-  const inside = style => 'inside-' + theme(style);
+  const sceneName = style => style === 'castle' ? 'dungeon' : theme(style);
+  const outside = style => 'outside-' + sceneName(style);
+  const inside = style => 'inside-' + sceneName(style);
 
   function sceneY(floor, groundY, H) {
     const height = Math.ceil(Math.max(groundY / floor, (H - groundY) / (1 - floor)));

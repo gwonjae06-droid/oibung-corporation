@@ -283,8 +283,7 @@ async function loadDetails() {
   if (!gameId || !client) return;
   const revision = ++detailRevision;
   try {
-    const images = await client.from('oc_images').select('path').eq('game_id', gameId)
-      .order('created_at', { ascending: false }).order('path').range(0, imageLimit);
+    const images = await gameImages(gameId).range(0, imageLimit);
     if (gameId !== activeGame() || revision !== detailRevision) return;
     drawImages(unwrap(images), gameId);
   } catch {
@@ -293,6 +292,20 @@ async function loadDetails() {
     }
   }
 }
+
+function gameImages(gameId) {
+  return client.from('oc_images').select('path').eq('game_id', gameId)
+    .order('created_at', { ascending: false }).order('path');
+}
+
+window.OIBUNG_EXHIBIT_MEDIA = {
+  async getScene(gameId) {
+    if (!client) await communityReady;
+    if (!client) return null;
+    const [image] = unwrap(await gameImages(gameId).limit(1));
+    return image ? client.storage.from(bucket).getPublicUrl(image.path).data.publicUrl : null;
+  }
+};
 
 detail.addEventListener('game-opened', () => {
   imageLimit = pageSize;
@@ -756,6 +769,6 @@ async function connect() {
   refreshCatalog();
 }
 
-void connect().catch(() => {
+const communityReady = connect().catch(() => {
   accountStatus.textContent = '공유 서버에 연결할 수 없어.';
 });
