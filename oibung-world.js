@@ -651,7 +651,8 @@
     const bob=moving?Math.abs(stride)*2.5:Math.sin(elapsed*2)*.5;
     ctx.save();
     ctx.translate(cx,ground+yOffset-Math.round(bob*scale));
-    ctx.scale((direction<0?-1:1)*scale,scale);
+    // Keep the visitor smaller than the elegant curator and monumental doors.
+    ctx.scale((direction<0?-1:1)*scale*.76,scale*.76);
     // Metallic leather boots, synchronized asymmetric leg motion.
     const lead=Math.round(stride*8),trail=-lead;
     rect(-15+lead,-29,12,34,'#253344');
