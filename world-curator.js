@@ -173,7 +173,8 @@
       affection:0,still:0,cooldown:.7,mode:'follow',timer:0,flight:null,followJump:0,
       landed:0,playerGrounded:true,gesture:null,gestureTime:0,gestureWait:.68,nextGesture:0,
       headAngle:0,headAngleVelocity:0,headBob:0,headBobVelocity:0,
-      look:0,lookVelocity:0,wingAngle:0,wingAngleVelocity:0});
+      look:0,lookVelocity:0,wingAngle:0,wingAngleVelocity:0,
+      crouch:0,crouchVelocity:0});
     return guide;
   }
   function spring(guide,key,target,stiffness,damping,dt) {
@@ -289,6 +290,7 @@
     spring(guide,'headBob',bounce,80,17,motionDt);
     spring(guide,'look',gaze,75,17,motionDt);
     spring(guide,'wingAngle',wing,74,16,motionDt);
+    spring(guide,'crouch',!reduced&&guide.mode==='charge'?1:0,95,19,motionDt);
     updateGesture(guide,watching,dt,reduced);
   }
 
@@ -465,7 +467,7 @@
     const beckon=gesture?.name==='beckon'?gestureWeight:0;
     const hair=gesture?.name==='hair'?gestureWeight:0;
     const kiss=gesture?.name==='kiss'?gestureWeight:0;
-    const crouch=guide.mode==='charge'?ease(clamp(guide.timer/.38,0,1)):0;
+    const crouch=clamp(guide.crouch,0,1);
     const start=from*rigResolution;
     for(let y=start;y<height;y++){
       const py=y/rigResolution;
@@ -496,8 +498,12 @@
     }
     // Upper rows are unused by the independently drawn head.
     guide.rigContext.putImageData(guide.rigImage,0,0,0,start,width,height-start);
+    // Filter only the subpixel-deformed body; preserve nearest-neighbour
+    // pixels on the face and high-resolution eye details.
+    ctx.imageSmoothingEnabled=true;
     ctx.drawImage(guide.rigCanvas,0,start,width,height-start,0,from,
       frameWidth,frameHeight-from);
+    ctx.imageSmoothingEnabled=false;
   }
 
   // Independent neck-pivot sprite rig: the face stays stable during walking
@@ -551,8 +557,8 @@
     const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
     const eyes=form===forms.devil?devilEyes:eyeAnchors;
     const scale=height/standingHeight;
-    const direction=Math.sign(guide.turn)||guide.facing;
-    const turnWidth=.34+.66*Math.abs(guide.turn);
+    // Scale through zero continuously while turning; never snap mirrored signs.
+    const turnScale=reduced?guide.facing:clamp(guide.turn,-1,1);
     const cycle=guide.phase*Math.PI*2;
     const time=elapsed+(form===forms.devil?.8:0);
     const breathing=reduced?0:Math.sin(time*2.8)*.013;
@@ -562,7 +568,7 @@
     ctx.save();
     ctx.imageSmoothingEnabled=false;
     ctx.translate(center,groundY+guide.y);
-    ctx.scale(scale*direction*turnWidth,scale);
+    ctx.scale(scale*turnScale,scale);
     ctx.rotate(reduced?0:Math.sin(cycle)*guide.stride*.012+lean);
     ctx.scale(1-(breathing+step)*.32,1+breathing+step);
     const sway=reduced?0:Math.sin(time*1.9)*.012+
