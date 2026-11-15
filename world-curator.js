@@ -18,7 +18,7 @@
   const ready = () => art.complete&&art.naturalWidth===103&&art.naturalHeight===356;
   let rig;
 
-  function cut(points) {
+  function cut(points,paint=brush=>brush.drawImage(art,0,0)) {
     const layer=document.createElement('canvas');
     const left=Math.min(...points.map(point=>point[0]));
     const top=Math.min(...points.map(point=>point[1]));
@@ -31,7 +31,7 @@
     for(let i=1;i<points.length;i++)brush.lineTo(...points[i]);
     brush.closePath();
     brush.clip();
-    brush.drawImage(art,0,0);
+    paint(brush);
     return {layer,left,top};
   }
   function shade(part) {
@@ -59,7 +59,10 @@
   function prepare() {
     if(!rig){
       const legs={
-        thigh:cut([[57,222],[80,223],[80,240],[75,258],[55,259],[55,244]]),
+        thigh:cut([[55,151],[72,151],[80,173],[80,239],[75,258],[55,259],[53,218],[53,170]],brush=>{
+          brush.drawImage(art,60,234,14,13,53,151,27,96);
+          brush.drawImage(art,55,232,25,27,55,232,25,27);
+        }),
         shin:cut([[58,240],[78,241],[76,266],[75,302],[79,321],[61,325],[62,303],[55,278],[55,257]]),
         shoe:cut([[59,311],[79,311],[83,330],[102,337],[101,353],[57,353],[58,325]])
       };
@@ -266,10 +269,10 @@
     const bob=(1-Math.cos(cycle*2))*guide.stride*2;
     const bodyY=Math.max(hipY+guide.crouch*23-guide.tuck*3-bob,minHip(front),minHip(rear));
     const breath=reduced?0:Math.sin(elapsed*2.9)*.018;
-    const sway=guide.lean+gait*.076+breath;
-    const lift=guide.tuck*.22;
-    const nearSwing=-gait*.48-guide.prep*.34-guide.reach*.77-lift;
-    const farSwing=gait*.43-guide.prep*.29-guide.reach*.86-lift*.75;
+    const sway=guide.lean+gait*.076+guide.tuck*.10+breath;
+    const lift=guide.tuck*.46;
+    const nearSwing=-gait*.55-guide.prep*.34-guide.reach*.77-lift;
+    const farSwing=gait*.50-guide.prep*.29-guide.reach*.86-lift*.75;
     const nearFlex=-.06-Math.max(0,gait)*.25-guide.prep*.91-guide.reach*.22-lift*.9;
     const farFlex=-.06-Math.max(0,-gait)*.23-guide.prep*.8-guide.reach*.17-lift;
     const top=groundY+guide.y-height;
@@ -290,7 +293,7 @@
     ctx.translate(10,-2);
     arm(ctx,parts.rearArms,farSwing,farFlex);
     ctx.restore();
-    const hairSway=-gait*.14-guide.tuck*.21+breath*2;
+    const hairSway=-gait*.14-guide.tuck*.28+breath*2;
     ctx.save();
     ctx.translate(43,32);
     ctx.rotate(hairSway);
@@ -299,7 +302,8 @@
     drawPart(ctx,parts.torso,0,0);
     arm(ctx,parts.arms,nearSwing,nearFlex);
     ctx.translate(...neck);
-    ctx.rotate(-sway*.44+breath+guide.affection*.07-guide.tuck*.12);
+    const nod=reduced?0:Math.sin(elapsed*4)*guide.affection*.028;
+    ctx.rotate(-sway*.44+breath+guide.affection*.07+nod-guide.tuck*.12);
     ctx.translate(-neck[0],-neck[1]);
     drawPart(ctx,parts.head,0,0);
     expression(ctx,parts.iris,guide,elapsed,reduced);
