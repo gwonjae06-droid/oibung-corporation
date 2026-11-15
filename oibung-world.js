@@ -396,12 +396,14 @@
     gradient.addColorStop(1,mix(c.sky,c.far,.78));
     ctx.fillStyle=gradient;
     ctx.fillRect(0,0,W,groundY);
-    // Layered film-grain sky haze drawn at native-pixel density.
-    for(let i=0;i<Math.min(1300,W*1.2);i++){
+    if(window.OIBUNG_CINEMATIC)window.OIBUNG_CINEMATIC.sky(ctx,{
+      W,groundY,camera,elapsed,castleStrength:zone.castleStrength,
+      reducedMotion:reduceMotion.matches
+    });
+    else for(let i=0;i<Math.min(650,W*.7);i++){
       const x=(i*193+Math.floor(camera*.018))%W;
       const y=(i*79+(i%7)*23)%Math.max(10,groundY-30);
-      const mod=(i*29+i*i*7)%97;
-      rect(x,y,1,mod%5===0?2:1,mod%3?'#ffffff11':'#0d19200a');
+      rect(x,y,1,1,i%3?'#ffffff11':'#0d19200a');
     }
     const sunX=Math.round(((W*.75-camera*.02)%W+W)%W);
     if(zone.castleStrength>.01){
@@ -420,34 +422,24 @@
       }
       ctx.restore();
     }
-    // Pixel-parallax distant town and mountain silhouettes.
-    for(let x=-80;x<W+100;x+=68){
-      const v=(x+Math.round(camera*.18))%157;
-      const h=40+(Math.abs(v*13)%41);
-      polygon([[x,groundY-22],[x+35,groundY-75-h],[x+83,groundY-22]],mix(c.far,c.facade,.36));
-    }
-    for(let x=-60;x<W+80;x+=37){
-      const elevation=32+Math.abs((x+Math.floor(camera*.34))%29);
-      rect(x-Math.floor(camera*.24)%37,groundY-elevation,19,elevation,mix(c.facade,c.sky,.24));
-      rect(x+4-Math.floor(camera*.24)%37,groundY-elevation-10,11,10,mix(c.facade,c.sky,.24));
-      rect(x+5-Math.floor(camera*.24)%37,groundY-elevation+12,4,5,c.window);
-    }
-    // Distant rooflines add city scale, window lights and layered parallax.
-    for(let i=0;i<Math.ceil(W/37)+8;i++){
-      const xx=i*37-(Math.floor(camera*.13)%37)-25;
-      const v=(i*119+Math.floor(camera*.02))%103;
-      const yy=groundY-90-v;
-      rect(xx,yy,30,groundY-yy-18,mix(c.facade,c.sky,.30));
-      if(i%3===0){
-        polygon([[xx-5,yy+3],[xx+15,yy-28],[xx+37,yy+3]],mix(c.facade,c.roof,.35));
-        rect(xx+13,yy-34,4,8,c.trim);
-      }
-      for(let r=0;r<5;r++){
-        rect(xx+5+(r%2)*13,yy+17+r*18,3,6,i%3?c.window:'#c7b69b');
+    if(window.OIBUNG_CINEMATIC){
+      window.OIBUNG_CINEMATIC.far(ctx,{
+        W,groundY,camera,castleStrength:zone.castleStrength
+      });
+    }else{
+      // Fallback silhouette if the cinematic renderer fails to load.
+      for(let x=-80;x<W+100;x+=68){
+        const v=(x+Math.round(camera*.18))%157;
+        const h=40+(Math.abs(v*13)%41);
+        polygon([[x,groundY-22],[x+35,groundY-75-h],[x+83,groundY-22]],mix(c.far,c.facade,.36));
       }
     }
   }
   function drawGround(){
+    if(window.OIBUNG_CINEMATIC){
+      window.OIBUNG_CINEMATIC.ground(ctx,{W,groundY,camera});
+      return;
+    }
     // Cobblestones: sunlit chipped surfaces, fine joints and wet reflections.
     rect(0,groundY-8,W,11,'#42584b');
     for(let x=0;x<W;x+=7){rect(x,groundY-8,3,1,x%3?'#9cab85':'#617a65');}
@@ -822,7 +814,17 @@
     ctx.imageSmoothingEnabled=false;
     drawSky();drawPlaza();
     for(const b of buildings)drawBuilding(b);
+    if(window.OIBUNG_CINEMATIC){
+      window.OIBUNG_CINEMATIC.archGlow(ctx,{
+        groundY,camera,elapsed,buildings,reducedMotion:reduceMotion.matches
+      });
+    }
     drawGround();
+    if(window.OIBUNG_CINEMATIC){
+      window.OIBUNG_CINEMATIC.facadeProps(ctx,{
+        W,groundY,camera,elapsed,buildings,reducedMotion:reduceMotion.matches
+      });
+    }
     drawCurator(curator.x,groundY,curator.direction,curator.walk);
     // Reuse the cached, proportional visitor animation; retain the old
     // function solely as a safe fallback if artwork cannot initialize.
@@ -832,6 +834,9 @@
       scale:Math.max(.82,Math.min(1.13,H/750))
     });
     else drawPlayerHD(player.x,groundY,player.direction,player.walk,player.y);
+    if(window.OIBUNG_CINEMATIC)window.OIBUNG_CINEMATIC.foregroundDust(ctx,{
+      W,groundY,elapsed,reducedMotion:reduceMotion.matches
+    });
     // Guide stays visible with a caption at stops, without blocking entrances.
     const guideX=(curator.x-camera)*LOGICAL_PIXEL_SIZE;
     guideBubble.style.left=Math.round(Math.min(stage.clientWidth-80,Math.max(80,guideX)))+'px';
@@ -888,7 +893,7 @@
   resize();rebuild();
   frameId=requestAnimationFrame(frame);
   window.OIBUNG_WORLD={
-    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),skyColor:skyTransition().colors.sky,guideBubbleVisible:!guideBubble.hidden,renderDensity:LOGICAL_PIXEL_SIZE,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!guideImages.neutral}),
+    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),skyColor:skyTransition().colors.sky,guideBubbleVisible:!guideBubble.hidden,renderDensity:LOGICAL_PIXEL_SIZE,cinematicFX:!!window.OIBUNG_CINEMATIC,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!guideImages.neutral}),
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
     enter,refresh:rebuild,jump,movement
   };
