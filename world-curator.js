@@ -264,7 +264,7 @@
       guide.cooldown=2;
     }
     if(guide.mode==='admire'&&(!watching||guide.timer>.85))guide.mode='follow';
-    if(!groundedGuide&&allowHop&&guide.mode==='follow'&&guide.still>1.25&&guide.cooldown===0&&!guide.flight&&!guide.followJump&&!guide.gesture){
+    if(!groundedGuide&&allowHop&&guide.mode==='follow'&&guide.still>1.25&&guide.cooldown===0&&guide.nextGesture===0&&!guide.flight&&!guide.followJump&&!guide.gesture){
       guide.mode=reduced?'admire':'charge';
       guide.timer=0;
       guide.cooldown=11;
