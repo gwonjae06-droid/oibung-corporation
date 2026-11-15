@@ -111,6 +111,8 @@
 
   function canRun(){
     return !document.hidden&&window.OIBUNG_CURRENT_VIEW!=='reviews'&&
+      !world.classList.contains('world-menu-open')&&
+      !document.getElementById('world-all-games')?.open&&
       !document.querySelector('dialog[open]')&&world.isConnected;
   }
   function listCatalog(){
