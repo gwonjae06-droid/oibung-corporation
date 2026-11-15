@@ -52,9 +52,16 @@ const fs=require('node:fs/promises');
         const bb=await right.boundingBox();
         assert.ok(bb.y>=0&&bb.y+bb.height<=viewport.height+3,'Mobile controls outside viewport');
         const px=moved.playerX;
-        await right.dispatchEvent('pointerdown',{pointerId:4,pointerType:'touch'});
-        await page.waitForTimeout(225);
-        await right.dispatchEvent('pointerup',{pointerId:4,pointerType:'touch'});
+        // Pointer capture requires a real active pointer. Browser-level
+        // touch events avoid the false failures of synthetic dispatchEvent.
+        const cdp=await page.context().newCDPSession(page);
+        const tx=Math.round(bb.x+bb.width*.5),ty=Math.round(bb.y+bb.height*.5);
+        await cdp.send('Input.dispatchTouchEvent',{
+          type:'touchStart',touchPoints:[{x:tx,y:ty,id:4}]
+        });
+        await page.waitForTimeout(245);
+        await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+        await cdp.detach();
         moved=await page.evaluate(()=>window.OIBUNG_WORLD.getState());
         assert.ok(moved.playerX>px+15,'Touch hold-to-walk is operational');
       }
