@@ -31,25 +31,7 @@
     {name:'pairShy',duration:2.45},
     {name:'pairCheer',duration:2.35}
   ];
-  const actionFrames={
-    angel:{
-      wink:[0,13,13,13,0],hair:[0,12,13,13,0],
-      kiss:[0,13,14,13,0],shy:[0,13,13,13,0],
-      cheer:[0,14,14,14,0],pout:[0,12,13,12,0],
-      surprise:[0,14,14,14,0],stretch:[0,8,9,11,0],
-      wave:[0,9,9,9,0],pairWave:[0,9,9,9,0],
-      pairShy:[0,13,13,13,0],pairCheer:[0,14,14,14,0]
-    },
-    devil:{
-      beckon:[0,14,14,14,0],hair:[0,15,15,15,0],
-      kiss:[0,14,14,14,0],shy:[0,13,13,13,0],
-      cheer:[0,14,14,14,0],pout:[0,12,12,12,0],
-      surprise:[0,12,13,12,0],stretch:[0,15,15,15,0],
-      wave:[0,14,14,14,0],pairWave:[0,14,14,14,0],
-      pairShy:[0,13,13,13,0],pairCheer:[0,14,14,14,0]
-    }
-  };
-  function poseFrame(guide,formId,progress) {
+  function poseFrame(guide) {
     if(guide.gesture){
       // The sixteen approved poses can have different necklines and hair.
       // Swapping 0 -> 13 -> 0 causes a visible full-body pop. Instead use
@@ -222,12 +204,6 @@
 
   function reset(guide,x) {
     delete guide.pose;
-    delete guide.rigCanvas;
-    delete guide.rigContext;
-    delete guide.rigImage;
-    delete guide.rigOutput;
-    delete guide.rigFrame;
-    delete guide.rigStamp;
     Object.assign(guide,{x,y:0,speed:0,facing:1,turn:1,side:-1,phase:0,stride:0,
       affection:0,still:0,cooldown:.7,mode:'follow',timer:0,flight:null,followJump:0,
       landed:0,playerGrounded:true,gesture:null,gestureTime:0,gestureWait:2.8,nextGesture:0,
@@ -779,7 +755,7 @@
     const progress=gesture?clamp(guide.gestureTime/gesture.duration,0,1):0;
     // Use the approved hand-drawn poses for actual walking and expressive
     // gestures, while preserving the original portrait and outfit.
-    const frame=reduced?0:poseFrame(guide,formId,progress);
+    const frame=reduced?0:poseFrame(guide);
     const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
     const eyes=form===forms.devil?devilEyes:eyeAnchors;
     const scale=height/standingHeight;
