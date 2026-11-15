@@ -68,13 +68,25 @@
       const source=art.images[name];
       return surface(source.naturalWidth,source.naturalHeight,(c,w,h)=>{
         c.drawImage(source,0,0);
+        // Independent horizontal/vertical soft alpha masks remove hard
+        // rectangular source-image seams at every viewport size.
         c.globalCompositeOperation='destination-in';
-        const g=c.createRadialGradient(w*.52,h*.52,w*.18,w*.52,h*.52,w*.69);
-        g.addColorStop(0,'rgba(0,0,0,1)');
-        g.addColorStop(.59,'rgba(0,0,0,.96)');
-        g.addColorStop(.82,'rgba(0,0,0,.53)');
-        g.addColorStop(1,'rgba(0,0,0,0)');
-        c.fillStyle=g;c.fillRect(0,0,w,h);
+        const horizontal=c.createLinearGradient(0,0,w,0);
+        horizontal.addColorStop(0,'rgba(0,0,0,0)');
+        horizontal.addColorStop(.11,'rgba(0,0,0,.40)');
+        horizontal.addColorStop(.25,'rgba(0,0,0,1)');
+        horizontal.addColorStop(.73,'rgba(0,0,0,1)');
+        horizontal.addColorStop(.91,'rgba(0,0,0,.45)');
+        horizontal.addColorStop(1,'rgba(0,0,0,0)');
+        c.fillStyle=horizontal;c.fillRect(0,0,w,h);
+        const vertical=c.createLinearGradient(0,0,0,h);
+        vertical.addColorStop(0,'rgba(0,0,0,0)');
+        vertical.addColorStop(.17,'rgba(0,0,0,.82)');
+        vertical.addColorStop(.31,'rgba(0,0,0,1)');
+        vertical.addColorStop(.73,'rgba(0,0,0,1)');
+        vertical.addColorStop(.88,'rgba(0,0,0,.43)');
+        vertical.addColorStop(1,'rgba(0,0,0,0)');
+        c.fillStyle=vertical;c.fillRect(0,0,w,h);
         c.globalCompositeOperation='source-over';
       });
     });
