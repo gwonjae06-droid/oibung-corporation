@@ -40,14 +40,14 @@
     [13,77,87],[13,78,87],[13,79,87],[13,77,87],
     [14,80,85],[13,78,87],[14,79,85],[13,76,87]
   ];
-  const fittedHeadWidth=68,fittedHeadHeight=50;
+  const fittedHeadWidth=64,fittedHeadHeight=46;
 
   function proportions([top,neck,width,pivot=98,sole=ground]) {
     const hip=neck+(sole-neck)*.57;
     const saved=neck-top-fittedHeadHeight;
     return {
       neck,pivot,headScale:fittedHeadWidth/width,source:[0,top,neck,hip,sole,frameHeight],
-      output:[0,top,neck-saved,hip-saved*.63,sole,frameHeight]
+      output:[0,top,neck-saved,hip-saved*.67,sole,frameHeight]
     };
   }
   const winterShapes=headByFrame.map(proportions);
@@ -223,7 +223,7 @@
     if(points){
       for(const [i,point] of points.entries()){
         const [x,y]=featurePoint(shape,...point);
-        const size=i?2.5:3.6;
+        const size=i?2.35:3.4;
         heart(ctx,x,y,size+1,'#842654');
         heart(ctx,x,y,size,'#f64f90');
         heart(ctx,x,y,size*.56,'#ffe3b3');
