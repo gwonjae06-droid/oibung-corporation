@@ -107,7 +107,20 @@ const fs=require('node:fs/promises');
    await menuButton.click();
    await page.locator('#world-overlay-menu [data-open-editor]').click();
    assert.equal(await page.locator('#guide-dialog').evaluate(d=>d.open),true,'Game registration remains accessible');
+   const submit=page.locator('#guide-dialog button[type="submit"]');
+   await submit.scrollIntoViewIfNeeded({timeout:5000});
+   const submitBounds=await submit.boundingBox();
+   assert.ok(submitBounds&&submitBounds.x>=0&&submitBounds.y>=0&&
+      submitBounds.x+submitBounds.width<=viewport.width+2&&
+      submitBounds.y+submitBounds.height<=viewport.height+2,
+      'Registration submit must be reachable on real mobile screens '+JSON.stringify(submitBounds));
    await page.locator('#close-guide').click();
+   await menuButton.click();
+   const beforeTheme=await page.locator('html').getAttribute('data-gallery-mode');
+   await page.locator('#world-theme-toggle').click();
+   assert.notEqual(await page.locator('html').getAttribute('data-gallery-mode'),beforeTheme,
+      'In-world theme toggle must switch real site appearance');
+   await page.locator('#world-menu-close').click();
 
    const last=await page.evaluate(()=>({w:document.documentElement.scrollWidth,h:document.documentElement.scrollHeight,
      iw:innerWidth,ih:innerHeight}));
