@@ -109,6 +109,7 @@
   let guideText='환영합니다! 오른쪽으로 걸어가면 게임들이 있어요.';
   let guideTextUntil=0;
   let justWarped=false;
+  let didInitialSpawn=false;
   let inputIsActive=false;
 
   function canRun(){
@@ -134,10 +135,19 @@
       return {game,index:i,x:FIRST_BUILDING+i*BUILDING_SPACING,width,height,style,seed:hash(game.id)};
     });
     worldEnd=FIRST_BUILDING+next.length*BUILDING_SPACING+390;
-    if(justWarped&&oldId){
-      const b=buildings.find(item=>item.game.id===oldId);
-      if(b)player.x=b.x+b.width*.5;
-    }else if(previousX>worldEnd-60) player.x=Math.max(80,worldEnd-90);
+    // First visit should reveal an actual game landmark, not a blank sky.
+    if(!didInitialSpawn&&buildings.length){
+      player.x=buildings[0].x+65;
+      curator.x=player.x-64;
+      camera=Math.max(0,Math.min(worldEnd-W,player.x-W*.49));
+      didInitialSpawn=true;
+    }else if(justWarped&&oldId){
+      const selected=buildings.find(item=>item.game.id===oldId);
+      if(selected){
+        player.x=selected.x+selected.width*.5-105;
+        curator.x=player.x-65;
+      }
+    }else if(previousX>worldEnd-60)player.x=Math.max(80,worldEnd-90);
     nearest=-1;
     jumpSelect.replaceChildren(new Option('건물 바로 찾기',''));
     list.replaceChildren();
@@ -174,7 +184,7 @@
     groundY=H-Math.max(43,Math.min(83,Math.round(H*.092)));
     canvas.width=W;canvas.height=H;
     ctx.imageSmoothingEnabled=false;
-    camera=Math.max(0,Math.min(camera,Math.max(0,worldEnd-W)));
+    camera=Math.max(0,Math.min(Math.max(0,worldEnd-W),player.x-W*.49));
     updateSigns();
   }
   function buildingScale(b){return Math.min(1,Math.max(.24,(groundY-39)/(b.height+126)));}
@@ -182,27 +192,32 @@
     signs.style.pointerEvents='none';
     for(let i=0;i<signButtons.length;i++){
       const b=buildings[i],button=signButtons[i];
+      const scale=buildingScale(b);
       const sx=(b.x+b.width*.5-camera)*LOGICAL_PIXEL_SIZE;
-      const sy=(groundY-(b.height-33)*buildingScale(b))*LOGICAL_PIXEL_SIZE;
-      const visible=sx>-90&&sx<stage.clientWidth+90;
+      // A small plaque above the doorway is easier to read and leaves
+      // the grand roof and towers unobscured.
+      const sy=(groundY-212*scale)*LOGICAL_PIXEL_SIZE;
+      const visible=sx>-70&&sx<stage.clientWidth+70&&
+        Math.abs(player.x-(b.x+b.width*.5))<Math.max(410,W*.68);
       button.hidden=!visible;
       if(visible){
         button.style.left=Math.round(sx)+'px';
-        button.style.top=Math.round(Math.max(66,sy))+'px';
+        button.style.top=Math.round(Math.max(75,sy))+'px';
       }
     }
   }
   function warp(i){
     const b=buildings[i];if(!b)return;
-    player.x=b.x+b.width*.5-1;
+    // Let the player stand beside the monumental door, not on top of it.
+    player.x=b.x+b.width*.5-105;
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
-    curator.x=player.x-50;
+    curator.x=player.x-66;
     const target=Math.max(0,Math.min(worldEnd-W,player.x-W*.5));
     camera=target;justWarped=true;
     updateNearby(true);updateSigns();render();
   }
   function nearbyBuilding(){
-    let result=-1,dist=76;
+    let result=-1,dist=135;
     for(let i=0;i<buildings.length;i++){
       const b=buildings[i];
       const d=Math.abs(player.x-(b.x+b.width*.5));
@@ -213,6 +228,7 @@
   function announce(text,seconds=4){
     guideText=text;guideTextUntil=elapsed+seconds;
     guideBubble.textContent=text;
+    guideBubble.hidden=false;
   }
   function updateNearby(force=false){
     const n=nearbyBuilding();
@@ -234,7 +250,7 @@
     if(!games.length)interactButton.disabled=true;
   }
   function enter(){
-    if(nearest<0)return false;
+    if(nearest<0||!canRun())return false;
     const b=buildings[nearest];
     if(!b)return false;
     const api=window.OIBUNG_CATALOG;
@@ -248,10 +264,11 @@
     return true;
   }
   function jump(){
-    if(!player.onGround)return;
-    player.vy=-258;player.onGround=false;
+    if(!player.onGround||!canRun())return;
+    player.vy=-285;player.onGround=false;
   }
   function movement(code,down){
+    if(down&&!canRun())return;
     if(code==='left'||code==='right'){
       keys[code]=down;
       inputIsActive=keys.left||keys.right;
@@ -288,11 +305,26 @@
     panel.scrollIntoView({behavior:reduceMotion.matches?'auto':'smooth',block:'start'});
   });
   world.addEventListener('click',e=>{
-    if(e.target!==canvas)return;
-    const rect=canvas.getBoundingClientRect();
-    const x=(e.clientX-rect.left)/LOGICAL_PIXEL_SIZE+camera;
-    const y=(e.clientY-rect.top)/LOGICAL_PIXEL_SIZE;
-    const idx=buildings.findIndex(b=>x>=b.x-12&&x<=b.x+b.width+12&&y>groundY-b.height-25&&y<groundY+8);
+    if(e.target!==canvas||!canRun())return;
+    const bounds=canvas.getBoundingClientRect();
+    const x=(e.clientX-bounds.left)/LOGICAL_PIXEL_SIZE+camera;
+    const y=(e.clientY-bounds.top)/LOGICAL_PIXEL_SIZE;
+    const idx=buildings.findIndex(b=>{
+      const scale=buildingScale(b);
+      const center=b.x+b.width*.5;
+      const asset=window.OIBUNG_HD_ARCHITECTURE?.get(b);
+      if(asset){
+        const sourceX=Math.floor((x-(center-asset.width*scale*.5))/scale);
+        const sourceY=Math.floor((y-(groundY-asset.buildingInfo.base*scale))/scale);
+        if(sourceX<0||sourceY<0||sourceX>=asset.width||sourceY>=asset.height)return false;
+        // Use the baked pixel art alpha, not a broad rectangle: an empty
+        // patch of sky between high towers must never teleport the visitor.
+        const pixel=asset.getContext('2d').getImageData(sourceX,sourceY,1,1).data;
+        return pixel[3]>35;
+      }
+      return x>=center-(b.width+170)*scale*.5&&x<=center+(b.width+170)*scale*.5&&
+        y>=groundY-(b.height+102)*scale&&y<=groundY+4;
+    });
     if(idx<0)return;
     if(nearest===idx)enter();
     else warp(idx);
@@ -317,9 +349,20 @@
     const map={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
     if(map[e.code])movement(map[e.code],false);
   });
+  function restoreWorldFocus(){
+    // Native <dialog> restores focus to the opener *after* its close event.
+    // Move focus back on the following frame, or keyboard movement stays
+    // disabled because the focused element is the old "Enter" button.
+    requestAnimationFrame(()=>{
+      if(window.OIBUNG_CURRENT_VIEW!=='reviews'&&
+         !document.querySelector('dialog[open]'))stage.focus({preventScroll:true});
+    });
+  }
   document.getElementById('game-dialog')?.addEventListener('close',e=>{
     delete e.currentTarget.dataset.worldTheme;
+    restoreWorldFocus();
   });
+  document.getElementById('guide-dialog')?.addEventListener('close',restoreWorldFocus);
   window.addEventListener('blur',()=>{keys.left=false;keys.right=false;});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.left=false;keys.right=false;}});
   document.addEventListener('oibung-catalog-updated',rebuild);
@@ -328,17 +371,31 @@
     if(window.OIBUNG_CURRENT_VIEW==='games')resize();
   });
 
+  function skyTransition(){
+    // Blend the plaza into the castle and then between each district.
+    // The old nearest-building switch caused an obvious sky-color flash.
+    const stops=[{center:0,style:'studio'},...buildings.map(b=>({center:b.x+b.width*.5,style:b.style}))];
+    let i=0;
+    while(i<stops.length-2&&player.x>stops[i+1].center)i++;
+    const left=stops[i],right=stops[Math.min(i+1,stops.length-1)];
+    const raw=(player.x-left.center)/Math.max(1,right.center-left.center);
+    const t=Math.max(0,Math.min(1,raw));
+    const eased=t*t*(3-2*t);
+    const c={};
+    for(const key of ['sky','far','facade','roof','trim','window']){
+      c[key]=mix(colors[left.style][key],colors[right.style][key],eased);
+    }
+    const castleStrength=(left.style==='castle'?1-eased:0)+(right.style==='castle'?eased:0);
+    return {colors:c,castleStrength};
+  }
   function drawSky(){
-    let theme='tactics';
-    let best=Infinity;
-    for(const b of buildings){
-      const d=Math.abs(player.x-(b.x+b.width*.5));
-      if(d<best){best=d;theme=b.style;}
-    }
-    const c=colors[theme];
-    for(let y=0;y<groundY;y+=2){
-      rect(0,y,W,2,mix(c.sky,c.far,(y/Math.max(1,groundY))*.78));
-    }
+    const zone=skyTransition(),c=zone.colors;
+    // One gradient is cheaper than hundreds of per-row hex conversions.
+    const gradient=ctx.createLinearGradient(0,0,0,groundY);
+    gradient.addColorStop(0,c.sky);
+    gradient.addColorStop(1,mix(c.sky,c.far,.78));
+    ctx.fillStyle=gradient;
+    ctx.fillRect(0,0,W,groundY);
     // Layered film-grain sky haze drawn at native-pixel density.
     for(let i=0;i<Math.min(1300,W*1.2);i++){
       const x=(i*193+Math.floor(camera*.018))%W;
@@ -346,17 +403,22 @@
       const mod=(i*29+i*i*7)%97;
       rect(x,y,1,mod%5===0?2:1,mod%3?'#ffffff11':'#0d19200a');
     }
-    const sunX=Math.round(W*.75-camera*.02);
-    if(theme==='castle'){
+    const sunX=Math.round(((W*.75-camera*.02)%W+W)%W);
+    if(zone.castleStrength>.01){
+      ctx.save();ctx.globalAlpha=zone.castleStrength;
       circle(sunX,47,27,'#aa6375');circle(sunX,47,20,'#d4959d');
       pixelStars(W,H,camera,elapsed);
-    }else{
+      ctx.restore();
+    }
+    if(zone.castleStrength<.99){
+      ctx.save();ctx.globalAlpha=1-zone.castleStrength;
       circle(sunX,47,24,'#f4d7a0');circle(sunX,47,16,'#fff0be');
       for(let k=0;k<8;k++){
         const x=((k*109-camera*.16)%(W+130)+W+130)%(W+130)-60;
         const y=22+(k*41)%53;
         rect(x,y,46,9,'#ffffff43');rect(x+6,y-6,32,6,'#ffffff55');rect(x+13,y+9,22,4,'#ffffff35');
       }
+      ctx.restore();
     }
     // Pixel-parallax distant town and mountain silhouettes.
     for(let x=-80;x<W+100;x+=68){
@@ -762,15 +824,21 @@
     for(const b of buildings)drawBuilding(b);
     drawGround();
     drawCurator(curator.x,groundY,curator.direction,curator.walk);
-    drawPlayerHD(player.x,groundY,player.direction,player.walk,player.y);
+    // Reuse the cached, proportional visitor animation; retain the old
+    // function solely as a safe fallback if artwork cannot initialize.
+    if(window.OIBUNG_WORLD_VISITOR)window.OIBUNG_WORLD_VISITOR.render(ctx,{
+      x:player.x,ground:groundY,camera,direction:player.direction,
+      moving:player.walk>.1,elapsed,yOffset:player.y,
+      scale:Math.max(.82,Math.min(1.13,H/750))
+    });
+    else drawPlayerHD(player.x,groundY,player.direction,player.walk,player.y);
     // Guide stays visible with a caption at stops, without blocking entrances.
     const guideX=(curator.x-camera)*LOGICAL_PIXEL_SIZE;
     guideBubble.style.left=Math.round(Math.min(stage.clientWidth-80,Math.max(80,guideX)))+'px';
     const bubbleY=(groundY-Math.min(164,H*.20))*LOGICAL_PIXEL_SIZE;
-    guideBubble.style.top=Math.round(Math.max(67,bubbleY-54))+'px';
-    if(guideTextUntil<elapsed&&nearest<0&&Math.abs(player.vx)<1){
-      announce('게임 건물 앞에 서서 E를 누르면 작품 설명을 볼 수 있어요.',5.5);
-    }
+    guideBubble.style.top=Math.round(Math.max(69,bubbleY-54))+'px';
+    // Do not endlessly repeat the same subtitle across the scenery.
+    guideBubble.hidden=elapsed>guideTextUntil;
   }
   function update(dt){
     elapsed+=dt;
@@ -802,18 +870,25 @@
   function frame(timestamp){
     const delta=lastFrame?Math.min(.043,(timestamp-lastFrame)/1000):.016;
     lastFrame=timestamp;
-    if(canRun())update(delta);
-    render();
+    if(canRun()){
+      update(delta);
+      render();
+    }else{
+      // Menus and dialogs keep the last painted scene; do not waste CPU
+      // redrawing architecture and hundreds of background pixels.
+      keys.left=false;keys.right=false;player.vx=0;
+    }
     frameId=requestAnimationFrame(frame);
   }
   // Cap all world effects to a single Canvas rather than hundreds of DOM layers.
   const observer=typeof ResizeObserver!=='undefined'?new ResizeObserver(resize):null;
   observer?.observe(stage);
   window.addEventListener('resize',resize,{passive:true});
-  rebuild();resize();
+  // The first spawn uses the real screen width, including mobile portrait.
+  resize();rebuild();
   frameId=requestAnimationFrame(frame);
   window.OIBUNG_WORLD={
-    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),renderDensity:LOGICAL_PIXEL_SIZE,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!guideImages.neutral}),
+    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),skyColor:skyTransition().colors.sky,guideBubbleVisible:!guideBubble.hidden,renderDensity:LOGICAL_PIXEL_SIZE,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!guideImages.neutral}),
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
     enter,refresh:rebuild,jump,movement
   };
