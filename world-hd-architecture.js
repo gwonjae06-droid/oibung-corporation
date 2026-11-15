@@ -499,7 +499,20 @@
     if(castleArt){
       const bw=Math.round(w*1.01),bh=base;
       c.imageSmoothingEnabled=true; // detailed source stays legible when fitted
-      c.drawImage(castleArt,Math.floor((w-bw)/2),0,bw,bh);
+      const left=Math.floor((w-bw)/2);
+      c.drawImage(castleArt,left,0,bw,bh);
+      // The generated concept source included a stray presenting hand from
+      // its reference guide at the outer left edge. Remove that tiny piece
+      // from the *building* canvas to avoid a floating human hand on the wall.
+      c.save();c.globalCompositeOperation='destination-out';
+      const sx=bw/844,sy=bh/836;
+      const off=[[0,516],[26,529],[50,530],[86,541],[87,562],
+        [62,569],[47,584],[30,623],[0,633]];
+      c.beginPath();
+      c.moveTo(left+off[0][0]*sx,off[0][1]*sy);
+      for(let i=1;i<off.length;i++)c.lineTo(left+off[i][0]*sx,off[i][1]*sy);
+      c.closePath();c.fill();
+      c.restore();
       c.imageSmoothingEnabled=false;
       surface.buildingInfo={base,width:w,height:h,hires:true};
       return surface;
