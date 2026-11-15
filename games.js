@@ -9,6 +9,7 @@
 window.OIBUNG_GAMES = [
   {
     id: 'odenring',
+    developmentStatus: 'finished',
     title: '오든링',
     english: 'ODEN RING',
     tagline: '끝까지 살아남을 수 있겠어?',

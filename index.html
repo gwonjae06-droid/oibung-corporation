@@ -24,22 +24,18 @@
   <link rel="stylesheet" href="oibung-world.css?v=world-pixel-v1">
   <link rel="stylesheet" href="world-fullscreen.css?v=world-fullscreen-v1">
   <link rel="stylesheet" href="world-polish.css?v=world-polish-v1">
-  <link rel="stylesheet" href="world-interiors.css?v=world-interiors-v1">
+  <link rel="stylesheet" href="world-interiors.css?v=world-districts-v2">
   <!-- 3D actor meshes are now local; only the 3D engine loads externally. -->
   <script src="gallery-display-mode.js?v=blackout-1"></script>
-  <script src="games.js?v=two-modes-1" defer></script>
+  <script src="games.js?v=world-districts-v2" defer></script>
   <script src="community-config.js" defer></script>
   <script src="app.js?v=continuous-hall-1" defer></script>
   <script type="module" src="community.js?v=gallery-polish-1"></script>
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="direct-gallery.js?v=direct-gallery-v1" defer></script>
-  <script src="world-cinematic-art.js?v=cinematic-art-v1" defer></script>
-  <script src="world-hd-architecture.js?v=cinematic-v2" defer></script>
-  <script src="world-cinematic-fx.js?v=cinematic-v2" defer></script>
-  <script src="world-visitor.js?v=world-polish-v1" defer></script>
-  <script src="world-interiors.js?v=world-interiors-v1" defer></script>
-  <script src="world-map-details.js?v=world-interiors-v1" defer></script>
-  <script src="oibung-world.js?v=world-interiors-v1" defer></script>
+  <script src="world-pixel-scenes.js?v=world-districts-v2" defer></script>
+  <script src="world-interiors.js?v=world-districts-v2" defer></script>
+  <script src="oibung-world.js?v=world-districts-v2" defer></script>
   <script src="world-fullscreen.js?v=world-polish-v1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
 </head>
@@ -121,7 +117,7 @@
               <span class="world-stage-logo">OIBUNG <b>WORLD</b></span>
               <span id="world-count">게임 월드를 여는 중…</span>
             </div>
-            <div class="world-guide-bubble" id="world-guide-bubble" role="status">오이붕 월드에 어서 오세요!</div>
+            <div class="world-guide-bubble" id="world-guide-bubble" role="status" hidden></div>
             <div class="world-stage-help">A · D / ← → 이동　·　E 입장　·　SPACE 점프</div>
           </div>
           <div class="world-controlbar">

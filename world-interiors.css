@@ -20,34 +20,38 @@
 }
 #games #world-interior-return:focus-visible{outline:3px solid #f9d58e;outline-offset:2px}
 #games .world-interior-info{
- --roomAccent:#d9b88d;
+ --roomAccent:#d9b88d;--roomInk:#202d34;--roomButton:#435d60;
  position:absolute;z-index:48;
  top:50%;left:50%;transform:translate(-50%,-50%);
  width:min(620px,calc(100% - 28px));
  max-height:min(78dvh,670px);overflow-y:auto;
- padding:clamp(18px,3.5vw,32px);
- background:#202d34f5;color:#f8eeda;
- border:3px solid var(--roomAccent);
- border-radius:3px;
- box-shadow:0 18px 55px #07121cbd,6px 6px 0 #090f13a6;
- backdrop-filter:blur(6px);
+ padding:clamp(20px,4vw,36px);
+ background:linear-gradient(180deg,transparent,var(--roomInk) 112px),
+   linear-gradient(90deg,var(--roomInk),transparent),var(--room-art) center top / 100% auto no-repeat,var(--roomInk);
+ image-rendering:pixelated;color:#f8eeda;
+ border:2px solid var(--roomAccent);
+ border-radius:0;
+ box-shadow:inset 0 0 0 3px var(--roomInk),inset 0 0 0 4px var(--roomAccent),
+   0 0 0 4px #10161e,7px 7px 0 3px #10161ec9;
  overscroll-behavior:contain;
 }
 #games .world-interior-info[hidden]{display:none!important}
 #games .world-info-close{
  position:absolute;right:11px;top:11px;
  display:grid;place-items:center;min-height:44px;min-width:44px;
- cursor:pointer;color:#ffe6c6;background:#39444c;
- border:2px solid var(--roomAccent);border-radius:2px;font:800 22px monospace;
+ cursor:pointer;color:#ffe6c6;background:var(--roomButton);
+ border:2px solid var(--roomAccent);border-radius:0;font:800 22px monospace;
 }
 #games .world-info-kicker{
  display:block;margin-right:50px;
- font:800 11px/1.5 monospace;letter-spacing:.1em;color:var(--roomAccent);
+ font:800 11px/1.5 'Noto Sans KR',system-ui,sans-serif;letter-spacing:.04em;color:var(--roomAccent);
+ text-shadow:1px 1px var(--roomInk),2px 2px var(--roomInk);
 }
 #games .world-interior-info h2{
  margin:9px 55px 15px 0!important;
  font:900 clamp(21px,4vw,30px)/1.4 'Noto Sans KR',system-ui,sans-serif!important;
  color:#fff0d9!important;letter-spacing:-.04em;
+ text-shadow:2px 2px var(--roomInk),3px 3px var(--roomInk);
 }
 #games .world-info-description{
  margin:0 0 15px!important;white-space:pre-line;
@@ -61,18 +65,49 @@
 #games .world-info-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 #games .world-info-actions button,#games .world-info-actions a{
  min-height:46px;display:flex;align-items:center;justify-content:center;
- border:2px solid var(--roomAccent);background:#465c53;color:#fff4e0;
+ border:2px solid var(--roomAccent);background:var(--roomButton);color:#fff4e0;
  padding:10px 15px;font:800 13px/1.4 'Noto Sans KR',system-ui,sans-serif;
- border-radius:2px;cursor:pointer;text-decoration:none;
+ border-radius:0;cursor:pointer;text-decoration:none;
+ box-shadow:inset -2px -2px 0 #0005,3px 3px 0 #0006;
 }
-#games .world-info-actions a{background:#896f4a}
+#games .world-info-actions a{background:var(--roomAccent);color:var(--roomInk)}
 #games .world-info-actions button:hover,#games .world-info-actions a:hover{filter:brightness(1.1)}
-#games .world-interior-info[data-theme="castle"]{--roomAccent:#e0a5a4}
-#games .world-interior-info[data-theme="arena"]{--roomAccent:#eecf93}
-#games .world-interior-info[data-theme="duel"]{--roomAccent:#c9b4dc}
-#games .world-interior-info[data-theme="tactics"]{--roomAccent:#b3d1b1}
-#games .world-interior-info[data-theme="cat"]{--roomAccent:#f2c0d8}
-#games .world-interior-info[data-theme="tower"]{--roomAccent:#d3b8eb}
+#games [data-room-theme="castle"],#games .world-interior-info[data-theme="castle"]{--roomAccent:#efa6a2;--roomInk:#2e1927;--roomButton:#713746}
+#games [data-room-theme="arena"],#games .world-interior-info[data-theme="arena"]{--roomAccent:#f3d591;--roomInk:#192d30;--roomButton:#26616a}
+#games [data-room-theme="duel"],#games .world-interior-info[data-theme="duel"]{--roomAccent:#d0b8ed;--roomInk:#20243d;--roomButton:#494879}
+#games [data-room-theme="tactics"],#games .world-interior-info[data-theme="tactics"]{--roomAccent:#c8d4a4;--roomInk:#223127;--roomButton:#475734}
+#games [data-room-theme="cat"],#games .world-interior-info[data-theme="cat"]{--roomAccent:#f6c0db;--roomInk:#3d223d;--roomButton:#7b4366}
+#games [data-room-theme="tower"],#games .world-interior-info[data-theme="tower"]{--roomAccent:#d8c4fa;--roomInk:#252039;--roomButton:#4d4873}
+#games [data-room-theme] .world-interior-hud{background:var(--roomInk,#202d34);border-color:var(--roomAccent,#d9b88d)}
+#games [data-room-theme] #world-interior-return{background:var(--roomButton,#435d60);border-color:var(--roomAccent,#d9b88d)}
+#games .world-room-markers{position:absolute;z-index:12;inset:0;pointer-events:none}
+#games .world-room-sign{
+ position:absolute;transform:translate(-50%,-100%);max-width:142px;
+ padding:5px 8px;color:#fff5df;background:var(--roomInk,#202d34);
+ border:2px solid var(--roomAccent,#d9b88d);box-shadow:2px 3px 0 #151322b0;
+ font:800 clamp(10px,1.2vw,12px)/1.35 'Noto Sans KR',system-ui,sans-serif;
+ text-align:center;white-space:nowrap;opacity:.86;
+}
+#games .world-room-sign.is-nearby{opacity:1;background:var(--roomButton,#435d60)}
+#games .world-district-directory{grid-column:1/-1;display:grid;gap:6px}
+#games .world-district-directory h3{margin:5px 0 2px;font-size:12px;color:#efcf9e;letter-spacing:.04em}
+#games .world-district-directory .world-directory-item{grid-template-columns:minmax(0,1fr) auto}
+#games #world-count[data-district="finished"]{color:#f7ca95}
+#games #world-count[data-district="released"]{color:#aeead4}
+#games #world-count[data-district="live_service"]{color:#afdafa}
+#games #world-count[data-district="in_development"]{color:#f2d496}
+#games #world-guide-bubble{
+ left:50%!important;top:calc(64px + env(safe-area-inset-top,0px))!important;
+ transform:translateX(-50%)!important;
+ width:max-content!important;max-width:min(450px,calc(100% - 28px))!important;
+ padding:7px 11px!important;border-radius:0!important;
+ border:2px solid #d8bf94!important;background:#202c36f5!important;color:#fff3dd!important;
+ font:700 clamp(11px,1.8vw,13px)/1.45 'Noto Sans KR',system-ui,sans-serif!important;
+ text-align:center;word-break:keep-all;
+}
+#games #world-guide-bubble::before{content:'안내 비서';margin-right:.65em;color:#f1cf96;white-space:nowrap}
+#games #world-guide-bubble::after{display:none!important}
+#games .is-world-interior #world-guide-bubble{top:calc(123px + env(safe-area-inset-top,0px))!important}
 #games .is-world-interior ~ .world-controlbar .world-enter:not(:disabled){
  background:#4e6055e8!important;
 }
@@ -87,6 +122,7 @@
  #games .world-interior-location{max-width:120px}
  #games #world-interior-return{min-height:34px;font-size:10px;padding:5px 8px}
  #games .world-interior-info{max-height:calc(100dvh - 55px);padding:21px 15px}
+ #games .is-world-interior #world-guide-bubble{top:calc(110px + env(safe-area-inset-top,0px))!important}
  #games .world-info-description{font-size:13px!important}
  #games .world-info-actions button,#games .world-info-actions a{font-size:12px;flex:1}
 }
@@ -96,4 +132,5 @@
   max-width:calc(100% - 175px);
  }
  #games .world-interior-info{max-height:calc(100dvh - 20px)}
+ #games .is-world-interior #world-guide-bubble{top:calc(58px + env(safe-area-inset-top,0px))!important}
 }
