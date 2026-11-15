@@ -24,6 +24,12 @@ const fs=require('node:fs/promises');
       const intro=await page.evaluate(()=>window.OIBUNG_WORLD.getState());
       assert.equal(intro.hdRenderer,true);
       assert.equal(intro.renderDensity,1);
+      // The first mobile screen previously contained no game building.
+      const ground=viewport.height-Math.max(43,Math.min(83,Math.round(viewport.height*.092)));
+      const scale=Math.min(1,Math.max(.24,(ground-39)/(intro.buildingHeights[0]+126)));
+      const firstBuildingLeft=525+intro.buildingWidths[0]*.5-(intro.buildingWidths[0]+170)*scale*.5-intro.camera;
+      assert.ok(firstBuildingLeft<viewport.width*.80,
+        'Game buildings must be visible as soon as the world opens: '+firstBuildingLeft);
       assert.equal(await page.locator('#world-menu-toggle').isVisible(),true);
       const area=await stage.boundingBox();
       assert.ok(Math.abs(area.x)<2&&Math.abs(area.y)<2&&Math.abs(area.width-viewport.width)<2&&Math.abs(area.height-viewport.height)<2);
