@@ -652,7 +652,6 @@
     ctx.save();
     ctx.translate(cx,ground+yOffset-Math.round(bob*scale));
     ctx.scale((direction<0?-1:1)*scale,scale);
-    const bx=(x,y,w,h,color)=>rect(bx.x??x,y,w,h,color);
     // Metallic leather boots, synchronized asymmetric leg motion.
     const lead=Math.round(stride*8),trail=-lead;
     rect(-15+lead,-29,12,34,'#253344');
