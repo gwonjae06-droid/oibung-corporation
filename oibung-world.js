@@ -800,15 +800,21 @@
     for(const b of buildings)drawBuilding(b);
     drawGround();
     drawCurator(curator.x,groundY,curator.direction,curator.walk);
-    drawPlayerHD(player.x,groundY,player.direction,player.walk,player.y);
+    // Reuse the cached, proportional visitor animation; retain the old
+    // function solely as a safe fallback if artwork cannot initialize.
+    if(window.OIBUNG_WORLD_VISITOR)window.OIBUNG_WORLD_VISITOR.render(ctx,{
+      x:player.x,ground:groundY,camera,direction:player.direction,
+      moving:player.walk>.1,elapsed,yOffset:player.y,
+      scale:Math.max(.82,Math.min(1.13,H/750))
+    });
+    else drawPlayerHD(player.x,groundY,player.direction,player.walk,player.y);
     // Guide stays visible with a caption at stops, without blocking entrances.
     const guideX=(curator.x-camera)*LOGICAL_PIXEL_SIZE;
     guideBubble.style.left=Math.round(Math.min(stage.clientWidth-80,Math.max(80,guideX)))+'px';
     const bubbleY=(groundY-Math.min(164,H*.20))*LOGICAL_PIXEL_SIZE;
-    guideBubble.style.top=Math.round(Math.max(67,bubbleY-54))+'px';
-    if(guideTextUntil<elapsed&&nearest<0&&Math.abs(player.vx)<1){
-      announce('게임 건물 앞에 서서 E를 누르면 작품 설명을 볼 수 있어요.',5.5);
-    }
+    guideBubble.style.top=Math.round(Math.max(69,bubbleY-54))+'px';
+    // Do not endlessly repeat the same subtitle across the scenery.
+    guideBubble.hidden=elapsed>guideTextUntil;
   }
   function update(dt){
     elapsed+=dt;
@@ -840,8 +846,14 @@
   function frame(timestamp){
     const delta=lastFrame?Math.min(.043,(timestamp-lastFrame)/1000):.016;
     lastFrame=timestamp;
-    if(canRun())update(delta);
-    render();
+    if(canRun()){
+      update(delta);
+      render();
+    }else{
+      // Menus and dialogs keep the last painted scene; do not waste CPU
+      // redrawing architecture and hundreds of background pixels.
+      keys.left=false;keys.right=false;player.vx=0;
+    }
     frameId=requestAnimationFrame(frame);
   }
   // Cap all world effects to a single Canvas rather than hundreds of DOM layers.
@@ -851,7 +863,7 @@
   rebuild();resize();
   frameId=requestAnimationFrame(frame);
   window.OIBUNG_WORLD={
-    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),renderDensity:LOGICAL_PIXEL_SIZE,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!guideImages.neutral}),
+    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),skyColor:skyTransition().colors.sky,guideBubbleVisible:!guideBubble.hidden,renderDensity:LOGICAL_PIXEL_SIZE,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!guideImages.neutral}),
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
     enter,refresh:rebuild,jump,movement
   };
