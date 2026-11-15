@@ -109,36 +109,58 @@
     return layer;
   }
 
-  // Scale2x keeps diagonal pixel clusters defined on high-density displays.
+  // Three real texture samples per source pixel. Scale3x resolves diagonal
+  // clusters without blurring the pixel-art palette. Bounded LRU avoids
+  // allocating all sixteen large frames for both guides on mobile.
   function detailedFrame(form,frame,shape) {
-    if(!hdFrames.has(form))hdFrames.set(form,[]);
+    if(!hdFrames.has(form))hdFrames.set(form,new Map());
     const cache=hdFrames.get(form);
-    if(cache[frame])return cache[frame];
-    const layer=document.createElement('canvas');
-    layer.width=frameWidth*2;layer.height=frameHeight*2;
-    const pixels=layer.getContext('2d');
+    if(cache.has(frame)){
+      const cached=cache.get(frame);
+      cache.delete(frame);cache.set(frame,cached);
+      return cached;
+    }
+    const source=document.createElement('canvas');
+    source.width=frameWidth;source.height=frameHeight;
+    const src=source.getContext('2d',{willReadFrequently:true});
+    src.imageSmoothingEnabled=false;
     if(form===forms.devil){
-      pixels.drawImage(form.art,(frame%4)*frameWidth,Math.floor(frame/4)*frameHeight,
+      src.drawImage(form.art,(frame%4)*frameWidth,Math.floor(frame/4)*frameHeight,
         frameWidth,frameHeight,0,0,frameWidth,frameHeight);
-    }else pixels.drawImage(fitFrame(frame,shape,form),0,0);
-    const input=new Uint32Array(pixels.getImageData(0,0,frameWidth,frameHeight).data.buffer);
+    }else src.drawImage(fitFrame(frame,shape,form),0,0);
+    const input=new Uint32Array(src.getImageData(0,0,frameWidth,frameHeight).data.buffer);
+    const layer=document.createElement('canvas');
+    layer.width=frameWidth*3;layer.height=frameHeight*3;
+    const pixels=layer.getContext('2d');
     const output=pixels.createImageData(layer.width,layer.height);
     const result=new Uint32Array(output.data.buffer);
     for(let y=0;y<frameHeight;y++){
       for(let x=0;x<frameWidth;x++){
-        const i=y*frameWidth+x,e=input[i];
-        const b=input[y?i-frameWidth:i],h=input[y<frameHeight-1?i+frameWidth:i];
-        const d=input[x?i-1:i],f=input[x<frameWidth-1?i+1:i];
-        const j=y*2*layer.width+x*2;
-        const edge=b!==h&&d!==f;
-        result[j]=edge&&d===b?d:e;
-        result[j+1]=edge&&b===f?f:e;
-        result[j+layer.width]=edge&&d===h?d:e;
-        result[j+layer.width+1]=edge&&h===f?f:e;
+        const i=y*frameWidth+x,E=input[i];
+        const top=y>0,low=y<frameHeight-1,left=x>0,right=x<frameWidth-1;
+        const A=input[top&&left?i-frameWidth-1:i],B=input[top?i-frameWidth:i],
+          C=input[top&&right?i-frameWidth+1:i],D=input[left?i-1:i],
+          F=input[right?i+1:i],G=input[low&&left?i+frameWidth-1:i],
+          H=input[low?i+frameWidth:i],I=input[low&&right?i+frameWidth+1:i];
+        const j=(y*3)*layer.width+x*3;
+        if(B!==H&&D!==F){
+          result[j]=D===B?D:E;
+          result[j+1]=((D===B&&E!==C)||(B===F&&E!==A))?B:E;
+          result[j+2]=B===F?F:E;
+          result[j+layer.width]=((D===B&&E!==G)||(D===H&&E!==A))?D:E;
+          result[j+layer.width+1]=E;
+          result[j+layer.width+2]=((B===F&&E!==I)||(H===F&&E!==C))?F:E;
+          result[j+layer.width*2]=D===H?D:E;
+          result[j+layer.width*2+1]=((D===H&&E!==I)||(H===F&&E!==G))?H:E;
+          result[j+layer.width*2+2]=H===F?F:E;
+        }else{
+          for(let row=0;row<3;row++)result.fill(E,j+row*layer.width,j+row*layer.width+3);
+        }
       }
     }
     pixels.putImageData(output,0,0);
-    cache[frame]=layer;
+    cache.set(frame,layer);
+    if(cache.size>10)cache.delete(cache.keys().next().value);
     return layer;
   }
 
@@ -146,8 +168,16 @@
     delete guide.pose;
     Object.assign(guide,{x,y:0,speed:0,facing:1,turn:1,side:-1,phase:0,stride:0,
       affection:0,still:0,cooldown:.7,mode:'follow',timer:0,flight:null,followJump:0,
-      landed:0,playerGrounded:true,gesture:null,gestureTime:0,gestureWait:.68,nextGesture:0});
+      landed:0,playerGrounded:true,gesture:null,gestureTime:0,gestureWait:.68,nextGesture:0,
+      headAngle:0,headAngleVelocity:0,headBob:0,headBobVelocity:0,
+      look:0,lookVelocity:0,wingAngle:0,wingAngleVelocity:0});
     return guide;
+  }
+  function spring(guide,key,target,stiffness,damping,dt) {
+    const velocityKey=key+'Velocity';
+    let velocity=guide[velocityKey]+((target-guide[key])*stiffness-guide[velocityKey]*damping)*dt;
+    guide[key]+=velocity*dt;
+    guide[velocityKey]=velocity;
   }
   function updateGesture(guide,watching,dt,reduced) {
     if(reduced||!watching||guide.mode!=='follow'||guide.flight||guide.followJump){
@@ -240,6 +270,20 @@
     guide.stride=approach(guide.stride,reduced?0:gait,13,dt);
     const hearts=watching&&guide.still>.36||guide.mode==='hop'||guide.mode==='admire';
     guide.affection=approach(guide.affection,hearts?1:0,12,dt);
+    // Continuous secondary rig follows velocity, gaze and breathing,
+    // rather than snapping every time the sprite-sheet frame changes.
+    const motionDt=Math.min(dt,1/30);
+    const tilt=reduced?0:clamp(-guide.speed*.00011,-.05,.05)
+      +Math.sin(guide.timer*(groundedGuide?1.55:1.28))*.014;
+    const bounce=reduced?0:-Math.abs(Math.sin(guide.phase*Math.PI*2))*guide.stride*1.7
+      +Math.sin(guide.timer*2.25)*.7;
+    const gaze=reduced?0:clamp(distance/Math.max(gap*3,100),-1,1)*1.6;
+    const wing=reduced?0:Math.sin(guide.timer*(groundedGuide?4.1:3.4))*.12
+      +guide.stride*.04;
+    spring(guide,'headAngle',tilt,105,20,motionDt);
+    spring(guide,'headBob',bounce,80,17,motionDt);
+    spring(guide,'look',gaze,75,17,motionDt);
+    spring(guide,'wingAngle',wing,74,16,motionDt);
     updateGesture(guide,watching,dt,reduced);
   }
 
@@ -371,14 +415,52 @@
     }
     ctx.restore();
   }
-  function drawPose(ctx,form,frame,guide,elapsed,reduced,winking) {
+  function drawBody(ctx,form,frame) {
+    const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
+    const from=clamp(Math.floor(shape.output[2]-4),0,frameHeight-1);
+    const layer=detailedFrame(form,frame,shape);
+    ctx.drawImage(layer,0,from*3,layer.width,(frameHeight-from)*3,
+      0,from,frameWidth,frameHeight-from);
+  }
+
+  // Independent neck-pivot sprite rig: the face stays stable during walking
+  // while the torso, wings, expressions and head retain separate motion.
+  function drawHead(ctx,form,frame,guide,elapsed,reduced,winking) {
     const isDevil=form===forms.devil;
     const shape=(isDevil?devilShapes:winterShapes)[frame];
     const eyes=isDevil?devilEyes:eyeAnchors;
-    drawWings(ctx,form,shape,reduced?0:Math.sin(elapsed*(isDevil?4.6:3.7))*.15);
-    ctx.drawImage(detailedFrame(form,frame,shape),0,0,frameWidth,frameHeight);
+    const layer=detailedFrame(form,frame,shape);
+    const cut=clamp(Math.ceil(shape.output[2]+7),1,frameHeight);
+    const pivotX=shape.pivot,pivotY=shape.output[2]+4;
+    ctx.save();
+    ctx.translate(pivotX+(reduced?0:guide.look),pivotY+(reduced?0:guide.headBob));
+    ctx.rotate(reduced?0:guide.headAngle);
+    ctx.translate(-pivotX,-pivotY);
+    ctx.drawImage(layer,0,0,layer.width,cut*3,0,0,frameWidth,cut);
     drawCrown(ctx,form,shape);
     express(ctx,guide,frame,elapsed,reduced,shape,eyes,winking);
+    // Subtle asynchronous blink on both guides, including the otherwise
+    // static devil idle pose. Eye highlights are drawn at native sub-pixels.
+    if(!reduced&&eyes[frame]){
+      const eyeList=eyes[frame];
+      const phase=(elapsed+(isDevil?1.65:.35))%(isDevil?4.3:3.85);
+      const blink=clamp(1-Math.abs(phase-.15)/.15,0,1);
+      for(const [x,y,size] of eyeList){
+        const [eyeX,eyeY]=featurePoint(shape,x,y);
+        if(blink>.1){
+          ctx.globalAlpha=blink;
+          ctx.fillStyle=isDevil?'#bd8eaa':'#ead4dc';
+          ctx.fillRect(eyeX-size-1,eyeY-size*.5,size*2+2,size*1.5);
+          ctx.fillStyle=isDevil?'#542c41':'#70516b';
+          ctx.fillRect(eyeX-size,eyeY+.5,size*2,1);
+          ctx.globalAlpha=1;
+        }else if(guide.affection<.5){
+          ctx.fillStyle='rgba(255,249,247,.7)';
+          ctx.fillRect(eyeX+.2,eyeY-1,.8,.8);
+        }
+      }
+    }
+    ctx.restore();
   }
 
   function draw(ctx,guide,{center,groundY,height,elapsed,reduced,formId}) {
@@ -394,7 +476,9 @@
       pose.frame=frame;
       pose.since=elapsed;
     }
-    const transition=guide.stride>.20?clamp(8/Math.max(1,Math.abs(guide.speed)),.016,.055):.105;
+    // Blend only the animated torso: whole-sprite crossfades used to make
+    // the head appear doubled and then snap when one pose disappeared.
+    const transition=guide.stride>.20?clamp(17/Math.max(1,Math.abs(guide.speed)),.06,.13):.16;
     const blend=ease(clamp((elapsed-pose.since)/transition,0,1));
     const isDevil=form===forms.devil;
     const shape=(isDevil?devilShapes:winterShapes)[frame];
@@ -408,7 +492,7 @@
     const step=reduced?0:Math.sin(cycle*2)*guide.stride*.009;
     const lean=gesture?.name==='beckon'?Math.sin(progress*Math.PI)**2*.025:0;
     ctx.save();
-    ctx.imageSmoothingEnabled=true;
+    ctx.imageSmoothingEnabled=false;
     ctx.translate(center,groundY+guide.y);
     ctx.scale(scale*direction*turnWidth,scale);
     ctx.rotate(reduced?0:Math.sin(cycle)*guide.stride*.012+lean);
@@ -417,14 +501,39 @@
       Math.sin(cycle)*guide.stride*.010;
     ctx.transform(1,0,sway,1,0,0);
     ctx.translate(-origin,-ground);
-    const winking=gesture?.name==='wink'&&progress>.31&&progress<.57;
-    if(!reduced&&blend<1&&pose.previous!==frame){
-      ctx.globalAlpha=1-blend;
-      drawPose(ctx,form,pose.previous,guide,elapsed,reduced,winking);
-      ctx.globalAlpha=blend;
+    drawWings(ctx,form,shape,reduced?0:guide.wingAngle);
+    const walking=!reduced&&guide.mode==='follow'&&!guide.flight&&!guide.followJump&&
+      !gesture&&guide.stride>.08;
+    if(walking){
+      // Blend adjacent cycle frames by fractional travel, instead of snapping
+      // at every seventh of a step. Fade the gait in/out as speed changes.
+      const walkPhase=guide.phase*walkFrames.length;
+      const walkIndex=Math.floor(walkPhase)%walkFrames.length;
+      const nextIndex=(walkIndex+1)%walkFrames.length;
+      const fraction=ease(walkPhase-Math.floor(walkPhase));
+      const gaitFade=ease(clamp((guide.stride-.08)/.32,0,1));
+      ctx.globalAlpha=1-gaitFade;
+      drawBody(ctx,form,0);
+      ctx.globalAlpha=gaitFade*(1-fraction);
+      drawBody(ctx,form,walkFrames[walkIndex]);
+      ctx.globalAlpha=gaitFade*fraction;
+      drawBody(ctx,form,walkFrames[nextIndex]);
+    }else{
+      const transitioning=!reduced&&blend<1&&pose.previous!==frame;
+      if(transitioning){
+        ctx.globalAlpha=1-blend;
+        drawBody(ctx,form,pose.previous);
+        ctx.globalAlpha=blend;
+      }
+      drawBody(ctx,form,frame);
     }
-    drawPose(ctx,form,frame,guide,elapsed,reduced,winking);
     ctx.globalAlpha=1;
+    // Keep the head registration stable during idle, turning and the gait.
+    // Only gestures and airborne silhouettes change the head source frame.
+    const stableHead=guide.mode==='follow'&&!guide.flight&&!guide.followJump&&!gesture;
+    const headFrame=stableHead?0:frame;
+    const winking=gesture?.name==='wink'&&progress>.31&&progress<.57;
+    drawHead(ctx,form,headFrame,guide,elapsed,reduced,winking);
     if(gesture)drawGestureEffect(ctx,gesture,progress,shape,eyes,frame);
     ctx.restore();
     return true;
