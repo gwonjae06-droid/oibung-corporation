@@ -10,12 +10,55 @@
 
   const frameWidth=188,frameHeight=194,ground=175,origin=91,standingHeight=161;
   // Distinct non-fading, joint-driven charm actions. No sprite opacity blends.
+  // Every action selects actual original pixel-art poses from the 4x4 atlas.
+  // The sprite's face, clothes, palette and proportions are never replaced.
   const gestures=[
-    {name:'wink',duration:1.32},
-    {name:'hair',duration:1.72},
-    {name:'kiss',duration:1.95}
+    {name:'wink',duration:1.45},{name:'hair',duration:1.9},
+    {name:'kiss',duration:2.05},{name:'shy',duration:1.9},
+    {name:'cheer',duration:1.72},{name:'pout',duration:1.8},
+    {name:'surprise',duration:1.45},{name:'stretch',duration:2.2},
+    {name:'wave',duration:1.85}
   ];
-  const devilGesture={name:'beckon',duration:2.65};
+  const devilGestures=[
+    {name:'beckon',duration:2.1},{name:'hair',duration:1.9},
+    {name:'kiss',duration:2.05},{name:'shy',duration:1.85},
+    {name:'cheer',duration:1.85},{name:'pout',duration:1.8},
+    {name:'surprise',duration:1.55},{name:'stretch',duration:2.1},
+    {name:'wave',duration:1.95}
+  ];
+  const pairGestures=[
+    {name:'pairWave',duration:2.25},
+    {name:'pairShy',duration:2.45},
+    {name:'pairCheer',duration:2.35}
+  ];
+  const actionFrames={
+    angel:{
+      wink:[0,13,13,13,0],hair:[0,12,13,13,0],
+      kiss:[0,13,14,13,0],shy:[0,13,13,13,0],
+      cheer:[0,14,14,14,0],pout:[0,12,13,12,0],
+      surprise:[0,14,14,14,0],stretch:[0,8,9,11,0],
+      wave:[0,9,9,9,0],pairWave:[0,9,9,9,0],
+      pairShy:[0,13,13,13,0],pairCheer:[0,14,14,14,0]
+    },
+    devil:{
+      beckon:[0,14,14,14,0],hair:[0,15,15,15,0],
+      kiss:[0,14,14,14,0],shy:[0,13,13,13,0],
+      cheer:[0,14,14,14,0],pout:[0,12,12,12,0],
+      surprise:[0,12,13,12,0],stretch:[0,15,15,15,0],
+      wave:[0,14,14,14,0],pairWave:[0,14,14,14,0],
+      pairShy:[0,13,13,13,0],pairCheer:[0,14,14,14,0]
+    }
+  };
+  function poseFrame(guide,formId,progress) {
+    if(guide.gesture){
+      const frames=actionFrames[formId][guide.gesture.name];
+      return frames[Math.min(frames.length-1,Math.floor(progress*frames.length))];
+    }
+    // Movement is a genuine eight-pose walk cycle, not idle art shaken by CSS.
+    if(!guide.flight&&guide.stride>.22&&Math.abs(guide.speed)>24)
+      return 1+Math.min(6,Math.floor(guide.phase*7));
+    return 0;
+  }
   const forms={
     angel:{name:'농',scale:.85,edge:'#66508b',wing:'#eeeaff',shade:'#b6a0dc',frames:[],art},
     devil:{name:'빵',scale:.98,edge:'#391925',wing:'#8e3959',shade:'#542544',art:devilArt}
@@ -23,8 +66,11 @@
   const hdFrames=new WeakMap();
   const formFor=id=>id==='devil'?forms.devil:forms.angel;
   const eyeAnchors={
-    0:[[95,56,2.4],[112,55,1.4]],12:[[95,56,2.4],[112,55,1.4]],
-    13:[[92,58,2.2],[108,61,1.45]],15:[[95,56,2.4],[111,55,1.4]]
+    0:[[95,56,2.4],[112,55,1.4]],8:[[95,71,2.4],[112,70,1.4]],
+    9:[[96,59,2.4],[112,57,1.4]],10:[[99,76,2.4],[116,75,1.4]],
+    11:[[95,67,2.4],[111,67,1.4]],12:[[95,56,2.4],[112,55,1.4]],
+    13:[[92,58,2.2],[108,61,1.45]],14:[[96,74,2.4],[113,73,1.4]],
+    15:[[95,56,2.4],[111,55,1.4]]
   };
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
   const ease=t=>t*t*(3-2*t);
@@ -66,7 +112,9 @@
   const devilEyes={
     0:[[91,33,1.7],[99,33,1.12]],
     12:[[91,26.5,1.7],[99,25.5,1.12]],
-    14:[[88.5,26.5,1.7],[97,26.5,1.12]]
+    13:[[90,33,1.7],[98,33,1.12]],
+    14:[[88.5,26.5,1.7],[97,26.5,1.12]],
+    15:[[89,32,1.7],[97,32,1.12]]
   };
 
   function mapRow(y,from,to) {
@@ -172,7 +220,7 @@
     delete guide.rigOutput;
     Object.assign(guide,{x,y:0,speed:0,facing:1,turn:1,side:-1,phase:0,stride:0,
       affection:0,still:0,cooldown:.7,mode:'follow',timer:0,flight:null,followJump:0,
-      landed:0,playerGrounded:true,gesture:null,gestureTime:0,gestureWait:.68,nextGesture:0,
+      landed:0,playerGrounded:true,gesture:null,gestureTime:0,gestureWait:2.8,nextGesture:0,
       headAngle:0,headAngleVelocity:0,headBob:0,headBobVelocity:0,
       look:0,lookVelocity:0,wingAngle:0,wingAngleVelocity:0,
       crouch:0,crouchVelocity:0});
@@ -213,9 +261,41 @@
         rightY:-37*reach+tease*4, leftX:-5*reach,
         tilt:-.12*reach,lean:.095*reach};
     }
+    const p=hold(t,.05,.26,.75,.98);
+    switch(gesture.name){
+      case 'shy': case 'pairShy':
+        return {...still,leftX:8*p,leftY:-17*p,rightX:-9*p,
+          rightY:-20*p,tilt:-.12*p,lean:-.075*p};
+      case 'cheer': case 'pairCheer':
+        return {...still,leftX:-12*p,leftY:-29*p,rightX:13*p,
+          rightY:-31*p,tilt:.065*p,lean:.08*p};
+      case 'pout':
+        return {...still,leftX:5*p,leftY:-14*p,rightX:-5*p,
+          rightY:-14*p,tilt:-.075*p,lean:-.035*p};
+      case 'surprise':
+        return {...still,leftX:-13*p,leftY:-20*p,rightX:14*p,
+          rightY:-20*p,tilt:.085*p,lean:-.065*p};
+      case 'stretch':
+        return {...still,leftX:-13*p,leftY:-35*p,rightX:12*p,
+          rightY:-34*p,tilt:.04*p,lean:.05*p};
+      case 'wave': case 'pairWave': {
+        const wave=Math.sin(t*Math.PI*11)*hold(t,.28,.34,.72,.86);
+        return {...still,rightX:(13+wave*6)*p,rightY:-33*p,
+          leftX:-3*p,tilt:.055*p,lean:.03*p};
+      }
+    }
     return still;
   }
 
+  function play(guide,name) {
+    const catalog=[...(guide.formId==='devil'?devilGestures:gestures),...pairGestures];
+    const action=catalog.find(item=>item.name===name);
+    if(!action||guide.gesture||guide.flight||guide.mode!=='follow')return false;
+    guide.gesture=action;
+    guide.gestureTime=0;
+    guide.gestureWait=2.5;
+    return true;
+  }
   function updateGesture(guide,watching,dt,reduced) {
     if(reduced||guide.flight||guide.followJump||guide.mode!=='follow'){
       guide.gesture=null;
@@ -230,17 +310,18 @@
       if(guide.gestureTime>=guide.gesture.duration){
         guide.gesture=null;
         guide.gestureTime=0;
-        guide.gestureWait=1.5;
+        guide.gestureWait=2.35;
       }
       return;
     }
     if(!watching)return;
     guide.gestureWait=Math.max(0,guide.gestureWait-dt);
     if(guide.gestureWait===0&&Math.abs(guide.speed)<48){
-      guide.gesture=guide.formId==='devil'?devilGesture:gestures[guide.nextGesture];
+      const catalog=guide.formId==='devil'?devilGestures:gestures;
+      guide.gesture=catalog[guide.nextGesture%catalog.length];
       guide.gestureTime=0;
-      guide.gestureWait=1.5;
-      if(guide.formId!=='devil')guide.nextGesture=(guide.nextGesture+1)%gestures.length;
+      guide.gestureWait=2.35;
+      guide.nextGesture=(guide.nextGesture+1)%catalog.length;
     }
   }
 
@@ -425,6 +506,32 @@
         ctx.restore();
       }
     }
+    const p=hold(t,.12,.29,.73,.94);
+    if(p<.02)return;
+    const name=gesture.name;
+    if(['cheer','pairCheer','surprise','pairWave','wave','stretch'].includes(name)){
+      ctx.save();ctx.globalAlpha=p;ctx.fillStyle='#fff4c1';
+      for(const [x,y,s] of [[58,30,3],[135,45,2],[121,15,2]]){
+        const rise=name==='cheer'||name==='pairCheer'?t*20:0;
+        ctx.fillRect(x-s/2,y-rise,s,s*3);
+        ctx.fillRect(x-s,y+1-rise,s*2+s,1);
+      }
+      ctx.restore();
+    }
+    if(name==='pairShy'||name==='shy'){
+      ctx.save();ctx.globalAlpha=.9*p;
+      const [x,y]=featurePoint(shape,114,69);
+      heart(ctx,x+11,y-13,5,'#f69dba');
+      ctx.restore();
+    }
+    if(name==='wave'||name==='pairWave'){
+      ctx.save();ctx.globalAlpha=p;
+      const [x,y]=featurePoint(shape,127,77);
+      ctx.strokeStyle='#ffe5ae';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(x+13,y-32);ctx.lineTo(x+19,y-40);
+      ctx.moveTo(x+18,y-17);ctx.lineTo(x+25,y-17);ctx.stroke();
+      ctx.restore();
+    }
   }
 
   function pixelShape(ctx,form,points,color) {
@@ -475,16 +582,22 @@
   // limb movement without introducing an expensive new atlas per frame.
   const rigSources=new WeakMap();
   const rigResolution=2;
-  function rigSource(form) {
-    if(rigSources.has(form))return rigSources.get(form);
+  function rigSource(form,frame) {
+    if(!rigSources.has(form))rigSources.set(form,new Map());
+    const cache=rigSources.get(form);
+    if(cache.has(frame)){
+      const cached=cache.get(frame);
+      cache.delete(frame);cache.set(frame,cached);
+      return cached;
+    }
     const isDevil=form===forms.devil;
-    const shape=(isDevil?devilShapes:winterShapes)[0];
+    const shape=(isDevil?devilShapes:winterShapes)[frame];
     const width=frameWidth*rigResolution,height=frameHeight*rigResolution;
     const canvas=document.createElement('canvas');
     canvas.width=width;canvas.height=height;
     const pixels=canvas.getContext('2d',{willReadFrequently:true});
     pixels.imageSmoothingEnabled=true;
-    pixels.drawImage(detailedFrame(form,0,shape),0,0,width,height);
+    pixels.drawImage(detailedFrame(form,frame,shape),0,0,width,height);
     const rgba=new Uint32Array(pixels.getImageData(0,0,width,height).data.buffer);
     const lArm=new Float32Array(width),rArm=new Float32Array(width);
     const lLeg=new Float32Array(width),rLeg=new Float32Array(width);
@@ -501,19 +614,20 @@
     }
     const source={width,height,rgba,lArm,rArm,lLeg,rLeg,neck:shape.output[2],
       isDevil};
-    rigSources.set(form,source);
+    cache.set(frame,source);
+    if(cache.size>10)cache.delete(cache.keys().next().value);
     return source;
   }
-  function drawBody(ctx,form,guide,elapsed,reduced,gesture,progress) {
-    const shape=(form===forms.devil?devilShapes:winterShapes)[0];
+  function drawBody(ctx,form,frame,guide,elapsed,reduced,gesture,progress) {
+    const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
     const from=clamp(Math.floor(shape.output[2]-4),0,frameHeight-1);
     if(reduced){
-      const layer=detailedFrame(form,0,shape);
+      const layer=detailedFrame(form,frame,shape);
       ctx.drawImage(layer,0,from*3,layer.width,(frameHeight-from)*3,
         0,from,frameWidth,frameHeight-from);
       return;
     }
-    const source=rigSource(form);
+    const source=rigSource(form,frame);
     if(!guide.rigCanvas){
       guide.rigCanvas=document.createElement('canvas');
       guide.rigCanvas.width=source.width;
@@ -533,6 +647,10 @@
     const action=flirtPose(gesture,progress);
     const crouch=clamp(guide.crouch,0,1);
     const start=from*rigResolution;
+    // Animate the head at display FPS; cap expensive per-pixel body deformation
+    // around 36 FPS on mobile, without fading or scaling the sprite frames.
+    if(guide.rigFrame!==frame||elapsed-(guide.rigStamp??-1)>1/36){
+      guide.rigFrame=frame;guide.rigStamp=elapsed;
     for(let y=start;y<height;y++){
       const py=y/rigResolution;
       // Deformation envelopes taper to zero at each joint. The source
@@ -562,6 +680,7 @@
     }
     // Upper rows are unused by the independently drawn head.
     guide.rigContext.putImageData(guide.rigImage,0,0,0,start,width,height-start);
+    }
     // Filter only the subpixel-deformed body; preserve nearest-neighbour
     // pixels on the face and high-resolution eye details.
     ctx.imageSmoothingEnabled=true;
@@ -570,6 +689,34 @@
     ctx.imageSmoothingEnabled=false;
   }
 
+  function drawEmotion(ctx,guide,shape,frame,eyes,gesture,progress) {
+    if(!gesture)return;
+    const strength=hold(progress,.13,.3,.74,.97);
+    if(strength<.02)return;
+    const points=eyes[frame]||eyes[0];
+    if(!points)return;
+    const left=featurePoint(shape,points[0][0],points[0][1]);
+    const right=featurePoint(shape,points[1][0],points[1][1]);
+    const name=gesture.name;
+    ctx.save();ctx.globalAlpha=strength;
+    if(name==='shy'||name==='pairShy'||name==='kiss'){
+      ctx.fillStyle='#e87393';
+      for(const [x,y] of [left,right]){
+        ctx.fillRect(x-7,y+7,5,2);ctx.fillRect(x-5,y+10,3,1);
+      }
+    }else if(name==='pout'){
+      ctx.fillStyle='#c27679';
+      ctx.fillRect(left[0]-7,left[1]-3,6,2);
+      ctx.fillRect(right[0]-5,right[1]-3,6,2);
+      const mouth=featurePoint(shape,101,79);
+      ctx.fillStyle='#7e3c49';ctx.fillRect(mouth[0],mouth[1],3,2);
+    }else if(name==='surprise'){
+      const mouth=featurePoint(shape,102,80);
+      ctx.fillStyle='#653b49';ctx.fillRect(mouth[0],mouth[1]-2,4,5);
+      ctx.fillStyle='#f2b49e';ctx.fillRect(mouth[0]+1,mouth[1]+2,2,1);
+    }
+    ctx.restore();
+  }
   // Independent neck-pivot sprite rig: the face stays stable during walking
   // while the torso, wings, expressions and head retain separate motion.
   function drawHead(ctx,form,frame,guide,elapsed,reduced,winking) {
@@ -586,6 +733,8 @@
     ctx.drawImage(layer,0,0,layer.width,cut*3,0,0,frameWidth,cut);
     drawCrown(ctx,form,shape);
     express(ctx,guide,frame,elapsed,reduced,shape,eyes,winking);
+    if(!reduced)drawEmotion(ctx,guide,shape,frame,eyes,guide.gesture,
+      guide.gesture?clamp(guide.gestureTime/guide.gesture.duration,0,1):0);
     // Subtle asynchronous blink on both guides, including the otherwise
     // static devil idle pose. Eye highlights are drawn at native sub-pixels.
     if(!reduced&&eyes[frame]){
@@ -615,9 +764,9 @@
     const form=formFor(formId);
     const gesture=!reduced?guide.gesture:null;
     const progress=gesture?clamp(guide.gestureTime/gesture.duration,0,1):0;
-    // Every animation uses the same portrait and outfit pixels. Motion is
-    // driven by the continuous rig, not swapping or fading between poses.
-    const frame=0;
+    // Use the approved hand-drawn poses for actual walking and expressive
+    // gestures, while preserving the original portrait and outfit.
+    const frame=reduced?0:poseFrame(guide,formId,progress);
     const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
     const eyes=form===forms.devil?devilEyes:eyeAnchors;
     const scale=height/standingHeight;
@@ -640,13 +789,13 @@
     ctx.transform(1,0,sway,1,0,0);
     ctx.translate(-origin,-ground);
     drawWings(ctx,form,shape,reduced?0:guide.wingAngle);
-    drawBody(ctx,form,guide,elapsed,reduced,gesture,progress);
+    drawBody(ctx,form,frame,guide,elapsed,reduced,gesture,progress);
     const winking=gesture?.name==='wink'&&progress>.31&&progress<.57;
-    drawHead(ctx,form,0,guide,elapsed,reduced,winking);
-    if(gesture)drawGestureEffect(ctx,gesture,progress,shape,eyes,0);
+    drawHead(ctx,form,frame,guide,elapsed,reduced,winking);
+    if(gesture)drawGestureEffect(ctx,gesture,progress,shape,eyes,frame);
     ctx.restore();
     return true;
   }
 
-  window.OIBUNG_CURATOR={ready,reset,update,draw,formFor};
+  window.OIBUNG_CURATOR={ready,reset,update,draw,play,formFor};
 })();
