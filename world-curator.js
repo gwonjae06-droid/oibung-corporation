@@ -119,7 +119,7 @@
     }
   }
 
-  function update(guide,{dt,player,limit,gap,height,reduced}) {
+  function update(guide,{dt,player,limit,gap,height,reduced,targetX,allowHop=true,jumpDelay=.11}) {
     const distance=player.x-guide.x;
     const close=Math.abs(distance)<gap+44;
     const watching=player.onGround&&Math.abs(player.vx)<13&&close;
@@ -129,7 +129,7 @@
     guide.still=watching?guide.still+dt:0;
     guide.timer+=dt;
     if(player.onGround!==guide.playerGrounded){
-      if(!player.onGround&&close&&!reduced&&guide.mode!=='hop')guide.followJump=.11;
+      if(!player.onGround&&!reduced&&guide.mode!=='hop'&&(close||targetX!==undefined))guide.followJump=jumpDelay;
       guide.playerGrounded=player.onGround;
     }
     if(guide.mode==='charge'&&!watching){
@@ -137,7 +137,7 @@
       guide.cooldown=2;
     }
     if(guide.mode==='admire'&&(!watching||guide.timer>.85))guide.mode='follow';
-    if(guide.mode==='follow'&&guide.still>1.25&&guide.cooldown===0&&!guide.flight&&!guide.followJump&&!guide.gesture){
+    if(allowHop&&guide.mode==='follow'&&guide.still>1.25&&guide.cooldown===0&&!guide.flight&&!guide.followJump&&!guide.gesture){
       guide.mode=reduced?'admire':'charge';
       guide.timer=0;
       guide.cooldown=11;
@@ -158,7 +158,8 @@
 
     if(Math.abs(distance)>20)guide.side=distance>0?-1:1;
     const restingGap=watching&&guide.cooldown>9.8?gap*.65:gap;
-    const target=clamp(player.x+guide.side*restingGap,20,limit-20);
+    const slot=targetX===undefined?guide.side*gap:targetX-player.x;
+    const target=clamp(player.x+slot*restingGap/gap,20,limit-20);
     const walkTarget=guide.mode==='charge'||guide.mode==='hop'?guide.x:target;
     guide.speed=approach(guide.speed,clamp((walkTarget-guide.x)*8,-415,415),11,dt);
     if(guide.flight){

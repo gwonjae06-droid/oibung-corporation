@@ -57,17 +57,36 @@
   let W=640,H=330,groundY=276,worldEnd=1550,camera=0;
   let lastFrame=0,elapsed=0,frameId=0,paused=false;
   let player={x:165,y:0,vx:0,vy:0,direction:1,walk:0,onGround:true};
-  const curator=curatorMotion.reset({},111);
+  const guides=['angel','devil'].map(formId=>({formId,state:curatorMotion.reset({},165)}));
   let curatorForm='angel';
   try{
     if(localStorage.getItem('oibung-world-guide')==='devil')curatorForm='devil';
   }catch{}
   if(guideSelect)guideSelect.value=curatorForm;
+  const speakingGuide=()=>guides[curatorForm==='devil'?1:0];
   let keys={left:false,right:false};
   let guideTextUntil=0;
   let didInitialSpawn=false;
   let previousInteriorObject=null;
   let interiorOrigin=null;
+
+  function guideSlots(limit){
+    const gap=Math.min(curatorGap(),Math.max(58,Math.round(W*.25)));
+    let first=player.x-gap,second=player.x+gap;
+    if(first<20){first=player.x+gap;second=first+gap;}
+    else if(second>limit-20){second=player.x-gap;first=second-gap;}
+    return [clamp(first,20,limit-20),clamp(second,20,limit-20)];
+  }
+  function resetGuides(positions=guideSlots(inRoom()?room().roomWidth():worldEnd)){
+    for(const [index,guide] of guides.entries()){
+      const facing=player.x>=positions[index]?1:-1;
+      curatorMotion.reset(guide.state,positions[index]);
+      guide.state.facing=facing;
+      guide.state.turn=facing;
+      guide.state.side=-facing;
+      guide.state.gestureWait+=index*.58;
+    }
+  }
 
   function canRun(){
     return !document.hidden&&window.OIBUNG_CURRENT_VIEW!=='reviews'&&
@@ -109,16 +128,16 @@
     const offset=replacement?entrance(replacement)-entrance(oldAnchor):0;
     if(wasInterior&&interiorOrigin&&offset){
       interiorOrigin.playerX+=offset;
-      interiorOrigin.curatorX+=offset;
+      interiorOrigin.guideX=interiorOrigin.guideX.map(x=>x+offset);
       interiorOrigin.camera+=offset;
     }else if(!wasInterior){
       if(!didInitialSpawn&&buildings.length){
         player.x=entrance(buildings[0])-105;
-        curatorMotion.reset(curator,player.x-curatorGap());
+        resetGuides();
         didInitialSpawn=true;
       }else if(offset){
         player.x+=offset;
-        curator.x+=offset;
+        for(const {state} of guides)state.x=clamp(state.x+offset,20,worldEnd-20);
       }
       player.x=clamp(player.x,18,worldEnd-35);
       camera=clamp(player.x-W*.49,0,Math.max(0,worldEnd-W));
@@ -175,7 +194,7 @@
     const roomScale=room()?.resize?.(W,H);
     if(inRoom()&&roomScale&&roomScale!==1){
       player.x*=roomScale;
-      curator.x*=roomScale;
+      for(const {state} of guides)state.x*=roomScale;
     }
     const extent=inRoom()?room().roomWidth():worldEnd;
     camera=Math.max(0,Math.min(Math.max(0,extent-W),player.x-W*.49));
@@ -204,7 +223,7 @@
     // Let the player stand beside the monumental door, not on top of it.
     player.x=b.x+b.width*.5-105;
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
-    curatorMotion.reset(curator,player.x-curatorGap());
+    resetGuides();
     const target=Math.max(0,Math.min(worldEnd-W,player.x-W*.5));
     camera=target;
     updateNearby(true);updateSigns();render();
@@ -268,7 +287,7 @@
     const origin=room().leave();
     interiorOrigin=null;
     player.x=clamp(origin?.playerX??player.x,18,worldEnd-35);
-    curatorMotion.reset(curator,origin?.curatorX??player.x-curatorGap());
+    resetGuides(origin?.guideX?.map(x=>clamp(x,20,worldEnd-20)));
     camera=clamp(origin?.camera??0,0,Math.max(0,worldEnd-W));
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
     previousInteriorObject=null;
@@ -286,11 +305,11 @@
     if(nearest<0)return false;
     const b=buildings[nearest];
     if(!b||!room())return false;
-    const origin={playerX:player.x,curatorX:curator.x,camera};
+    const origin={playerX:player.x,guideX:guides.map(guide=>guide.state.x),camera};
     if(!room().enter(b.game,b.style,origin))return false;
     interiorOrigin=origin;
     player.x=room().spawnX();
-    curatorMotion.reset(curator,player.x-curatorGap());
+    resetGuides();
     camera=clamp(player.x-W*.49,0,Math.max(0,room().roomWidth()-W));
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
     keys.left=false;keys.right=false;previousInteriorObject=null;
@@ -353,7 +372,7 @@
     if(room().nearest(player.x)?.id===object.id){
       return room().interact(object,{leave:leaveInterior});
     }
-    player.x=object.x-38;curatorMotion.reset(curator,player.x-curatorGap());
+    player.x=object.x-38;resetGuides();
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;keys.left=false;keys.right=false;
     camera=clamp(player.x-W*.49,0,Math.max(0,room().roomWidth()-W));
     updateNearby(true);render();stage.focus({preventScroll:true});
@@ -425,16 +444,19 @@
     ctx.fill();
   }
 
-  function curatorHeight(){return Math.round(clamp(H*.185,63,157)*curatorMotion.formFor(curatorForm).scale);}
+  function curatorHeight(formId){return Math.round(clamp(H*.185,63,157)*curatorMotion.formFor(formId).scale);}
 
-  function positionDialogue(center, top, spriteWidth){
+  function positionDialogue(center,top,spriteWidth,height,guide){
     const edge=14, gap=13;
     const leftEdge=center-Math.ceil(spriteWidth/2)-gap;
     const rightEdge=center+Math.ceil(spriteWidth/2)+gap;
     const leftSpace=leftEdge-edge;
     const rightSpace=W-edge-rightEdge;
     const maxWidth=W<620?164:224;
-    const preferredSide=curator.x<player.x?'left':'right';
+    const facingOut=guide.state.x<player.x?-1:1;
+    const preferredSide=facingOut<0?'left':'right';
+    const other=guides[guide===guides[0]?1:0];
+    const outwardDistance=(other.state.x-guide.state.x)*facingOut;
     const preferredSpace=preferredSide==='left'?leftSpace:rightSpace;
     const otherSpace=preferredSide==='left'?rightSpace:leftSpace;
     let side=preferredSpace>=maxWidth||preferredSpace>=otherSpace
@@ -442,8 +464,8 @@
     const space=side==='left'?leftSpace:rightSpace;
     const width=Math.round(Math.min(maxWidth,space>=100?space:W-2*edge));
     let x=side==='left'?leftEdge-width:rightEdge;
-    let y=top+Math.min(28,Math.round(curatorHeight()*.19));
-    if(space<100){
+    let y=top+Math.min(28,Math.round(height*.19));
+    if(space<100||(outwardDistance>0&&outwardDistance<maxWidth+spriteWidth)){
       side='above';
       x=clamp(center-width/2,edge,W-width-edge);
       y=top-14;
@@ -454,17 +476,20 @@
     guideBubble.style.setProperty('--guide-y',y+'px');
     guideBubble.style.setProperty('--guide-tail-x',Math.round(center-x)+'px');
   }
-  function drawCurator(){
-    const height=curatorHeight();
+  function drawCurator(guide){
+    const {state:curator,formId}=guide;
+    const height=curatorHeight(formId);
     const center=Math.round(curator.x-camera);
     const width=Math.round(height*.96);
     const top=groundY+curator.y-height;
     const visible=curatorMotion.ready()&&center>=-width&&center<=W+width;
-    guideBubble.hidden=!visible||!guideBubble.textContent||elapsed>guideTextUntil||center<0||center>W;
+    if(guide===speakingGuide()){
+      guideBubble.hidden=!visible||!guideBubble.textContent||elapsed>guideTextUntil||center<0||center>W;
+      if(!guideBubble.hidden)positionDialogue(center,top,width,height,guide);
+    }
     if(!visible)return;
-    if(!guideBubble.hidden)positionDialogue(center,top,width);
     footShadow(curator.x,groundY,Math.max(9,height*.115),.44+curator.y*.004);
-    curatorMotion.draw(ctx,curator,{center,groundY,height,elapsed,reduced:reduceMotion.matches,formId:curatorForm});
+    curatorMotion.draw(ctx,curator,{center,groundY,height,elapsed,reduced:reduceMotion.matches,formId});
   }
   function draw(){
     ctx.imageSmoothingEnabled=false;
@@ -478,8 +503,9 @@
       moving:player.walk>.1&&!reduceMotion.matches,airborne:!player.onGround,
       elapsed,yOffset:player.y,height
     });
-    if(curator.x<player.x){drawCurator();drawPlayer();}
-    else{drawPlayer();drawCurator();}
+    for(const guide of guides)if(guide.state.x<player.x)drawCurator(guide);
+    drawPlayer();
+    for(const guide of guides)if(guide.state.x>=player.x)drawCurator(guide);
     if(inRoom())room().drawForeground(ctx,view);
   }
   function update(dt){
@@ -496,7 +522,12 @@
       if(player.y>=0){player.y=0;player.vy=0;player.onGround=true;}
     }
     player.walk=Math.abs(player.vx)>10?1:0;
-    curatorMotion.update(curator,{dt,player,limit,gap:curatorGap(),height:curatorHeight(),reduced:reduceMotion.matches});
+    const slots=guideSlots(limit);
+    const speaker=speakingGuide();
+    for(const [index,guide] of guides.entries()){
+      curatorMotion.update(guide.state,{dt,player,limit,gap:curatorGap(),height:curatorHeight(guide.formId),
+        reduced:reduceMotion.matches,targetX:slots[index],allowHop:guide===speaker,jumpDelay:.11+index*.07});
+    }
     const maxCam=Math.max(0,limit-W);
     const follow=Math.max(0,Math.min(maxCam,player.x-W*.49));
     camera+=(follow-camera)*Math.min(1,dt*5.6);
@@ -525,7 +556,17 @@
   resize();rebuild();
   frameId=requestAnimationFrame(frame);
   window.OIBUNG_WORLD={
-    getState:()=>({inside:inRoom(),interior:room()?.state(),playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingWidths:buildings.map(b=>b.width),district:districts.findLast(d=>d.start<=player.x)?.status||null,districts:districts.map(d=>({...d})),buildingPositions:buildings.map(b=>({id:b.game.id,x:entrance(b),district:b.status})),guideBubbleVisible:!guideBubble.hidden,pixelArtReady:scenes.ready(nearest<0?(buildings[0]?.style||'studio'):buildings[nearest].style),renderDensity:LOGICAL_PIXEL_SIZE,curatorArtLoaded:curatorMotion.ready(),curatorHdAtlasReady:curatorMotion.ready(),curatorY:curator.y,curatorMode:curator.mode,curatorAffection:curator.affection}),
+    getState:()=>{
+      const curator=speakingGuide().state;
+      return {inside:inRoom(),interior:room()?.state(),playerX:player.x,curatorX:curator.x,camera,
+        nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,
+        buildingWidths:buildings.map(b=>b.width),district:districts.findLast(d=>d.start<=player.x)?.status||null,
+        districts:districts.map(d=>({...d})),buildingPositions:buildings.map(b=>({id:b.game.id,x:entrance(b),district:b.status})),
+        guideBubbleVisible:!guideBubble.hidden,pixelArtReady:scenes.ready(nearest<0?(buildings[0]?.style||'studio'):buildings[nearest].style),
+        renderDensity:LOGICAL_PIXEL_SIZE,curatorArtLoaded:curatorMotion.ready(),curatorHdAtlasReady:curatorMotion.ready(),
+        curatorY:curator.y,curatorMode:curator.mode,curatorAffection:curator.affection,curatorForm,
+        guides:guides.map(({formId,state})=>({formId,x:state.x,y:state.y}))};
+    },
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
     enter,leaveInterior,approachInterior,refresh:rebuild,jump,movement
   };
