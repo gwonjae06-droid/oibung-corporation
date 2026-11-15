@@ -7,6 +7,7 @@ on:
       - "oibung-world.js"
       - "index.html"
       - "tests/world-hd.cjs"
+      - "tests/world-fullscreen.cjs"
       - ".github/workflows/world-hd.yml"
   workflow_dispatch:
 
@@ -33,6 +34,7 @@ jobs:
           python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/world-hd.log 2>&1 &
           sleep 2
           node tests/world-hd.cjs
+          node tests/world-fullscreen.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
