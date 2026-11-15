@@ -22,6 +22,7 @@
   <link rel="stylesheet" href="gallery-display-modes.css?v=two-modes-1">
   <link rel="stylesheet" href="direct-gallery.css?v=direct-gallery-v1">
   <link rel="stylesheet" href="oibung-world.css?v=world-pixel-v1">
+  <link rel="stylesheet" href="world-fullscreen.css?v=world-fullscreen-v1">
   <!-- 3D actor meshes are now local; only the 3D engine loads externally. -->
   <script src="gallery-display-mode.js?v=blackout-1"></script>
   <script src="games.js?v=two-modes-1" defer></script>
@@ -31,6 +32,7 @@
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="direct-gallery.js?v=direct-gallery-v1" defer></script>
   <script src="oibung-world.js?v=world-pixel-v1" defer></script>
+  <script src="world-fullscreen.js?v=world-fullscreen-v1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
 </head>
 <body>
@@ -88,23 +90,24 @@
           <div><h1 id="games-title">오이붕 월드 <span class="world-head-english">OIBUNG WORLD</span></h1><p>친구들이 만든 게임들이 하나의 세계가 됐어. 직접 걸어가서 건물을 구경해 봐!</p></div>
           <button class="button-primary" type="button" data-open-editor>게임 등록하기 <svg aria-hidden="true"><use href="#i-arrow"/></svg></button>
         </div>
-        <section class="oibung-world" id="oibung-world" aria-labelledby="world-heading">
-          <div class="world-topbar">
-            <div class="world-heading">
-              <span class="world-kicker">PIXEL ADVENTURE · FRIENDS' GAMES</span>
-              <h2 id="world-heading">우리들의 게임이 사는 마을</h2>
-              <p>왼쪽·오른쪽으로 걸어가서 좋아하는 게임의 건물에 들어가 봐.</p>
-            </div>
-            <div class="world-toolbar">
-              <label class="world-select-label" for="world-jump-select">게임으로 바로 이동</label>
-              <select id="world-jump-select" aria-label="게임 건물 빠른 이동"><option value="">건물 바로 찾기</option></select>
-              <button type="button" class="world-toolbar-button" id="world-list-toggle" aria-expanded="false" aria-controls="world-directory">🗺️ 건물 목록</button>
-              <button type="button" class="world-toolbar-button world-review-button" id="direct-review-shortcut">후기 보기</button>
-            </div>
-          </div>
-          <div class="world-directory" id="world-directory" hidden aria-label="게임 건물 빠른 선택"></div>
+        <section class="oibung-world" id="oibung-world" aria-label="오이붕 월드 횡스크롤 게임">
           <div class="world-stage" id="oibung-world-stage" tabindex="0" aria-label="오이붕 월드 횡스크롤 게임. 방향키 좌우 이동, E 건물 입장, 스페이스 점프">
             <canvas id="oibung-world-canvas" role="img" aria-label="도트 그래픽 오이붕 월드 마을. 게임마다 고유한 거대한 건물이 있습니다."></canvas>
+            <button type="button" id="world-menu-toggle" class="world-hud-menu-toggle" aria-label="오이붕 월드 메뉴 열기" aria-expanded="false" aria-controls="world-overlay-menu">☰ <span>메뉴</span></button>
+            <aside class="world-overlay-menu" id="world-overlay-menu" aria-label="오이붕 월드 메뉴" hidden>
+              <div class="world-overlay-menu-header"><strong>OIBUNG WORLD · MENU</strong><button type="button" id="world-menu-close" aria-label="월드 메뉴 닫기">✕</button></div>
+              <div class="world-toolbar">
+                <label class="world-select-label" for="world-jump-select">바로 이동할 게임</label>
+                <select id="world-jump-select" aria-label="게임 건물 빠른 이동"><option value="">건물 바로 찾기</option></select>
+                <button type="button" class="world-toolbar-button" id="world-list-toggle" aria-expanded="false" aria-controls="world-directory">🏠 건물 목록</button>
+                <button type="button" class="world-toolbar-button" id="world-catalog-toggle">🔎 게임 검색·목록</button>
+                <button type="button" class="world-toolbar-button world-review-button" id="direct-review-shortcut">★ 게임 후기</button>
+                <button type="button" class="world-toolbar-button" data-open-editor>＋ 게임 등록</button>
+                <button type="button" class="world-toolbar-button" id="world-theme-toggle">◐ 밝기 변경</button>
+              </div>
+              <div class="world-directory" id="world-directory" hidden aria-label="게임 건물 빠른 선택"></div>
+              <p class="world-menu-hint">← → 이동 · E 건물 입장 · SPACE 점프</p>
+            </aside>
             <div class="world-signs" id="world-signs"></div>
             <div class="world-stage-stats">
               <span class="world-stage-logo">OIBUNG <b>WORLD</b></span>
