@@ -411,7 +411,7 @@
     ctx.fill();
   }
 
-  function curatorHeight(){return Math.round(clamp(H*.23,74,201));}
+  function curatorHeight(){return Math.round(clamp(H*.205,70,185));}
 
   function positionDialogue(center, top, spriteWidth){
     const edge=14, gap=13;
@@ -443,13 +443,13 @@
   function drawCurator(){
     const height=curatorHeight();
     const center=Math.round(curator.x-camera);
-    const width=Math.round(height*.39);
+    const width=Math.round(height*.71);
     const top=groundY+curator.y-height;
     const visible=curatorMotion.ready()&&center>=-width&&center<=W+width;
     guideBubble.hidden=!visible||!guideBubble.textContent||elapsed>guideTextUntil||center<0||center>W;
     if(!visible)return;
     if(!guideBubble.hidden)positionDialogue(center,top,width);
-    footShadow(curator.x,groundY,Math.max(9,width*.26),.44+curator.y*.004);
+    footShadow(curator.x,groundY,Math.max(9,height*.115),.44+curator.y*.004);
     curatorMotion.draw(ctx,curator,{center,groundY,height,elapsed,reduced:reduceMotion.matches});
   }
   function draw(){
