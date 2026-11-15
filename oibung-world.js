@@ -25,10 +25,12 @@
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
   if (!ctx) return;
 
-  const LOGICAL_PIXEL_SIZE = 2;
-  const MOVE_SPEED = 145;
-  const BUILDING_SPACING = 300;
-  const FIRST_BUILDING = 290;
+  // A native logical pixel per CSS pixel gives four times the pixel density
+  // of the previous 2x 2D canvas. Repeated masonry is cached in HD sprites.
+  const LOGICAL_PIXEL_SIZE = 1;
+  const MOVE_SPEED = 255;
+  const BUILDING_SPACING = 930;
+  const FIRST_BUILDING = 525;
   const GRAVITY = 720;
   const colors = {
     castle: {sky:'#392b50',far:'#65546a',facade:'#4d3948',wall:'#75616b',roof:'#342639',accent:'#e66e73',trim:'#d9a57a',window:'#e7a48b'},
@@ -127,10 +129,11 @@
     games=next;
     buildings=next.map((game,i)=>{
       const style=themeOf(game,i);
-      const width=(style==='castle'?191:style==='arena'?198:style==='tactics'?186:177);
-      return {game,index:i,x:FIRST_BUILDING+i*BUILDING_SPACING,width,height:style==='castle'?211:style==='arena'?174:style==='tower'?213:184,style,seed:hash(game.id)};
+      const dimensions={castle:[640,835],arena:[730,700],duel:[645,755],tactics:[680,770],cat:[650,720],studio:[650,740],tower:[630,850]};
+      const [width,height]=dimensions[style]||dimensions.studio;
+      return {game,index:i,x:FIRST_BUILDING+i*BUILDING_SPACING,width,height,style,seed:hash(game.id)};
     });
-    worldEnd=FIRST_BUILDING+next.length*BUILDING_SPACING+210;
+    worldEnd=FIRST_BUILDING+next.length*BUILDING_SPACING+390;
     if(justWarped&&oldId){
       const b=buildings.find(item=>item.game.id===oldId);
       if(b)player.x=b.x+b.width*.5;
@@ -165,16 +168,16 @@
   }
   function resize(){
     const size=stage.getBoundingClientRect();
-    // One logical pixel corresponds to two CSS pixels at all DPRs.
+    // Pixel-perfect internal rendering at full CSS resolution.
     W=Math.max(160,Math.floor(size.width/LOGICAL_PIXEL_SIZE));
     H=Math.max(130,Math.floor(size.height/LOGICAL_PIXEL_SIZE));
-    groundY=H-37;
+    groundY=H-Math.max(43,Math.min(83,Math.round(H*.092)));
     canvas.width=W;canvas.height=H;
     ctx.imageSmoothingEnabled=false;
     camera=Math.max(0,Math.min(camera,Math.max(0,worldEnd-W)));
     updateSigns();
   }
-  function buildingScale(b){return Math.min(1,Math.max(.34,(groundY-19)/(b.height+36)));}
+  function buildingScale(b){return Math.min(1,Math.max(.24,(groundY-39)/(b.height+126)));}
   function updateSigns(){
     signs.style.pointerEvents='none';
     for(let i=0;i<signButtons.length;i++){
@@ -185,7 +188,7 @@
       button.hidden=!visible;
       if(visible){
         button.style.left=Math.round(sx)+'px';
-        button.style.top=Math.round(Math.max(12,sy))+'px';
+        button.style.top=Math.round(Math.max(66,sy))+'px';
       }
     }
   }
@@ -333,8 +336,15 @@
       if(d<best){best=d;theme=b.style;}
     }
     const c=colors[theme];
-    for(let y=0;y<groundY;y+=3){
-      rect(0,y,W,3,mix(c.sky,c.far,(y/Math.max(1,groundY))*.78));
+    for(let y=0;y<groundY;y+=2){
+      rect(0,y,W,2,mix(c.sky,c.far,(y/Math.max(1,groundY))*.78));
+    }
+    // Layered film-grain sky haze drawn at native-pixel density.
+    for(let i=0;i<Math.min(1300,W*1.2);i++){
+      const x=(i*193+Math.floor(camera*.018))%W;
+      const y=(i*79+(i%7)*23)%Math.max(10,groundY-30);
+      const mod=(i*29+i*i*7)%97;
+      rect(x,y,1,mod%5===0?2:1,mod%3?'#ffffff11':'#0d19200a');
     }
     const sunX=Math.round(W*.75-camera*.02);
     if(theme==='castle'){
@@ -360,18 +370,42 @@
       rect(x+4-Math.floor(camera*.24)%37,groundY-elevation-10,11,10,mix(c.facade,c.sky,.24));
       rect(x+5-Math.floor(camera*.24)%37,groundY-elevation+12,4,5,c.window);
     }
+    // Distant rooflines add city scale, window lights and layered parallax.
+    for(let i=0;i<Math.ceil(W/37)+8;i++){
+      const xx=i*37-(Math.floor(camera*.13)%37)-25;
+      const v=(i*119+Math.floor(camera*.02))%103;
+      const yy=groundY-90-v;
+      rect(xx,yy,30,groundY-yy-18,mix(c.facade,c.sky,.30));
+      if(i%3===0){
+        polygon([[xx-5,yy+3],[xx+15,yy-28],[xx+37,yy+3]],mix(c.facade,c.roof,.35));
+        rect(xx+13,yy-34,4,8,c.trim);
+      }
+      for(let r=0;r<5;r++){
+        rect(xx+5+(r%2)*13,yy+17+r*18,3,6,i%3?c.window:'#c7b69b');
+      }
+    }
   }
   function drawGround(){
-    rect(0,groundY-8,W,11,'#39544b');
-    for(let x=0;x<W;x+=16){rect(x,groundY-8,8,2,'#7d9674');}
-    rect(0,groundY+2,W,H-groundY-2,'#49484d');
-    for(let x=-16;x<W+16;x+=23){
-      const xx=x-Math.floor(camera*.95)%23;
-      rect(xx,groundY+5,19,1,'#71666a');
-      rect(xx+10,groundY+16,10,2,'#32383d');
+    // Cobblestones: sunlit chipped surfaces, fine joints and wet reflections.
+    rect(0,groundY-8,W,11,'#42584b');
+    for(let x=0;x<W;x+=7){rect(x,groundY-8,3,1,x%3?'#9cab85':'#617a65');}
+    rect(0,groundY+2,W,H-groundY-2,'#3b434a');
+    for(let row=0;row<Math.ceil((H-groundY)/14);row++){
+      const y=groundY+3+row*14;
+      const shift=((row%2)*19)-(Math.floor(camera*.94)%38);
+      for(let x=-55;x<W+55;x+=38){
+        const xx=x+shift;
+        rect(xx+1,y+1,35,12,'#4f575b');
+        rect(xx+2,y+1,29,1,'#929791');
+        rect(xx+2,y+2,1,7,'#657473');
+        rect(xx+4,y+9,25,1,'#343b41');
+        for(let p=0;p<5;p++){
+          const n=((Math.floor(xx*13)+row*31+p*71)&255)/255;
+          rect(xx+2+n*28,y+2+((p*7+row)%8),1,1,p%2?'#858984':'#313b42');
+        }
+      }
     }
-    rect(0,groundY+25,W,3,'#aaa18a');
-    rect(0,groundY+33,W,4,'#2e3338');
+    rect(0,groundY+34,W,4,'#bea98f');
   }
   function drawLamp(x,ground){
     rect(x-1,ground-88,3,88,'#39434b');rect(x-5,ground-88,11,4,'#f5c88a');
@@ -548,12 +582,16 @@
   }
   function drawBuilding(b){
     const x=b.x-camera,scale=buildingScale(b);
-    if(x>W+85||x+b.width<-85)return;
+    if(x>W+180||x+b.width<-180)return;
+    if(window.OIBUNG_HD_ARCHITECTURE){
+      window.OIBUNG_HD_ARCHITECTURE.render(ctx,b,camera,groundY,scale,elapsed);
+      return;
+    }
     ctx.save();
     const anchor=x+b.width*.5;
     ctx.translate(anchor,groundY);ctx.scale(scale,scale);ctx.translate(-anchor,-groundY);
     const y=groundY-b.height;
-    // Museum-scale structures dwarf the wandering avatar.
+    // Lightweight fallback if the rich cached renderer has not loaded.
     rect(x-17,groundY-5,b.width+34,8,'#333c3e');
     rect(x-13,groundY-11,b.width+26,6,'#bdaf97');
     if(b.style==='castle')drawCastle(b,y);
@@ -622,13 +660,13 @@
     drawSky();drawPlaza();
     for(const b of buildings)drawBuilding(b);
     drawGround();
-    avatar(curator.x,groundY,curator.direction,curator.walk,true,0);
+    drawCurator(curator.x,groundY,curator.direction,curator.walk);
     avatar(player.x,groundY,player.direction,player.walk,false,player.y);
     // Guide stays visible with a caption at stops, without blocking entrances.
     const guideX=(curator.x-camera)*LOGICAL_PIXEL_SIZE;
-    guideBubble.style.left=Math.round(Math.min(stage.clientWidth-90,Math.max(90,guideX)))+'px';
-    const bubbleY=(groundY-30)*LOGICAL_PIXEL_SIZE;
-    guideBubble.style.top=Math.round(Math.max(8,bubbleY-75))+'px';
+    guideBubble.style.left=Math.round(Math.min(stage.clientWidth-80,Math.max(80,guideX)))+'px';
+    const bubbleY=(groundY-Math.min(164,H*.20))*LOGICAL_PIXEL_SIZE;
+    guideBubble.style.top=Math.round(Math.max(67,bubbleY-54))+'px';
     if(guideTextUntil<elapsed&&nearest<0&&Math.abs(player.vx)<1){
       announce('게임 건물 앞에 서서 E를 누르면 작품 설명을 볼 수 있어요.',5.5);
     }
