@@ -51,8 +51,11 @@
   };
   function poseFrame(guide,formId,progress) {
     if(guide.gesture){
-      const frames=actionFrames[formId][guide.gesture.name];
-      return frames[Math.min(frames.length-1,Math.floor(progress*frames.length))];
+      // The sixteen approved poses can have different necklines and hair.
+      // Swapping 0 -> 13 -> 0 causes a visible full-body pop. Instead use
+      // the *same* approved source pixels and draw 24 intermediate frames
+      // of the actual moving arms/cloth in drawBody.
+      return 0;
     }
     // Movement is a genuine eight-pose walk cycle, not idle art shaken by CSS.
     if(!guide.flight&&guide.stride>.22&&Math.abs(guide.speed)>24)
@@ -106,9 +109,14 @@
     [18,48,93],[18,48,99],[18,48,95],[18,48,99],
     [15,45,87],[14,45,90],[14,45,89],[16,47,89],
     [10,39,86],[16,46,106],[9,39,85],[10,40,90]
-  ].map(([top,neck,pivot])=>({
-    neck,pivot,headScale:1,source:[0,top,frameHeight],output:[0,top,frameHeight]
-  }));
+  ].map(([top,neck,pivot])=>{
+    // Keep the devil's head separate from her torso. Previously output[2]
+    // was 194, so the entire sprite was treated as the HEAD: arms, legs
+    // and gestures could not animate at all.
+    const hip=neck+(ground-neck)*.57;
+    const rows=[0,top,neck,hip,ground,frameHeight];
+    return {neck,pivot,headScale:1,source:rows,output:rows};
+  });
   const devilEyes={
     0:[[91,33,1.7],[99,33,1.12]],
     12:[[91,26.5,1.7],[99,25.5,1.12]],
