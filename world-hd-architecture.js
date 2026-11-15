@@ -154,6 +154,16 @@
       path(c,[[x+w/2,top-12],[x+w+16,y+h],[x+w-6,y+h]],tone(p.roof,-19));
       path(c,[[x-16,y+h],[x+w/2,top-12],[x+w*.52,top-7],[x+7,y+h]],tone(p.roof,19));
     }
+    c.save();
+    c.beginPath();
+    if(kind==='dome'){
+      c.ellipse(x+w/2,y+h*.8,w*.52,h*.77,0,0,Math.PI*2);
+    }else{
+      c.moveTo(x-16,y+h);c.lineTo(x+w/2,top-12);c.lineTo(x+w+16,y+h);c.closePath();
+    }
+    c.clip();
+    // Tile highlights must stay inside the actual roof outline. Previously
+    // they were painted over its rectangular bounds, floating in mid-air.
     for(let row=0;row<Math.ceil(h/7);row++){
       const yy=top+row*7;
       for(let col=0;col<Math.ceil(w/13);col++){
@@ -164,6 +174,7 @@
         }
       }
     }
+    c.restore();
     box(c,x-18,y+h-1,w+36,5,p.gold);
     box(c,x-15,y+h+4,w+30,4,p.dark);
   }
@@ -174,7 +185,8 @@
     }
   }
   function portal(c,mid,base,p,rand){
-    const w=99,h=139,x=mid-w/2,y=base-h;
+    // Large readable entry arch, so people recognize where a building opens.
+    const w=156,h=176,x=mid-w/2,y=base-h;
     box(c,x-12,y+10,w+24,h-5,p.dark);
     for(let i=0;i<9;i++){
       const a=x-16+i*(w+32)/8;
@@ -372,10 +384,15 @@
   }
   function get(b){
     const key=b.style+':'+b.width+':'+b.height+':'+b.seed;
-    if(cache.has(key))return cache.get(key);
+    if(cache.has(key)){
+      // A tiny LRU avoids holding old giant canvases after fast travel.
+      const sprite=cache.get(key);
+      cache.delete(key);cache.set(key,sprite);
+      return sprite;
+    }
     const sprite=makeBuilding(b);
-    // Bound cache when a lot of externally registered games appear.
-    if(cache.size>25)cache.delete(cache.keys().next().value);
+    const maxCachedSprites=10; // usually under ~40MB of RGBA pixels
+    if(cache.size>=maxCachedSprites)cache.delete(cache.keys().next().value);
     cache.set(key,sprite);
     return sprite;
   }
