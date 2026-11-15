@@ -10,6 +10,7 @@
   const counter = document.getElementById('world-count');
   const nearbyLabel = document.getElementById('world-nearby');
   const guideBubble = document.getElementById('world-guide-bubble');
+  const guideSelect = document.getElementById('world-guide-select');
   const jumpSelect = document.getElementById('world-jump-select');
   const interactButton = document.getElementById('world-enter');
   const controls = [...world.querySelectorAll('[data-world-move]')];
@@ -57,6 +58,11 @@
   let lastFrame=0,elapsed=0,frameId=0,paused=false;
   let player={x:165,y:0,vx:0,vy:0,direction:1,walk:0,onGround:true};
   const curator=curatorMotion.reset({},111);
+  let curatorForm='angel';
+  try{
+    if(localStorage.getItem('oibung-world-guide')==='devil')curatorForm='devil';
+  }catch{}
+  if(guideSelect)guideSelect.value=curatorForm;
   let keys={left:false,right:false};
   let guideTextUntil=0;
   let didInitialSpawn=false;
@@ -323,6 +329,14 @@
     if(n>=0)warp(n);
     jumpSelect.value='';
   });
+  guideSelect?.addEventListener('change',()=>{
+    curatorForm=guideSelect.value==='devil'?'devil':'angel';
+    try{localStorage.setItem('oibung-world-guide',curatorForm);}catch{}
+    const form=curatorMotion.formFor(curatorForm);
+    announce(form.name+(curatorForm==='angel'?'이에요. 같이 둘러봐요!':'이야. 어디부터 가 볼까?'));
+    document.getElementById('world-menu-close')?.click();
+    render();
+  });
   listButton.addEventListener('click',()=>{
     list.hidden=!list.hidden;
     listButton.setAttribute('aria-expanded',String(!list.hidden));
@@ -411,7 +425,7 @@
     ctx.fill();
   }
 
-  function curatorHeight(){return Math.round(clamp(H*.185,63,157)*.85);}
+  function curatorHeight(){return Math.round(clamp(H*.185,63,157)*curatorMotion.formFor(curatorForm).scale);}
 
   function positionDialogue(center, top, spriteWidth){
     const edge=14, gap=13;
@@ -443,14 +457,14 @@
   function drawCurator(){
     const height=curatorHeight();
     const center=Math.round(curator.x-camera);
-    const width=Math.round(height*.71);
+    const width=Math.round(height*.96);
     const top=groundY+curator.y-height;
     const visible=curatorMotion.ready()&&center>=-width&&center<=W+width;
     guideBubble.hidden=!visible||!guideBubble.textContent||elapsed>guideTextUntil||center<0||center>W;
     if(!visible)return;
     if(!guideBubble.hidden)positionDialogue(center,top,width);
     footShadow(curator.x,groundY,Math.max(9,height*.115),.44+curator.y*.004);
-    curatorMotion.draw(ctx,curator,{center,groundY,height,elapsed,reduced:reduceMotion.matches});
+    curatorMotion.draw(ctx,curator,{center,groundY,height,elapsed,reduced:reduceMotion.matches,formId:curatorForm});
   }
   function draw(){
     ctx.imageSmoothingEnabled=false;

@@ -129,7 +129,7 @@ main {
 #games #world-overlay-menu .world-select-label{
   display:block!important;color:#e6d5b2!important;font-size:12px!important
 }
-#games #world-overlay-menu #world-jump-select{
+#games #world-overlay-menu :is(#world-jump-select,#world-guide-select){
   display:block!important;max-width:none!important;width:100%!important;
   background:#fff9e5!important;color:#263a32!important;
   min-height:45px!important;border:2px solid #c2ab83!important

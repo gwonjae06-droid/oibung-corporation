@@ -22,7 +22,7 @@
   <link rel="stylesheet" href="gallery-display-modes.css?v=two-modes-1">
   <link rel="stylesheet" href="direct-gallery.css?v=direct-gallery-v1">
   <link rel="stylesheet" href="oibung-world.css?v=world-pixel-v1">
-  <link rel="stylesheet" href="world-fullscreen.css?v=world-fullscreen-v1">
+  <link rel="stylesheet" href="world-fullscreen.css?v=curator-duo-v1">
   <link rel="stylesheet" href="world-polish.css?v=world-polish-v1">
   <link rel="stylesheet" href="world-interiors.css?v=world-exhibit-v1">
   <!-- 3D actor meshes are now local; only the 3D engine loads externally. -->
@@ -35,8 +35,8 @@
   <script src="direct-gallery.js?v=direct-gallery-v1" defer></script>
   <script src="world-pixel-scenes.js?v=world-exhibit-v1" defer></script>
   <script src="world-interiors.js?v=world-exhibit-v1" defer></script>
-  <script src="world-curator.js?v=curator-proportions-v3" defer></script>
-  <script src="oibung-world.js?v=world-spacing-v1" defer></script>
+  <script src="world-curator.js?v=curator-duo-v1" defer></script>
+  <script src="oibung-world.js?v=curator-duo-v1" defer></script>
   <script src="world-fullscreen.js?v=world-polish-v1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
 </head>
@@ -104,6 +104,11 @@
               <div class="world-toolbar">
                 <label class="world-select-label" for="world-jump-select">바로 이동할 게임</label>
                 <select id="world-jump-select" aria-label="게임 건물 빠른 이동"><option value="">건물 바로 찾기</option></select>
+                <label class="world-select-label" for="world-guide-select">동행할 비서</label>
+                <select id="world-guide-select">
+                  <option value="angel">농 · 천사 비서</option>
+                  <option value="devil">빵 · 악마 비서</option>
+                </select>
                 <button type="button" class="world-toolbar-button" id="world-list-toggle" aria-expanded="false" aria-controls="world-directory">🏠 건물 목록</button>
                 <button type="button" class="world-toolbar-button" id="world-catalog-toggle">🔎 게임 검색·목록</button>
                 <button type="button" class="world-toolbar-button world-review-button" id="direct-review-shortcut">★ 게임 후기</button>

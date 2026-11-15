@@ -4,17 +4,19 @@
   const art=new Image();
   art.decoding='async';
   art.src='assets/world-pixel/curator-winter-frames.png';
-  const gestureArt=new Image();
-  gestureArt.decoding='async';
-  gestureArt.src='assets/world-pixel/curator-gestures.png';
 
   const frameWidth=188,frameHeight=194,ground=175,origin=91,standingHeight=161;
   const walkFrames=[1,2,3,4,5,6,7];
   const gestures=[
-    {name:'wink',duration:1.08,frames:[[0,0],[.17,1],[.36,2],[.65,1],[.82,3]]},
-    {name:'hair',duration:1.28,frames:[[0,8],[.2,9],[.47,10],[.78,11]]},
-    {name:'kiss',duration:1.24,frames:[[0,4],[.19,5],[.49,6],[.74,7],[.92,4]]}
+    {name:'wink',duration:1.08,frames:[[0,12],[.17,13],[.78,15]]},
+    {name:'hair',duration:1.28,frames:[[0,13],[.47,14],[.78,15]]},
+    {name:'kiss',duration:1.24,frames:[[0,12],[.19,13],[.74,15]]}
   ];
+  const forms={
+    angel:{name:'농',scale:.85,edge:'#66508b',wing:'#eeeaff',shade:'#b6a0dc',frames:[]},
+    devil:{name:'빵',scale:.95,edge:'#391925',wing:'#8e3959',shade:'#542544',frames:[]}
+  };
+  const formFor=id=>id==='devil'?forms.devil:forms.angel;
   const eyeAnchors={
     0:[[95,55],[112,53]],12:[[95,55],[112,53]],
     13:[[90,58],[109,62]],15:[[94,55],[111,53]]
@@ -23,9 +25,6 @@
   const ease=t=>t*t*(3-2*t);
   const approach=(from,to,rate,dt)=>from+(to-from)*(1-Math.exp(-rate*dt));
   const ready=()=>art.complete&&art.naturalWidth===frameWidth*4&&art.naturalHeight===frameHeight*4;
-  const gesturesReady=()=>gestureArt.complete&&gestureArt.naturalWidth===frameWidth*4&&gestureArt.naturalHeight===frameHeight*3;
-  const winterFrames=[];
-  const gestureFrames=[];
 
   // Each cell records its crown, neck and head width in atlas pixels.
   // Airborne poses can also set a horizontal pivot and raised sole.
@@ -34,11 +33,6 @@
     [17,77,84],[16,75,83],[17,75,83],[16,75,82],
     [37,94,86,106],[16,79,88,112],[39,95,90,104,164],[30,88,87,105],
     [14,74,81],[15,80,83],[28,88,86,110],[14,74,81]
-  ];
-  const gestureHeads=[
-    [13,77,87],[13,79,87],[13,79,87],[13,77,87],
-    [13,77,87],[13,78,87],[13,79,87],[13,77,87],
-    [14,80,85],[13,78,87],[14,79,85],[13,76,87]
   ];
   const fittedHeadWidth=64,fittedHeadHeight=46;
 
@@ -51,7 +45,6 @@
     };
   }
   const winterShapes=headByFrame.map(proportions);
-  const gestureShapes=gestureHeads.map(head=>proportions([...head,108]));
 
   function mapRow(y,from,to) {
     let segment=1;
@@ -65,8 +58,8 @@
   function featurePoint(shape,x,y) {
     return [shape.pivot+(x-shape.pivot)*rowScale(y,shape),mapRow(y,shape.source,shape.output)];
   }
-  function fitFrame(image,frame,shape,cache) {
-    if(cache[frame])return cache[frame];
+  function fitFrame(frame,shape,form) {
+    if(form.frames[frame])return form.frames[frame];
     const layer=document.createElement('canvas');
     layer.width=frameWidth;layer.height=frameHeight;
     const pixels=layer.getContext('2d');
@@ -77,10 +70,23 @@
       const sourceRow=Math.min(frameHeight-1,Math.floor(mapRow(y+.5,shape.output,shape.source)));
       const scale=rowScale(sourceRow,shape);
       const left=Math.round(shape.pivot*(1-scale));
-      pixels.drawImage(image,sourceX,sourceY+sourceRow,frameWidth,1,
+      pixels.drawImage(art,sourceX,sourceY+sourceRow,frameWidth,1,
         left,y,Math.round(frameWidth*scale),1);
     }
-    cache[frame]=layer;
+    const garmentTop=Math.round(shape.output[2]+7);
+    const outfit=pixels.getImageData(0,garmentTop,frameWidth,frameHeight-garmentTop);
+    const data=outfit.data;
+    for(let i=0;i<data.length;i+=4){
+      const r=data[i],g=data[i+1],b=data[i+2];
+      if(!data[i+3]||r-g<15||r-b<10||g>111)continue;
+      if(form===forms.angel){
+        data[i]=clamp(r*.65+46,0,255);data[i+1]=clamp(g*.85+49,0,255);data[i+2]=clamp(b*.86+83,0,255);
+      }else{
+        data[i]=clamp(r*.88,0,255);data[i+1]=g*.72;data[i+2]=clamp(b*1.19+19,0,255);
+      }
+    }
+    pixels.putImageData(outfit,0,garmentTop);
+    form.frames[frame]=layer;
     return layer;
   }
 
@@ -106,7 +112,7 @@
       return;
     }
     guide.gestureWait-=dt;
-    if(guide.gestureWait<=0&&gesturesReady()&&Math.abs(guide.speed)<28){
+    if(guide.gestureWait<=0&&Math.abs(guide.speed)<28){
       guide.gesture=gestures[guide.nextGesture];
       guide.gestureTime=0;
       guide.nextGesture=(guide.nextGesture+1)%gestures.length;
@@ -256,17 +262,67 @@
       const [x,y]=featurePoint(shape,128,41);
       ctx.fillRect(x,y,2,9);
       ctx.fillRect(x-3,y+3,8,2);
+      const [eyeX,eyeY]=featurePoint(shape,90,58);
+      ctx.globalAlpha=1;
+      ctx.fillStyle='#f3b59d';
+      ctx.fillRect(eyeX-4,eyeY-3,7,6);
+      ctx.fillStyle='#3c242e';
+      ctx.fillRect(eyeX-4,eyeY,3,1);
+      ctx.fillRect(eyeX-1,eyeY+1,4,1);
       ctx.restore();
     }
   }
 
-  function draw(ctx,guide,{center,groundY,height,elapsed,reduced}) {
+  function pixelShape(ctx,form,points,color) {
+    ctx.beginPath();
+    ctx.moveTo(...points[0]);
+    for(const point of points.slice(1))ctx.lineTo(...point);
+    ctx.closePath();
+    ctx.fillStyle=color;
+    ctx.fill();
+    ctx.strokeStyle=form.edge;
+    ctx.lineWidth=2;
+    ctx.stroke();
+  }
+  function drawWings(ctx,form,shape,flap) {
+    const [x,y]=featurePoint(shape,76,shape.neck+28);
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.rotate(flap);
+    if(form===forms.angel){
+      pixelShape(ctx,form,[[7,8],[-6,-11],[-21,-21],[-54,-29],[-48,-17],[-53,-12],[-43,-4],[-46,1],[-34,8],[-34,14],[-16,19],[-7,20],[4,15]],form.wing);
+      pixelShape(ctx,form,[[2,10],[-8,0],[-29,-10],[-42,-14],[-33,-4],[-38,0],[-24,10],[-17,15],[-7,15]],form.shade);
+    }else{
+      pixelShape(ctx,form,[[8,10],[-8,-10],[-53,-27],[-43,-11],[-46,3],[-30,-2],[-27,13],[-15,8],[1,18]],form.wing);
+      ctx.strokeStyle=form.shade;ctx.beginPath();ctx.moveTo(-46,-20);ctx.lineTo(-22,1);ctx.lineTo(2,13);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(2,46);ctx.quadraticCurveTo(-27,69,-38,53);ctx.strokeStyle=form.edge;ctx.lineWidth=3;ctx.stroke();
+      pixelShape(ctx,form,[[-43,49],[-31,50],[-38,59]],form.wing);
+    }
+    ctx.restore();
+  }
+  function drawCrown(ctx,form,shape) {
+    const [x,y]=featurePoint(shape,100,shape.source[1]+4);
+    ctx.save();
+    ctx.translate(x,y);
+    if(form===forms.angel){
+      ctx.beginPath();ctx.ellipse(-4,-13,15,4,0,0,Math.PI*2);
+      ctx.strokeStyle='#7f5b45';ctx.lineWidth=5;ctx.stroke();
+      ctx.strokeStyle='#ffe5a0';ctx.lineWidth=3;ctx.stroke();
+      ctx.fillStyle='#fff8d6';ctx.fillRect(-13,-17,7,2);
+    }else{
+      pixelShape(ctx,form,[[-16,5],[-23,-2],[-24,-13],[-11,-4],[-8,5]],'#ac4769');
+      pixelShape(ctx,form,[[8,4],[11,-7],[19,-14],[18,-2],[15,6]],'#d06483');
+    }
+    ctx.restore();
+  }
+  function draw(ctx,guide,{center,groundY,height,elapsed,reduced,formId}) {
     if(!ready())return false;
-    const gesture=!reduced&&gesturesReady()?guide.gesture:null;
+    const form=formFor(formId);
+    const gesture=!reduced?guide.gesture:null;
     const progress=gesture?Math.min(1,guide.gestureTime/gesture.duration):0;
     const frame=gesture?gesture.frames.findLast(([start])=>progress>=start)[1]:frameFor(guide,elapsed,reduced);
-    const shape=gesture?gestureShapes[frame]:winterShapes[frame];
-    const sprite=gesture?fitFrame(gestureArt,frame,shape,gestureFrames):fitFrame(art,frame,shape,winterFrames);
+    const shape=winterShapes[frame];
+    const sprite=fitFrame(frame,shape,form);
     const scale=height/standingHeight;
     const direction=Math.sign(guide.turn)||guide.facing;
     const turnWidth=.78+.22*Math.abs(guide.turn);
@@ -280,12 +336,14 @@
     ctx.rotate(reduced?0:Math.sin(cycle)*guide.stride*.012);
     ctx.scale(1-(breathing+step)*.32,1+breathing+step);
     ctx.translate(-origin,-ground);
+    drawWings(ctx,form,shape,reduced?0:Math.sin(elapsed*(form===forms.angel?5:8))*.13);
     ctx.drawImage(sprite,0,0);
+    drawCrown(ctx,form,shape);
     if(gesture)drawGestureEffect(ctx,gesture,progress,shape);
     else express(ctx,guide,frame,elapsed,reduced,shape);
     ctx.restore();
     return true;
   }
 
-  window.OIBUNG_CURATOR={ready,reset,update,draw};
+  window.OIBUNG_CURATOR={ready,reset,update,draw,formFor};
 })();
