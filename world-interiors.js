@@ -134,8 +134,34 @@
     const sky=c.createLinearGradient(0,0,0,groundY);
     sky.addColorStop(0,t.shadow);sky.addColorStop(.65,t.wall);sky.addColorStop(1,t.stone);
     c.fillStyle=sky;c.fillRect(0,0,W,H);
-    const top=Math.max(14,groundY-540);
+    // Fill the viewport with the actual hall. The original short backdrop
+    // left a giant featureless black ceiling on tall phones and desktops.
+    const top=Math.max(10,groundY-Math.max(690,H*.86));
     rect(c,0,top,W,13,t.trim);rect(c,0,top+13,W,14,t.shadow);
+    // Vaulted ribbing, fresco medallions, and decorative ceiling joinery.
+    // These are architectural perspective cues rather than movement obstacles.
+    for(let xx=Math.floor(camera/320)*320-320;xx<camera+W+320;xx+=320){
+      const x=Math.round(xx-camera);
+      poly(c,[[x,top+20],[x+160,top+145],[x+320,top+20]],t.shadow);
+      poly(c,[[x+14,top+26],[x+160,top+111],[x+306,top+26]],t.wall);
+      line(c,x+6,top+24,x+160,top+129,t.trim,4);
+      line(c,x+314,top+24,x+160,top+129,t.trim,4);
+      ellipse(c,x+160,top+108,14,14,t.trim);
+      ellipse(c,x+160,top+108,9,9,t.glass);
+      for(let k=0;k<8;k++){
+        const a=k*Math.PI/4;
+        const dx=Math.round(Math.cos(a)*25),dy=Math.round(Math.sin(a)*20);
+        rect(c,x+160+dx,top+108+dy,3,3,t.light);
+      }
+    }
+    // Warm diagonal illumination through the glass. Static when reduced
+    // motion is preferred; no blur filter or GPU compositing needed.
+    c.save();c.globalAlpha=.085;
+    for(let xx=Math.floor(camera/465)*465-465;xx<camera+W+465;xx+=465){
+      const x=xx-camera+95;
+      poly(c,[[x-27,top+132],[x+27,top+132],[x+200,groundY-28],[x+33,groundY-28]],t.light);
+    }
+    c.restore();
     for(let x=Math.floor(camera/155)*155-155;x<camera+W+170;x+=155){
       const sx=Math.round(x-camera),col=(Math.floor(x/155)%3+3)%3;
       rect(c,sx,top+31,4,groundY-top-46,t.shadow);
@@ -220,12 +246,24 @@
       rect(c,x-115,ground-325,230,252,t.shadow);
       rect(c,x-110,ground-320,220,242,t.trim);
       rect(c,x-100,ground-310,200,222,t.wall);
-      const imageColors=[t.shadow,t.glass,t.rug,t.light,t.stone];
-      for(let n=0;n<11;n++){
-        poly(c,[[x-86+(n%3)*18,ground-117],[x-78+(n%3)*12,ground-164-n*9],[x+81-n*6,ground-120]],imageColors[n%5]);
+      const castleArt=state.style==='castle'&&window.OIBUNG_CINEMATIC_ART?.ready('castle_facade')
+        ?window.OIBUNG_CINEMATIC_ART.images.castle_facade:null;
+      if(castleArt){
+        c.save();c.beginPath();c.rect(x-96,ground-306,192,215);c.clip();
+        c.imageSmoothingEnabled=true;
+        c.drawImage(castleArt,x-96,ground-306,192,215);
+        c.restore();c.imageSmoothingEnabled=false;
       }
-      ellipse(c,x,ground-233,43,43,t.glass);
-      ellipse(c,x,ground-233,31,31,t.trim);
+      const imageColors=[t.shadow,t.glass,t.rug,t.light,t.stone];
+      if(!castleArt){
+        for(let n=0;n<11;n++){
+          poly(c,[[x-86+(n%3)*18,ground-117],[x-78+(n%3)*12,ground-164-n*9],[x+81-n*6,ground-120]],imageColors[n%5]);
+        }
+      }
+      if(!castleArt){
+        ellipse(c,x,ground-233,43,43,t.glass);
+        ellipse(c,x,ground-233,31,31,t.trim);
+      }
       rect(c,x-50,ground-145,100,7,t.light);
       rect(c,x-46,ground-130,91,4,t.trim);
       rect(c,x-80,ground-65,160,10,t.shadow);
