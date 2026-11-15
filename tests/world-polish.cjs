@@ -100,6 +100,9 @@ const fs=require('node:fs/promises');
       }
       await page.evaluate(()=>window.OIBUNG_WORLD.travelTo('odenring'));
       await page.locator('#world-enter').click();
+      assert.equal((await page.evaluate(()=>window.OIBUNG_WORLD.getState())).inside,true,'Building now opens a walkable room');
+      await page.evaluate(()=>window.OIBUNG_INTERIORS.showInfo('intro'));
+      await page.locator('.world-info-actions button').first().click();
       assert.equal(await page.locator('#game-dialog').evaluate(el=>el.open),true);
       assert.match(await page.locator('#detail-title').textContent(),/오든링/);
       await page.locator('#close-detail').click();
