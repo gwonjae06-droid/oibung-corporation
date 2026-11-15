@@ -3,7 +3,8 @@
   'use strict';
   const pixelDirectory = 'assets/world-pixel/';
   const snowDirectory = 'assets/world-snow/';
-  const themes = ['castle', 'arena', 'duel', 'tactics', 'cat', 'studio', 'tower'];
+  const themes = ['castle', 'arena', 'duel', 'tactics', 'cat', 'studio', 'tower', 'corp'];
+  const roomFloor = {castle:.885,arena:.885,duel:.858,tactics:.858,cat:.854,studio:.855,tower:.828,corp:.892};
   const images = new Map();
   const artPath = key => (key.startsWith('player-') ? pixelDirectory : snowDirectory) + key + '.webp';
   const load = key => {
@@ -48,17 +49,19 @@
     }
     const drawProp = (key, center, height) => {
       const x = Math.round(center - camera);
-      if (x < -height || x > W + height) return;
+      if (x < -height || x > W + height) return 0;
       const image = load(key);
-      if (!image) return;
+      if (!image) return 0;
       const width = Math.round(height * image.naturalWidth / image.naturalHeight);
       ctx.drawImage(image, x - Math.round(width / 2), groundY + 4 - height, width, height);
+      return width;
     };
     const buildingHeight = Math.round(Math.min(570, Math.max(172, H * .52)));
     for (const building of buildings) {
       const center = building.x + building.width / 2;
-      drawProp(outside(building.style), center, buildingHeight);
-      drawProp('lantern', center + Math.max(280, buildingHeight * .63), Math.round(buildingHeight * .34));
+      const height = building.style === 'corp' ? Math.round(groundY * .94) : buildingHeight;
+      const facadeWidth = drawProp(outside(building.style), center, height);
+      drawProp('lantern', center + Math.max(280, facadeWidth / 2 + 88), Math.round(buildingHeight * .34));
     }
     for (const district of districts.slice(1)) {
       drawProp('lantern', district.start, Math.round(buildingHeight * .43));
@@ -71,10 +74,9 @@
     ctx.fillStyle = '#376067';
     ctx.fillRect(0, 0, W, H);
     if (!image) return;
-    const [y, height] = sceneY(.88, groundY, H);
-    const width = Math.min(Math.max(W, roomWidth), Math.max(930, Math.round(height * 2)));
+    const [y, height] = sceneY(roomFloor[style] || .88, groundY, H);
     ctx.imageSmoothingEnabled = true;
-    drawStrip(ctx, image, W, camera, width, height, y);
+    ctx.drawImage(image, -Math.round(camera), y, Math.max(W, roomWidth), height);
     ctx.imageSmoothingEnabled = false;
   }
 

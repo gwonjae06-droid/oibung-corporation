@@ -42,9 +42,10 @@
 
   function themeOf(game) {
     const match = (String(game?.title || '')+' '+String(game?.english || '')+' '+String(game?.genre || '')+' '+String(game?.id || '')).toLowerCase();
+    if (/\bfur[.\s_-]*corp\b|퍼리|furry/.test(match)) return 'corp';
     if (/오든링|oden.?ring|elden|소울라이크|보스 러시/.test(match)) return 'castle';
     if (/아레나|arena|핀볼|ballfight|콜로세움/.test(match)) return 'arena';
-    if (/퍼리|furry|고양이|cat/.test(match)) return 'cat';
+    if (/고양이|\bcat\b/.test(match)) return 'cat';
     if (/오이챔스|ochams|대전|duel|배틀/.test(match)) return 'duel';
     if (/대학전선|frontier|캠퍼스|전략|strategy/.test(match)) return 'tactics';
     if (/마법|별빛|우주|연구탑|magic|observatory|space|astral/.test(match)) return 'tower';
@@ -164,6 +165,11 @@
     groundY=H-Math.max(43,Math.min(83,Math.round(H*.092)));
     canvas.width=W;canvas.height=H;
     ctx.imageSmoothingEnabled=false;
+    const roomScale=room()?.resize?.(W,H);
+    if(inRoom()&&roomScale&&roomScale!==1){
+      player.x*=roomScale;
+      curator.x*=roomScale;
+    }
     const extent=inRoom()?room().roomWidth():worldEnd;
     camera=Math.max(0,Math.min(Math.max(0,extent-W),player.x-W*.49));
     if(!inRoom())updateSigns();
@@ -224,12 +230,11 @@
       if(id!==previousInteriorObject||force){
         previousInteriorObject=id;
         interactButton.disabled=!object;
-        interactButton.textContent=object?.kind==='play'&& !room().currentGame()?.playUrl
-          ?'작품 상세 보기':object?.label||'전시물에 가까이';
+        interactButton.textContent=object?.action||'전시물에 가까이';
         nearbyLabel.textContent=object
           ?room().currentGame().title+' · '+object.label
           :room().currentGame().title+' · 전시실을 탐험하세요';
-        if(object&&id!=='exit')announce('여기서는 '+object.label+'를 할 수 있어요.',3.5);
+        if(object&&id!=='exit')announce(object.hint,3.5);
       }
       return;
     }
@@ -277,12 +282,12 @@
     const origin={playerX:player.x,curatorX:curator.x,camera};
     if(!room().enter(b.game,b.style,origin))return false;
     interiorOrigin=origin;
-    player.x=245;curator.x=player.x-curatorGap();camera=0;
+    player.x=room().spawnX();curator.x=player.x-curatorGap();camera=0;
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
     keys.left=false;keys.right=false;previousInteriorObject=null;
     signs.hidden=true;
     updateNearby(true);
-    announce('여기는 '+b.game.title+'의 전시실이에요. 오른쪽으로 걸어가 보세요!',5);
+    announce(room().welcome(),5);
     render();stage.focus({preventScroll:true});
     return true;
   }
@@ -326,19 +331,24 @@
     panel.open=true;
     panel.scrollIntoView({behavior:reduceMotion.matches?'auto':'smooth',block:'start'});
   });
+  function approachInterior(object){
+    if(!object||!inRoom()||!canRun())return false;
+    if(room().nearest(player.x)?.id===object.id){
+      return room().interact(object,{leave:leaveInterior});
+    }
+    player.x=object.x-38;curator.x=player.x-curatorGap();
+    player.vx=0;player.vy=0;player.y=0;player.onGround=true;keys.left=false;keys.right=false;
+    camera=clamp(player.x-W*.49,0,Math.max(0,room().roomWidth()-W));
+    updateNearby(true);render();stage.focus({preventScroll:true});
+    return true;
+  }
   world.addEventListener('click',e=>{
     if(e.target!==canvas||!canRun())return;
     const bounds=canvas.getBoundingClientRect();
     const x=(e.clientX-bounds.left)/LOGICAL_PIXEL_SIZE+camera;
     if(inRoom()){
-      // Tapping an indoor exhibit places the visitor beside it. The action
-      // still requires E / the bottom button, preventing accidental launches.
       const object=room().objects().find(obj=>Math.abs(obj.x-x)<72);
-      if(!object)return;
-      player.x=Math.max(25,Math.min(room().roomWidth()-45,object.x-68));
-      curator.x=player.x-curatorGap();player.vx=0;player.vy=0;player.y=0;player.onGround=true;keys.left=false;keys.right=false;
-      camera=Math.max(0,Math.min(room().roomWidth()-W,player.x-W*.49));
-      updateNearby(true);render();stage.focus({preventScroll:true});
+      if(object&&room().nearest(player.x)?.id!==object.id)approachInterior(object);
       return;
     }
     const y=(e.clientY-bounds.top)/LOGICAL_PIXEL_SIZE;
@@ -564,6 +574,6 @@
   window.OIBUNG_WORLD={
     getState:()=>({inside:inRoom(),interior:room()?.state(),playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingWidths:buildings.map(b=>b.width),district:districts.findLast(d=>d.start<=player.x)?.status||null,districts:districts.map(d=>({...d})),buildingPositions:buildings.map(b=>({id:b.game.id,x:entrance(b),district:b.status})),guideBubbleVisible:!guideBubble.hidden,pixelArtReady:scenes.ready(nearest<0?(buildings[0]?.style||'studio'):buildings[nearest].style),renderDensity:LOGICAL_PIXEL_SIZE,curatorArtLoaded:!!(atlasReady()||guideImages.neutral),curatorHdAtlasReady:atlasReady()}),
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
-    enter,leaveInterior,refresh:rebuild,jump,movement
+    enter,leaveInterior,approachInterior,refresh:rebuild,jump,movement
   };
 })();
