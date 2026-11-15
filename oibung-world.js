@@ -677,24 +677,43 @@
   }
   function characterScale(){return Math.max(.68,Math.min(1.46,H/625));}
   function drawCurator(x,ground,direction,walk){
-    const cx=Math.round(x-camera),scale=characterScale();
+    const cx=Math.round(x-camera);
+    const atlas=window.OIBUNG_CINEMATIC_ART;
+    const ready=atlas?.ready('curator_atlas');
     const moving=walk>.1;
-    const bounce=moving?Math.round(Math.abs(Math.sin(elapsed*12))*2*scale):Math.round(Math.sin(elapsed*1.8)*scale);
-    const pose=moving
-      ? (Math.floor(elapsed*5)%2?'present':'neutral')
-      : (nearest>=0?(Math.floor(elapsed/3)%2?'present':'explain'):'neutral');
-    const image=guideImages[pose]||guideImages.neutral;
-    if(!image){avatar(x,ground,direction,walk,true);return;}
-    // Larger than the player by only 10%; high-density detailing survives.
-    const height=Math.round(120*scale);
-    const width=Math.round(height*(image.naturalWidth/image.naturalHeight));
+    const height=Math.round(Math.max(112,Math.min(205,H*.235)));
+    const width=Math.round(height*256/384);
+    const sway=moving?Math.round(Math.abs(Math.sin(elapsed*10))*2):Math.round(Math.sin(elapsed*1.8));
     ctx.save();
-    ctx.translate(cx,Math.round(ground-bounce));
+    ctx.translate(cx,Math.round(ground-sway));
     if(direction<0)ctx.scale(-1,1);
-    // Native pixel art contains true transparent edges. Pixel interpolation
-    // is disabled to avoid the previous blurred character silhouettes.
-    ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(image,-Math.round(width/2),-height,width,height);
+    // Shared shadow and subtle ground-contact shine make the painted sprite
+    // sit in the actual world instead of floating like an HTML sticker.
+    ctx.fillStyle='rgba(18,20,30,.32)';
+    ctx.beginPath();
+    ctx.ellipse(0,2,Math.round(width*.21),4,0,0,Math.PI*2);
+    ctx.fill();
+    if(ready){
+      // 4 × 2 atlas: idle, profile, four walk frames, present, cheerful greet.
+      let pose=0;
+      if(moving)pose=2+Math.floor(elapsed*7.6)%4;
+      else if(nearest>=0)pose=Math.floor(elapsed/3.2)%2===0?6:0;
+      else pose=Math.floor(elapsed/4.5)%5===0?7:0;
+      const sx=(pose%4)*256,sy=Math.floor(pose/4)*384;
+      ctx.imageSmoothingEnabled=true; // graceful fine pixel clusters on reduction
+      ctx.drawImage(atlas.images.curator_atlas,sx,sy,256,384,
+        -Math.round(width/2),-height,width,height);
+    }else{
+      // The original approved in-repository art remains the offline fallback.
+      const pose=moving
+        ?(Math.floor(elapsed*5)%2?'present':'neutral')
+        :(nearest>=0?(Math.floor(elapsed/3)%2?'present':'explain'):'neutral');
+      const image=guideImages[pose]||guideImages.neutral;
+      if(image){
+        ctx.imageSmoothingEnabled=true;
+        ctx.drawImage(image,-Math.round(width/2),-height,width,height);
+      }
+    }
     ctx.restore();
   }
   function drawPlayerHD(x,ground,direction,walk,yOffset=0){
@@ -893,7 +912,7 @@
   resize();rebuild();
   frameId=requestAnimationFrame(frame);
   window.OIBUNG_WORLD={
-    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),skyColor:skyTransition().colors.sky,guideBubbleVisible:!guideBubble.hidden,renderDensity:LOGICAL_PIXEL_SIZE,cinematicFX:!!window.OIBUNG_CINEMATIC,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!guideImages.neutral}),
+    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),skyColor:skyTransition().colors.sky,guideBubbleVisible:!guideBubble.hidden,renderDensity:LOGICAL_PIXEL_SIZE,cinematicFX:!!window.OIBUNG_CINEMATIC,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!(window.OIBUNG_CINEMATIC_ART?.ready('curator_atlas')||guideImages.neutral),curatorHdAtlasReady:!!window.OIBUNG_CINEMATIC_ART?.ready('curator_atlas'),castleHdArtReady:!!window.OIBUNG_CINEMATIC_ART?.ready('castle_facade')}),
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
     enter,refresh:rebuild,jump,movement
   };
