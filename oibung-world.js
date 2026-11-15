@@ -194,15 +194,16 @@
   }
   function warp(i){
     const b=buildings[i];if(!b)return;
-    player.x=b.x+b.width*.5-1;
+    // Let the player stand beside the monumental door, not on top of it.
+    player.x=b.x+b.width*.5-105;
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
-    curator.x=player.x-50;
+    curator.x=player.x-66;
     const target=Math.max(0,Math.min(worldEnd-W,player.x-W*.5));
     camera=target;justWarped=true;
     updateNearby(true);updateSigns();render();
   }
   function nearbyBuilding(){
-    let result=-1,dist=76;
+    let result=-1,dist=135;
     for(let i=0;i<buildings.length;i++){
       const b=buildings[i];
       const d=Math.abs(player.x-(b.x+b.width*.5));
@@ -213,6 +214,7 @@
   function announce(text,seconds=4){
     guideText=text;guideTextUntil=elapsed+seconds;
     guideBubble.textContent=text;
+    guideBubble.hidden=false;
   }
   function updateNearby(force=false){
     const n=nearbyBuilding();
@@ -234,7 +236,7 @@
     if(!games.length)interactButton.disabled=true;
   }
   function enter(){
-    if(nearest<0)return false;
+    if(nearest<0||!canRun())return false;
     const b=buildings[nearest];
     if(!b)return false;
     const api=window.OIBUNG_CATALOG;
@@ -248,10 +250,11 @@
     return true;
   }
   function jump(){
-    if(!player.onGround)return;
-    player.vy=-258;player.onGround=false;
+    if(!player.onGround||!canRun())return;
+    player.vy=-285;player.onGround=false;
   }
   function movement(code,down){
+    if(down&&!canRun())return;
     if(code==='left'||code==='right'){
       keys[code]=down;
       inputIsActive=keys.left||keys.right;
@@ -319,6 +322,10 @@
   });
   document.getElementById('game-dialog')?.addEventListener('close',e=>{
     delete e.currentTarget.dataset.worldTheme;
+    if(window.OIBUNG_CURRENT_VIEW!=='reviews')stage.focus({preventScroll:true});
+  });
+  document.getElementById('guide-dialog')?.addEventListener('close',()=>{
+    if(window.OIBUNG_CURRENT_VIEW!=='reviews')stage.focus({preventScroll:true});
   });
   window.addEventListener('blur',()=>{keys.left=false;keys.right=false;});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.left=false;keys.right=false;}});
