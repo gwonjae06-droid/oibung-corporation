@@ -339,13 +339,20 @@
     const map={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right'};
     if(map[e.code])movement(map[e.code],false);
   });
+  function restoreWorldFocus(){
+    // Native <dialog> restores focus to the opener *after* its close event.
+    // Move focus back on the following frame, or keyboard movement stays
+    // disabled because the focused element is the old "Enter" button.
+    requestAnimationFrame(()=>{
+      if(window.OIBUNG_CURRENT_VIEW!=='reviews'&&
+         !document.querySelector('dialog[open]'))stage.focus({preventScroll:true});
+    });
+  }
   document.getElementById('game-dialog')?.addEventListener('close',e=>{
     delete e.currentTarget.dataset.worldTheme;
-    if(window.OIBUNG_CURRENT_VIEW!=='reviews')stage.focus({preventScroll:true});
+    restoreWorldFocus();
   });
-  document.getElementById('guide-dialog')?.addEventListener('close',()=>{
-    if(window.OIBUNG_CURRENT_VIEW!=='reviews')stage.focus({preventScroll:true});
-  });
+  document.getElementById('guide-dialog')?.addEventListener('close',restoreWorldFocus);
   window.addEventListener('blur',()=>{keys.left=false;keys.right=false;});
   document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.left=false;keys.right=false;}});
   document.addEventListener('oibung-catalog-updated',rebuild);
