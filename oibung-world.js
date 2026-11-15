@@ -347,17 +347,31 @@
     if(window.OIBUNG_CURRENT_VIEW==='games')resize();
   });
 
+  function skyTransition(){
+    // Blend the plaza into the castle and then between each district.
+    // The old nearest-building switch caused an obvious sky-color flash.
+    const stops=[{center:0,style:'studio'},...buildings.map(b=>({center:b.x+b.width*.5,style:b.style}))];
+    let i=0;
+    while(i<stops.length-2&&player.x>stops[i+1].center)i++;
+    const left=stops[i],right=stops[Math.min(i+1,stops.length-1)];
+    const raw=(player.x-left.center)/Math.max(1,right.center-left.center);
+    const t=Math.max(0,Math.min(1,raw));
+    const eased=t*t*(3-2*t);
+    const c={};
+    for(const key of ['sky','far','facade','roof','trim','window']){
+      c[key]=mix(colors[left.style][key],colors[right.style][key],eased);
+    }
+    const castleStrength=(left.style==='castle'?1-eased:0)+(right.style==='castle'?eased:0);
+    return {colors:c,castleStrength};
+  }
   function drawSky(){
-    let theme='tactics';
-    let best=Infinity;
-    for(const b of buildings){
-      const d=Math.abs(player.x-(b.x+b.width*.5));
-      if(d<best){best=d;theme=b.style;}
-    }
-    const c=colors[theme];
-    for(let y=0;y<groundY;y+=2){
-      rect(0,y,W,2,mix(c.sky,c.far,(y/Math.max(1,groundY))*.78));
-    }
+    const zone=skyTransition(),c=zone.colors;
+    // One gradient is cheaper than hundreds of per-row hex conversions.
+    const gradient=ctx.createLinearGradient(0,0,0,groundY);
+    gradient.addColorStop(0,c.sky);
+    gradient.addColorStop(1,mix(c.sky,c.far,.78));
+    ctx.fillStyle=gradient;
+    ctx.fillRect(0,0,W,groundY);
     // Layered film-grain sky haze drawn at native-pixel density.
     for(let i=0;i<Math.min(1300,W*1.2);i++){
       const x=(i*193+Math.floor(camera*.018))%W;
@@ -365,17 +379,22 @@
       const mod=(i*29+i*i*7)%97;
       rect(x,y,1,mod%5===0?2:1,mod%3?'#ffffff11':'#0d19200a');
     }
-    const sunX=Math.round(W*.75-camera*.02);
-    if(theme==='castle'){
+    const sunX=Math.round(((W*.75-camera*.02)%W+W)%W);
+    if(zone.castleStrength>.01){
+      ctx.save();ctx.globalAlpha=zone.castleStrength;
       circle(sunX,47,27,'#aa6375');circle(sunX,47,20,'#d4959d');
       pixelStars(W,H,camera,elapsed);
-    }else{
+      ctx.restore();
+    }
+    if(zone.castleStrength<.99){
+      ctx.save();ctx.globalAlpha=1-zone.castleStrength;
       circle(sunX,47,24,'#f4d7a0');circle(sunX,47,16,'#fff0be');
       for(let k=0;k<8;k++){
         const x=((k*109-camera*.16)%(W+130)+W+130)%(W+130)-60;
         const y=22+(k*41)%53;
         rect(x,y,46,9,'#ffffff43');rect(x+6,y-6,32,6,'#ffffff55');rect(x+13,y+9,22,4,'#ffffff35');
       }
+      ctx.restore();
     }
     // Pixel-parallax distant town and mountain silhouettes.
     for(let x=-80;x<W+100;x+=68){
