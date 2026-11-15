@@ -302,11 +302,18 @@
     const idx=buildings.findIndex(b=>{
       const scale=buildingScale(b);
       const center=b.x+b.width*.5;
-      const half=(b.width+170)*scale*.5;
-      // Match click targets to actual scaled artwork; empty sky no
-      // longer acts as an invisible building-teleport button.
-      return x>=center-half&&x<=center+half&&
-        y>=groundY-(b.height+112)*scale&&y<=groundY+4;
+      const asset=window.OIBUNG_HD_ARCHITECTURE?.get(b);
+      if(asset){
+        const sourceX=Math.floor((x-(center-asset.width*scale*.5))/scale);
+        const sourceY=Math.floor((y-(groundY-asset.buildingInfo.base*scale))/scale);
+        if(sourceX<0||sourceY<0||sourceX>=asset.width||sourceY>=asset.height)return false;
+        // Use the baked pixel art alpha, not a broad rectangle: an empty
+        // patch of sky between high towers must never teleport the visitor.
+        const pixel=asset.getContext('2d').getImageData(sourceX,sourceY,1,1).data;
+        return pixel[3]>35;
+      }
+      return x>=center-(b.width+170)*scale*.5&&x<=center+(b.width+170)*scale*.5&&
+        y>=groundY-(b.height+102)*scale&&y<=groundY+4;
     });
     if(idx<0)return;
     if(nearest===idx)enter();
