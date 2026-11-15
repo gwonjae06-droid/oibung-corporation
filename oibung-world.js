@@ -208,7 +208,6 @@
   function announce(text,seconds=4){
     guideTextUntil=elapsed+seconds;
     guideBubble.textContent=text;
-    guideBubble.hidden=false;
   }
   function updateDistrict(){
     const district=inRoom()?null:districts.findLast(d=>d.start<=player.x);
@@ -443,6 +442,33 @@
 
   function curatorHeight(){return Math.round(clamp(H*.23,74,201));}
 
+  function positionDialogue(center, top, spriteWidth){
+    const edge=14, gap=13;
+    const leftEdge=center-Math.ceil(spriteWidth/2)-gap;
+    const rightEdge=center+Math.ceil(spriteWidth/2)+gap;
+    const leftSpace=leftEdge-edge;
+    const rightSpace=W-edge-rightEdge;
+    const maxWidth=W<620?164:224;
+    const preferredSide=curator.x<player.x?'left':'right';
+    const preferredSpace=preferredSide==='left'?leftSpace:rightSpace;
+    const otherSpace=preferredSide==='left'?rightSpace:leftSpace;
+    let side=preferredSpace>=maxWidth||preferredSpace>=otherSpace
+      ?preferredSide:preferredSide==='left'?'right':'left';
+    const space=side==='left'?leftSpace:rightSpace;
+    const width=Math.round(Math.min(maxWidth,space>=100?space:W-2*edge));
+    let x=side==='left'?leftEdge-width:rightEdge;
+    let y=top+Math.min(28,Math.round(curatorHeight()*.19));
+    if(space<100){
+      side='above';
+      x=clamp(center-width/2,edge,W-width-edge);
+      y=top-14;
+    }
+    guideBubble.dataset.side=side;
+    guideBubble.style.setProperty('--guide-width',width+'px');
+    guideBubble.style.setProperty('--guide-x',Math.round(x)+'px');
+    guideBubble.style.setProperty('--guide-y',y+'px');
+    guideBubble.style.setProperty('--guide-tail-x',Math.round(center-x)+'px');
+  }
   function drawCurator(){
     const moving=curator.walk>.1;
     let image,sx=0,sy=0,frameWidth,frameHeight;
@@ -453,15 +479,18 @@
       frameWidth=256;frameHeight=384;
     }else{
       image=guideImages[nearest>=0?'present':'neutral']||guideImages.neutral;
-      if(!image)return;
+      if(!image){guideBubble.hidden=true;return;}
       frameWidth=image.naturalWidth;frameHeight=image.naturalHeight;
     }
     const bounds=spriteBounds(image,sx,sy,frameWidth,frameHeight);
     const height=curatorHeight();
     const width=Math.round(height*bounds.width/bounds.height);
+    const center=Math.round(curator.x-camera);
+    guideBubble.hidden=!guideBubble.textContent||elapsed>guideTextUntil||center<0||center>W;
+    if(!guideBubble.hidden)positionDialogue(center,groundY+1-height,width);
     footShadow(curator.x,groundY,Math.max(9,width*.22),.44);
     ctx.save();
-    ctx.translate(Math.round(curator.x-camera),groundY);
+    ctx.translate(center,groundY);
     ctx.scale(curator.direction,1);
     ctx.drawImage(image,sx+bounds.left,sy+bounds.top,bounds.width,bounds.height,
       -Math.round(width/2),1-height,width,height);
@@ -483,7 +512,6 @@
     if(curator.x<player.x){drawCurator();drawPlayer();}
     else{drawPlayer();drawCurator();}
     if(inRoom())room().drawForeground(ctx,view);
-    guideBubble.hidden=elapsed>guideTextUntil;
   }
   function update(dt){
     elapsed+=dt;

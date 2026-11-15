@@ -97,17 +97,33 @@
 #games #world-count[data-district="live_service"]{color:#afdafa}
 #games #world-count[data-district="in_development"]{color:#f2d496}
 #games #world-guide-bubble{
- left:50%!important;top:calc(64px + env(safe-area-inset-top,0px))!important;
- transform:translateX(-50%)!important;
- width:max-content!important;max-width:min(450px,calc(100% - 28px))!important;
- padding:7px 11px!important;border-radius:0!important;
- border:2px solid #d8bf94!important;background:#202c36f5!important;color:#fff3dd!important;
+ --guide-paper:#fffaf0;
+ --guide-ink:#54463e;
+ z-index:18;box-sizing:border-box;
+ left:var(--guide-x)!important;top:var(--guide-y)!important;
+ transform:translateY(-50%)!important;
+ width:var(--guide-width)!important;max-width:none!important;min-width:0!important;
+ padding:7px 10px!important;border-radius:7px!important;
+ border:1px solid var(--guide-ink)!important;
+ background:var(--guide-paper)!important;color:#342b2a!important;
+ box-shadow:0 2px 0 #36272550!important;
  font:700 clamp(11px,1.8vw,13px)/1.45 'Noto Sans KR',system-ui,sans-serif!important;
- text-align:center;word-break:keep-all;
+ text-align:center;word-break:keep-all;overflow-wrap:anywhere;
 }
-#games #world-guide-bubble::before{content:'안내 비서';margin-right:.65em;color:#f1cf96;white-space:nowrap}
-#games #world-guide-bubble::after{display:none!important}
-#games .is-world-interior #world-guide-bubble{top:calc(123px + env(safe-area-inset-top,0px))!important}
+html[data-gallery-mode="dark"] #games #world-guide-bubble{--guide-paper:#efe5dd}
+#games #world-guide-bubble::after{
+ left:auto;right:auto;bottom:auto!important;top:50%;
+ width:10px!important;height:10px!important;
+ background:var(--guide-paper)!important;
+ border:0!important;border-right:1px solid var(--guide-ink)!important;
+ border-bottom:1px solid var(--guide-ink)!important;
+}
+#games #world-guide-bubble[data-side="left"]::after{right:-6px;transform:translateY(-50%) rotate(-45deg)}
+#games #world-guide-bubble[data-side="right"]::after{left:-6px;transform:translateY(-50%) rotate(135deg)}
+#games #world-guide-bubble[data-side="above"]{transform:translateY(-100%)!important}
+#games #world-guide-bubble[data-side="above"]::after{
+ left:var(--guide-tail-x);top:auto;bottom:-6px!important;transform:translateX(-50%) rotate(45deg)
+}
 #games .is-world-interior ~ .world-controlbar .world-enter:not(:disabled){
  background:#4e6055e8!important;
 }
@@ -122,7 +138,6 @@
  #games .world-interior-location{max-width:120px}
  #games #world-interior-return{min-height:34px;font-size:10px;padding:5px 8px}
  #games .world-interior-info{max-height:calc(100dvh - 55px);padding:21px 15px}
- #games .is-world-interior #world-guide-bubble{top:calc(110px + env(safe-area-inset-top,0px))!important}
  #games .world-info-description{font-size:13px!important}
  #games .world-info-actions button,#games .world-info-actions a{font-size:12px;flex:1}
 }
@@ -132,5 +147,4 @@
   max-width:calc(100% - 175px);
  }
  #games .world-interior-info{max-height:calc(100dvh - 20px)}
- #games .is-world-interior #world-guide-bubble{top:calc(58px + env(safe-area-inset-top,0px))!important}
 }

@@ -1,15 +1,16 @@
 /* Authored pixel-art backgrounds and character frames for the world canvas. */
 (() => {
   'use strict';
-  const directory = 'assets/world-pixel/';
+  const pixelDirectory = 'assets/world-pixel/';
+  const snowDirectory = 'assets/world-snow/';
   const themes = ['castle', 'arena', 'duel', 'tactics', 'cat', 'studio', 'tower'];
   const images = new Map();
-  const faded = new WeakMap();
+  const artPath = key => (key.startsWith('player-') ? pixelDirectory : snowDirectory) + key + '.webp';
   const load = key => {
     if (!images.has(key)) {
       const image = new Image();
       image.decoding = 'async';
-      image.src = directory + key + '.webp';
+      image.src = artPath(key);
       images.set(key, image);
     }
     const image = images.get(key);
@@ -19,81 +20,12 @@
   const outside = style => 'outside-' + theme(style);
   const inside = style => 'inside-' + theme(style);
 
-  function blend(image, left, right) {
-    let versions = faded.get(image);
-    if (!versions) faded.set(image, versions = new Map());
-    const key = `${left}:${right}`;
-    if (!versions.has(key)) {
-      const layer = document.createElement('canvas');
-      layer.width = image.naturalWidth;
-      layer.height = image.naturalHeight;
-      const ctx = layer.getContext('2d');
-      ctx.drawImage(image, 0, 0);
-      const mask = ctx.createLinearGradient(0, 0, layer.width, 0);
-      mask.addColorStop(0, left ? 'transparent' : '#fff');
-      mask.addColorStop(.15, '#fff');
-      mask.addColorStop(.85, '#fff');
-      mask.addColorStop(1, right ? 'transparent' : '#fff');
-      ctx.globalCompositeOperation = 'destination-in';
-      ctx.fillStyle = mask;
-      ctx.fillRect(0, 0, layer.width, layer.height);
-      versions.set(key, layer);
-    }
-    return versions.get(key);
-  }
-
-  function sceneY(key, groundY, H) {
-    const floor = key.startsWith('inside-') ? .897 : .906;
+  function sceneY(floor, groundY, H) {
     const height = Math.ceil(Math.max(groundY / floor, (H - groundY) / (1 - floor)));
     return [Math.round(groundY - height * floor), height];
   }
 
-  function drawOutdoor(ctx, {W, H, groundY, camera, buildings, districts}) {
-    const base = load('plaza');
-    ctx.fillStyle = '#273d4c';
-    ctx.fillRect(0, 0, W, H);
-    if (base) {
-      const width = Math.max(980, Math.ceil(H * 1.9));
-      const [y, height] = sceneY('plaza', groundY, H);
-      for (let i = Math.floor(camera / width); i * width < camera + W; i++) {
-        const x = Math.round(i * width - camera);
-        ctx.save();
-        ctx.translate(x + (i % 2 ? width : 0), 0);
-        if (i % 2) ctx.scale(-1, 1);
-        ctx.drawImage(base, 0, y, width, height);
-        ctx.restore();
-      }
-    }
-    for (const district of districts.slice(1)) {
-      const width = 950;
-      const x = Math.round(district.start - width / 2 - camera);
-      if (x > W || x + width < 0) continue;
-      const garden = load('garden');
-      if (!garden) continue;
-      const [y, height] = sceneY('garden', groundY, H);
-      ctx.drawImage(blend(garden, true, true), x, y, width, height);
-    }
-    for (const b of buildings) {
-      const width = Math.min(b.width, Math.max(760, Math.round(H * 1.95)));
-      const x = Math.round(b.x + (b.width - width) / 2 - camera);
-      if (x > W || x + width < 0) continue;
-      const key = outside(b.style);
-      const image = load(key);
-      if (!image) continue;
-      const [y, height] = sceneY(key, groundY, H);
-      ctx.drawImage(blend(image, true, true), x, y, width, height);
-    }
-  }
-
-  function drawIndoor(ctx, {W, H, groundY, camera}, style, roomWidth) {
-    const key = inside(style);
-    const image = load(key);
-    ctx.fillStyle = '#263036';
-    ctx.fillRect(0, 0, W, H);
-    if (!image) return;
-    const [y, height] = sceneY(key, groundY, H);
-    const extent = Math.max(W, roomWidth);
-    const width = Math.min(extent, Math.max(1050, Math.round(height * 2.05)));
+  function drawStrip(ctx, image, W, camera, width, height, y) {
     for (let i = Math.floor(camera / width); i * width < camera + W; i++) {
       const x = Math.round(i * width - camera);
       ctx.save();
@@ -102,6 +34,48 @@
       ctx.drawImage(image, 0, y, width, height);
       ctx.restore();
     }
+  }
+
+  function drawOutdoor(ctx, {W, H, groundY, camera, buildings, districts}) {
+    const base = load('plaza');
+    ctx.fillStyle = '#b9b9f0';
+    ctx.fillRect(0, 0, W, H);
+    ctx.imageSmoothingEnabled = true;
+    if (base) {
+      const [y, height] = sceneY(.858, groundY, H);
+      const width = Math.round(height * base.naturalWidth / base.naturalHeight);
+      drawStrip(ctx, base, W, camera, width, height, y);
+    }
+    const drawProp = (key, center, height) => {
+      const x = Math.round(center - camera);
+      if (x < -height || x > W + height) return;
+      const image = load(key);
+      if (!image) return;
+      const width = Math.round(height * image.naturalWidth / image.naturalHeight);
+      ctx.drawImage(image, x - Math.round(width / 2), groundY + 4 - height, width, height);
+    };
+    const buildingHeight = Math.round(Math.min(570, Math.max(172, H * .52)));
+    for (const building of buildings) {
+      const center = building.x + building.width / 2;
+      drawProp(outside(building.style), center, buildingHeight);
+      drawProp('lantern', center + Math.max(280, buildingHeight * .63), Math.round(buildingHeight * .34));
+    }
+    for (const district of districts.slice(1)) {
+      drawProp('lantern', district.start, Math.round(buildingHeight * .43));
+    }
+    ctx.imageSmoothingEnabled = false;
+  }
+
+  function drawIndoor(ctx, {W, H, groundY, camera}, style, roomWidth) {
+    const image = load(inside(style));
+    ctx.fillStyle = '#376067';
+    ctx.fillRect(0, 0, W, H);
+    if (!image) return;
+    const [y, height] = sceneY(.88, groundY, H);
+    const width = Math.min(Math.max(W, roomWidth), Math.max(930, Math.round(height * 2)));
+    ctx.imageSmoothingEnabled = true;
+    drawStrip(ctx, image, W, camera, width, height, y);
+    ctx.imageSmoothingEnabled = false;
   }
 
   function drawPlayer(ctx, {x, groundY, camera, direction, moving, airborne, yOffset, elapsed, height}) {
@@ -121,7 +95,7 @@
   window.OIBUNG_PIXEL_SCENES = {
     drawOutdoor, drawIndoor, drawPlayer,
     preload: style => { load(outside(style)); load(inside(style)); },
-    roomArt: style => directory + inside(style) + '.webp',
+    roomArt: style => artPath(inside(style)),
     ready: style => !!(load('plaza') && load('player-0') && load(outside(style)))
   };
 })();
