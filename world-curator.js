@@ -4,9 +4,17 @@
   const art=new Image();
   art.decoding='async';
   art.src='assets/world-pixel/curator-winter-frames.png';
+  const gestureArt=new Image();
+  gestureArt.decoding='async';
+  gestureArt.src='assets/world-pixel/curator-gestures.png';
 
   const frameWidth=188,frameHeight=194,ground=175,origin=91,standingHeight=161;
   const walkFrames=[1,2,3,4,5,6,7];
+  const gestures=[
+    {name:'wink',duration:1.08,frames:[[0,0],[.17,1],[.36,2],[.65,1],[.82,3]]},
+    {name:'hair',duration:1.28,frames:[[0,8],[.2,9],[.47,10],[.78,11]]},
+    {name:'kiss',duration:1.24,frames:[[0,4],[.19,5],[.49,6],[.74,7],[.92,4]]}
+  ];
   const eyeAnchors={
     0:[[95,55],[112,53]],12:[[95,55],[112,53]],
     13:[[90,58],[109,62]],15:[[94,55],[111,53]]
@@ -15,12 +23,35 @@
   const ease=t=>t*t*(3-2*t);
   const approach=(from,to,rate,dt)=>from+(to-from)*(1-Math.exp(-rate*dt));
   const ready=()=>art.complete&&art.naturalWidth===frameWidth*4&&art.naturalHeight===frameHeight*4;
+  const gesturesReady=()=>gestureArt.complete&&gestureArt.naturalWidth===frameWidth*4&&gestureArt.naturalHeight===frameHeight*3;
 
   function reset(guide,x) {
     Object.assign(guide,{x,y:0,speed:0,facing:1,turn:1,side:-1,phase:0,stride:0,
       affection:0,still:0,cooldown:.7,mode:'follow',timer:0,flight:null,followJump:0,
-      landed:0,playerGrounded:true});
+      landed:0,playerGrounded:true,gesture:null,gestureTime:0,gestureWait:.68,nextGesture:0});
     return guide;
+  }
+  function updateGesture(guide,watching,dt,reduced) {
+    if(reduced||!watching||guide.mode!=='follow'||guide.flight||guide.followJump){
+      guide.gesture=null;
+      guide.gestureTime=0;
+      guide.gestureWait=Math.max(.65,guide.gestureWait);
+      return;
+    }
+    if(guide.gesture){
+      guide.gestureTime+=dt;
+      if(guide.gestureTime>=guide.gesture.duration){
+        guide.gesture=null;
+        guide.gestureWait=1.65;
+      }
+      return;
+    }
+    guide.gestureWait-=dt;
+    if(guide.gestureWait<=0&&gesturesReady()&&Math.abs(guide.speed)<28){
+      guide.gesture=gestures[guide.nextGesture];
+      guide.gestureTime=0;
+      guide.nextGesture=(guide.nextGesture+1)%gestures.length;
+    }
   }
 
   function update(guide,{dt,player,limit,gap,height,reduced}) {
@@ -41,7 +72,7 @@
       guide.cooldown=2;
     }
     if(guide.mode==='admire'&&(!watching||guide.timer>.85))guide.mode='follow';
-    if(guide.mode==='follow'&&guide.still>1.25&&guide.cooldown===0&&!guide.flight&&!guide.followJump){
+    if(guide.mode==='follow'&&guide.still>1.25&&guide.cooldown===0&&!guide.flight&&!guide.followJump&&!guide.gesture){
       guide.mode=reduced?'admire':'charge';
       guide.timer=0;
       guide.cooldown=11;
@@ -88,6 +119,7 @@
     guide.stride=approach(guide.stride,reduced?0:gait,13,dt);
     const hearts=watching&&guide.still>.36||guide.mode==='hop'||guide.mode==='admire';
     guide.affection=approach(guide.affection,hearts?1:0,12,dt);
+    updateGesture(guide,watching,dt,reduced);
   }
 
   function frameFor({mode,timer,flight,followJump,landed,phase,stride,affection},elapsed,reduced) {
@@ -145,9 +177,31 @@
     ctx.restore();
   }
 
+  function drawGestureEffect(ctx,gesture,t) {
+    if(gesture.name==='kiss'&&t>.49){
+      const progress=(t-.49)/.51;
+      const drift=ease(progress);
+      ctx.save();
+      ctx.globalAlpha=Math.sin(progress*Math.PI);
+      heart(ctx,118+drift*57,61-drift*40,5+3*drift,'#f55a94');
+      heart(ctx,113+drift*39,49-drift*30,3.4,'#ffd3a4');
+      ctx.restore();
+    }
+    if(gesture.name==='wink'&&t>.31&&t<.57){
+      ctx.save();
+      ctx.globalAlpha=Math.sin((t-.31)/.26*Math.PI);
+      ctx.fillStyle='#fff0b8';
+      ctx.fillRect(128,41,2,9);
+      ctx.fillRect(125,44,8,2);
+      ctx.restore();
+    }
+  }
+
   function draw(ctx,guide,{center,groundY,height,elapsed,reduced}) {
     if(!ready())return false;
-    const frame=frameFor(guide,elapsed,reduced);
+    const gesture=!reduced&&gesturesReady()?guide.gesture:null;
+    const progress=gesture?Math.min(1,guide.gestureTime/gesture.duration):0;
+    const frame=gesture?gesture.frames.findLast(([start])=>progress>=start)[1]:frameFor(guide,elapsed,reduced);
     const scale=height/standingHeight;
     const direction=Math.sign(guide.turn)||guide.facing;
     const turnWidth=.78+.22*Math.abs(guide.turn);
@@ -161,9 +215,10 @@
     ctx.rotate(reduced?0:Math.sin(cycle)*guide.stride*.012);
     ctx.scale(1-(breathing+step)*.32,1+breathing+step);
     ctx.translate(-origin,-ground);
-    ctx.drawImage(art,(frame%4)*frameWidth,Math.floor(frame/4)*frameHeight,
+    ctx.drawImage(gesture?gestureArt:art,(frame%4)*frameWidth,Math.floor(frame/4)*frameHeight,
       frameWidth,frameHeight,0,0,frameWidth,frameHeight);
-    express(ctx,guide,frame,elapsed,reduced);
+    if(gesture)drawGestureEffect(ctx,gesture,progress);
+    else express(ctx,guide,frame,elapsed,reduced);
     ctx.restore();
     return true;
   }

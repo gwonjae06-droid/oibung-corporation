@@ -411,7 +411,7 @@
     ctx.fill();
   }
 
-  function curatorHeight(){return Math.round(clamp(H*.205,70,185));}
+  function curatorHeight(){return Math.round(clamp(H*.185,63,157)*.85);}
 
   function positionDialogue(center, top, spriteWidth){
     const edge=14, gap=13;
