@@ -383,7 +383,7 @@
     const sprite=get(b);
     const mx=b.x+b.width*.5-camera;
     const bx=Math.round(mx-sprite.width*scale/2);
-    const by=Math.round(groundY-(sprite.buildingInfo.height-sprite.buildingInfo.base)*scale-sprite.buildingInfo.base*scale);
+    const by=Math.round(groundY-sprite.buildingInfo.base*scale);
     c.save();
     c.imageSmoothingEnabled=false;
     c.drawImage(sprite,bx,by,Math.ceil(sprite.width*scale),Math.ceil(sprite.height*scale));
