@@ -189,7 +189,9 @@
     W=Math.max(160,Math.floor(size.width/LOGICAL_PIXEL_SIZE));
     H=Math.max(130,Math.floor(size.height/LOGICAL_PIXEL_SIZE));
     groundY=H-Math.max(43,Math.min(83,Math.round(H*.092)));
-    canvas.width=W;canvas.height=H;
+    const density=clamp(window.devicePixelRatio||1,1,2);
+    canvas.width=Math.round(W*density);canvas.height=Math.round(H*density);
+    ctx.setTransform(canvas.width/W,0,0,canvas.height/H,0,0);
     ctx.imageSmoothingEnabled=false;
     const roomScale=room()?.resize?.(W,H);
     if(inRoom()&&roomScale&&roomScale!==1){
@@ -479,7 +481,7 @@
   function drawCurator(guide){
     const {state:curator,formId}=guide;
     const height=curatorHeight(formId);
-    const center=Math.round(curator.x-camera);
+    const center=curator.x-camera;
     const width=Math.round(height*.96);
     const top=groundY+curator.y-height;
     const visible=curatorMotion.ready(formId)&&center>=-width&&center<=W+width;

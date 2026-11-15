@@ -22,6 +22,7 @@
     angel:{name:'농',scale:.85,edge:'#66508b',wing:'#eeeaff',shade:'#b6a0dc',frames:[],art},
     devil:{name:'빵',scale:.98,edge:'#391925',wing:'#8e3959',shade:'#542544',art:devilArt}
   };
+  const hdFrames=new WeakMap();
   const formFor=id=>id==='devil'?forms.devil:forms.angel;
   const eyeAnchors={
     0:[[95,56,2.4],[112,55,1.4]],12:[[95,56,2.4],[112,55,1.4]],
@@ -108,7 +109,41 @@
     return layer;
   }
 
+  // Scale2x keeps diagonal pixel clusters defined on high-density displays.
+  function detailedFrame(form,frame,shape) {
+    if(!hdFrames.has(form))hdFrames.set(form,[]);
+    const cache=hdFrames.get(form);
+    if(cache[frame])return cache[frame];
+    const layer=document.createElement('canvas');
+    layer.width=frameWidth*2;layer.height=frameHeight*2;
+    const pixels=layer.getContext('2d');
+    if(form===forms.devil){
+      pixels.drawImage(form.art,(frame%4)*frameWidth,Math.floor(frame/4)*frameHeight,
+        frameWidth,frameHeight,0,0,frameWidth,frameHeight);
+    }else pixels.drawImage(fitFrame(frame,shape,form),0,0);
+    const input=new Uint32Array(pixels.getImageData(0,0,frameWidth,frameHeight).data.buffer);
+    const output=pixels.createImageData(layer.width,layer.height);
+    const result=new Uint32Array(output.data.buffer);
+    for(let y=0;y<frameHeight;y++){
+      for(let x=0;x<frameWidth;x++){
+        const i=y*frameWidth+x,e=input[i];
+        const b=input[y?i-frameWidth:i],h=input[y<frameHeight-1?i+frameWidth:i];
+        const d=input[x?i-1:i],f=input[x<frameWidth-1?i+1:i];
+        const j=y*2*layer.width+x*2;
+        const edge=b!==h&&d!==f;
+        result[j]=edge&&d===b?d:e;
+        result[j+1]=edge&&b===f?f:e;
+        result[j+layer.width]=edge&&d===h?d:e;
+        result[j+layer.width+1]=edge&&h===f?f:e;
+      }
+    }
+    pixels.putImageData(output,0,0);
+    cache[frame]=layer;
+    return layer;
+  }
+
   function reset(guide,x) {
+    delete guide.pose;
     Object.assign(guide,{x,y:0,speed:0,facing:1,turn:1,side:-1,phase:0,stride:0,
       affection:0,still:0,cooldown:.7,mode:'follow',timer:0,flight:null,followJump:0,
       landed:0,playerGrounded:true,gesture:null,gestureTime:0,gestureWait:.68,nextGesture:0});
@@ -246,7 +281,7 @@
   function express(ctx,guide,frame,elapsed,reduced,shape,eyes,winking) {
     if(guide.affection<.12)return;
     ctx.save();
-    ctx.globalAlpha=guide.affection;
+    ctx.globalAlpha*=guide.affection;
     const points=eyes[frame];
     if(points){
       for(const [i,[eyeX,eyeY,size]] of points.entries()){
@@ -336,37 +371,61 @@
     }
     ctx.restore();
   }
+  function drawPose(ctx,form,frame,guide,elapsed,reduced,winking) {
+    const isDevil=form===forms.devil;
+    const shape=(isDevil?devilShapes:winterShapes)[frame];
+    const eyes=isDevil?devilEyes:eyeAnchors;
+    drawWings(ctx,form,shape,reduced?0:Math.sin(elapsed*(isDevil?4.6:3.7))*.15);
+    ctx.drawImage(detailedFrame(form,frame,shape),0,0,frameWidth,frameHeight);
+    drawCrown(ctx,form,shape);
+    express(ctx,guide,frame,elapsed,reduced,shape,eyes,winking);
+  }
+
   function draw(ctx,guide,{center,groundY,height,elapsed,reduced,formId}) {
     if(!ready(formId))return false;
     const form=formFor(formId);
     const gesture=!reduced?guide.gesture:null;
     const progress=gesture?Math.min(1,guide.gestureTime/gesture.duration):0;
     const frame=gesture?gesture.frames.findLast(([start])=>progress>=start)[1]:frameFor(guide,elapsed,reduced);
+    if(!guide.pose||reduced)guide.pose={frame,previous:frame,since:elapsed};
+    const pose=guide.pose;
+    if(frame!==pose.frame){
+      pose.previous=pose.frame;
+      pose.frame=frame;
+      pose.since=elapsed;
+    }
+    const transition=guide.stride>.20?clamp(8/Math.max(1,Math.abs(guide.speed)),.016,.055):.105;
+    const blend=ease(clamp((elapsed-pose.since)/transition,0,1));
     const isDevil=form===forms.devil;
     const shape=(isDevil?devilShapes:winterShapes)[frame];
     const eyes=isDevil?devilEyes:eyeAnchors;
     const scale=height/standingHeight;
     const direction=Math.sign(guide.turn)||guide.facing;
-    const turnWidth=.78+.22*Math.abs(guide.turn);
+    const turnWidth=.34+.66*Math.abs(guide.turn);
     const cycle=guide.phase*Math.PI*2;
-    const breathing=reduced?0:Math.sin(elapsed*2.8)*.009;
+    const time=elapsed+(isDevil?.8:0);
+    const breathing=reduced?0:Math.sin(time*2.8)*.013;
     const step=reduced?0:Math.sin(cycle*2)*guide.stride*.009;
     const lean=gesture?.name==='beckon'?Math.sin(progress*Math.PI)**2*.025:0;
     ctx.save();
-    ctx.imageSmoothingEnabled=false;
+    ctx.imageSmoothingEnabled=true;
     ctx.translate(center,groundY+guide.y);
     ctx.scale(scale*direction*turnWidth,scale);
     ctx.rotate(reduced?0:Math.sin(cycle)*guide.stride*.012+lean);
     ctx.scale(1-(breathing+step)*.32,1+breathing+step);
+    const sway=reduced?0:Math.sin(time*1.9)*.012+
+      Math.sin(cycle)*guide.stride*.010;
+    ctx.transform(1,0,sway,1,0,0);
     ctx.translate(-origin,-ground);
-    drawWings(ctx,form,shape,reduced?0:Math.sin(elapsed*(form===forms.angel?5:8))*.13);
-    if(isDevil)ctx.drawImage(form.art,(frame%4)*frameWidth,Math.floor(frame/4)*frameHeight,
-      frameWidth,frameHeight,0,0,frameWidth,frameHeight);
-    else ctx.drawImage(fitFrame(frame,shape,form),0,0);
-    drawCrown(ctx,form,shape);
     const winking=gesture?.name==='wink'&&progress>.31&&progress<.57;
+    if(!reduced&&blend<1&&pose.previous!==frame){
+      ctx.globalAlpha=1-blend;
+      drawPose(ctx,form,pose.previous,guide,elapsed,reduced,winking);
+      ctx.globalAlpha=blend;
+    }
+    drawPose(ctx,form,frame,guide,elapsed,reduced,winking);
+    ctx.globalAlpha=1;
     if(gesture)drawGestureEffect(ctx,gesture,progress,shape,eyes,frame);
-    express(ctx,guide,frame,elapsed,reduced,shape,eyes,winking);
     ctx.restore();
     return true;
   }
