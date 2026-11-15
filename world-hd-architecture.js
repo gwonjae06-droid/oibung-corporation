@@ -346,6 +346,35 @@
     for(let side of [-1,1])banner(c,mid+side*w*.40,top+260,90,p,rand);
     stoneColumns(c,mid-w*.40,base-235,w*.80,195,p,rand,8);
   }
+  function sourceArt(name){
+    const source=window.OIBUNG_CINEMATIC_ART;
+    return source?.ready(name)?source.images[name]:null;
+  }
+  function applySurfaceDetail(c,w,base,b){
+    const masonry=sourceArt('ornate_stone');
+    if(masonry){
+      c.save();
+      c.globalCompositeOperation='source-atop';
+      c.globalAlpha=b.style==='cat'?.13:b.style==='arena'?.23:.18;
+      c.fillStyle=c.createPattern(masonry,'repeat');
+      c.fillRect(16,65,w-32,base-70);
+      c.restore();
+    }
+    // Stone shields and polished bronze roses at precise facade points.
+    const p=palette[b.style]||palette.studio;
+    for(const dir of [-1,1]){
+      const x=w/2+dir*(b.width*.36),y=base-244;
+      ellipse(c,x,y,18,23,p.dark);
+      ellipse(c,x,y-3,12,16,p.gold);
+      path(c,[[x-10,y-8],[x,y-16],[x+10,y-8],[x+4,y+12],[x,y+17],[x-5,y+12]],p.accent);
+      box(c,x-2,y-9,4,20,p.light);
+      box(c,x-8,y-2,16,3,p.light);
+      for(let j=0;j<6;j++){
+        const yy=base-145-j*30,xx=w/2+dir*(b.width*.43);
+        box(c,xx,yy,3,9,j%2?p.gold:p.light);
+      }
+    }
+  }
   function makeBuilding(b){
     const p=palette[b.style]||palette.studio;
     const w=Math.round(b.width+170),h=Math.round(b.height+126);
@@ -354,11 +383,24 @@
     const c=surface.getContext('2d',{alpha:true});
     const random=rng((b.seed>>>0)||71);
     const base=h-24;
+    // Odenring is a single original monumental HD facade from the art pass.
+    // The transparent illustration is baked directly into the same cached
+    // canvas, so door position, alpha hit test and LRU still share one source.
+    const castleArt=b.style==='castle'?sourceArt('castle_facade'):null;
+    if(castleArt){
+      const bw=Math.round(w*1.01),bh=base;
+      c.imageSmoothingEnabled=true; // detailed source stays legible when fitted
+      c.drawImage(castleArt,Math.floor((w-bw)/2),0,bw,bh);
+      c.imageSmoothingEnabled=false;
+      surface.buildingInfo={base,width:w,height:h,hires:true};
+      return surface;
+    }
     // Distant buttress, side walls and roof foundations.
     box(c,28,base-21,w-56,22,p.dark);
     box(c,24,base-18,w-48,7,p.light);
     const fn={castle,arena,duel,tactics,cat,studio:generic,tower:generic}[b.style]||generic;
     fn(c,w,h,b,p,random,base);
+    applySurfaceDetail(c,w,base,b);
     portal(c,w/2,base,p,random);
     for(let i=0;i<8;i++){
       const x=55+(i+.5)*(w-110)/8;
@@ -383,7 +425,10 @@
     return surface;
   }
   function get(b){
-    const key=b.style+':'+b.width+':'+b.height+':'+b.seed;
+    // Loading the art asynchronously upgrades a fallback building without
+    // requiring a page refresh, while keeping legacy local render behavior.
+    const type=b.style==='castle'&&sourceArt('castle_facade')?'illustrated':'procedural';
+    const key=type+':'+b.style+':'+b.width+':'+b.height+':'+b.seed;
     if(cache.has(key)){
       // A tiny LRU avoids holding old giant canvases after fast travel.
       const sprite=cache.get(key);
