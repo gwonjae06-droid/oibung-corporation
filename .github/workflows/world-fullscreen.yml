@@ -1,0 +1,46 @@
+name: Oibung fullscreen world smoke
+on:
+  push:
+    branches: ["feat/world-fullscreen-no-page-ui"]
+    paths:
+      - "index.html"
+      - "world-fullscreen.css"
+      - "world-fullscreen.js"
+      - "oibung-world.js"
+      - "tests/world-fullscreen.cjs"
+      - ".github/workflows/world-fullscreen.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check scripts
+        run: |
+          node --check oibung-world.js
+          node --check world-fullscreen.js
+          node --check tests/world-fullscreen.cjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Test desktop, portrait and landscape fullscreen mode
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/oibung-fullscreen.log 2>&1 &
+          sleep 2
+          node tests/world-fullscreen.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fullscreen-world-screenshots-${{ github.run_number }}
+          path: artifacts/*.png
+          retention-days: 14
+          if-no-files-found: ignore
