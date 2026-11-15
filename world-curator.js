@@ -9,7 +9,6 @@
   devilArt.src='assets/world-pixel/curator-devil-ponytail.png';
 
   const frameWidth=188,frameHeight=194,ground=175,origin=91,standingHeight=161;
-  const walkFrames=[1,2,3,4,5,6,7];
   const gestures=[
     {name:'wink',duration:1.08,frames:[[0,12],[.17,13],[.78,15]]},
     {name:'hair',duration:1.28,frames:[[0,13],[.47,14],[.78,15]]},
@@ -166,6 +165,10 @@
 
   function reset(guide,x) {
     delete guide.pose;
+    delete guide.rigCanvas;
+    delete guide.rigContext;
+    delete guide.rigImage;
+    delete guide.rigOutput;
     Object.assign(guide,{x,y:0,speed:0,facing:1,turn:1,side:-1,phase:0,stride:0,
       affection:0,still:0,cooldown:.7,mode:'follow',timer:0,flight:null,followJump:0,
       landed:0,playerGrounded:true,gesture:null,gestureTime:0,gestureWait:.68,nextGesture:0,
@@ -273,8 +276,10 @@
     // Continuous secondary rig follows velocity, gaze and breathing,
     // rather than snapping every time the sprite-sheet frame changes.
     const motionDt=Math.min(dt,1/30);
+    const gestureLift=guide.gesture?Math.sin(Math.PI*clamp(guide.gestureTime/guide.gesture.duration,0,1))**2:0;
     const tilt=reduced?0:clamp(-guide.speed*.00011,-.05,.05)
-      +Math.sin(guide.timer*(groundedGuide?1.55:1.28))*.014;
+      +Math.sin(guide.timer*(groundedGuide?1.55:1.28))*.014+
+      (guide.gesture?.name==='hair'?-.09:guide.gesture?.name==='kiss'?.07:0)*gestureLift;
     const bounce=reduced?0:-Math.abs(Math.sin(guide.phase*Math.PI*2))*guide.stride*1.7
       +Math.sin(guide.timer*2.25)*.7;
     const gaze=reduced?0:clamp(distance/Math.max(gap*3,100),-1,1)*1.6;
@@ -285,26 +290,6 @@
     spring(guide,'look',gaze,75,17,motionDt);
     spring(guide,'wingAngle',wing,74,16,motionDt);
     updateGesture(guide,watching,dt,reduced);
-  }
-
-  function frameFor({mode,timer,flight,followJump,landed,phase,stride,affection,formId},elapsed,reduced) {
-    if(reduced)return affection>.55&&formId!=='devil'?13:0;
-    if(flight){
-      const progress=flight.time/flight.duration;
-      if(progress<.22)return 9;
-      if(progress<.83)return 10;
-      return 11;
-    }
-    if(landed>.045)return 11;
-    if(followJump>0)return 8;
-    if(mode==='charge')return timer<.15?13:14;
-    if(mode==='admire')return 13;
-    if(stride>.27)return walkFrames[Math.floor(phase*walkFrames.length)];
-    if(stride>.10)return 7;
-    if(formId==='devil')return 0;
-    if(affection>.60)return 13;
-    const idle=elapsed%3.4;
-    return idle>2.95?15:idle>1.65?12:0;
   }
 
   function heart(ctx,x,y,size,fill) {
@@ -415,12 +400,104 @@
     }
     ctx.restore();
   }
-  function drawBody(ctx,form,frame) {
-    const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
+  // Live pixel rig: deform ONE opaque source pose using a smoothly varying
+  // inverse displacement field. No translucent overlays or sprite-frame swaps.
+  // Each guide keeps one reusable bitmap; the 2x texture preserves subpixel
+  // limb movement without introducing an expensive new atlas per frame.
+  const rigSources=new WeakMap();
+  const rigResolution=2;
+  function rigSource(form) {
+    if(rigSources.has(form))return rigSources.get(form);
+    const isDevil=form===forms.devil;
+    const shape=(isDevil?devilShapes:winterShapes)[0];
+    const width=frameWidth*rigResolution,height=frameHeight*rigResolution;
+    const canvas=document.createElement('canvas');
+    canvas.width=width;canvas.height=height;
+    const pixels=canvas.getContext('2d',{willReadFrequently:true});
+    pixels.imageSmoothingEnabled=true;
+    pixels.drawImage(detailedFrame(form,0,shape),0,0,width,height);
+    const rgba=new Uint32Array(pixels.getImageData(0,0,width,height).data.buffer);
+    const lArm=new Float32Array(width),rArm=new Float32Array(width);
+    const lLeg=new Float32Array(width),rLeg=new Float32Array(width);
+    function influence(x,pivot,radius){
+      const u=clamp(1-Math.abs(x-pivot)/radius,0,1);
+      return u*u*(3-2*u);
+    }
+    for(let x=0;x<width;x++){
+      const u=x/rigResolution;
+      lArm[x]=influence(u,isDevil?75:68,17);
+      rArm[x]=influence(u,isDevil?110:117,16);
+      lLeg[x]=influence(u,isDevil?87:87,15);
+      rLeg[x]=influence(u,isDevil?105:108,15);
+    }
+    const source={width,height,rgba,lArm,rArm,lLeg,rLeg,neck:shape.output[2],
+      isDevil};
+    rigSources.set(form,source);
+    return source;
+  }
+  function drawBody(ctx,form,guide,elapsed,reduced,gesture,progress) {
+    const shape=(form===forms.devil?devilShapes:winterShapes)[0];
     const from=clamp(Math.floor(shape.output[2]-4),0,frameHeight-1);
-    const layer=detailedFrame(form,frame,shape);
-    ctx.drawImage(layer,0,from*3,layer.width,(frameHeight-from)*3,
-      0,from,frameWidth,frameHeight-from);
+    if(reduced){
+      const layer=detailedFrame(form,0,shape);
+      ctx.drawImage(layer,0,from*3,layer.width,(frameHeight-from)*3,
+        0,from,frameWidth,frameHeight-from);
+      return;
+    }
+    const source=rigSource(form);
+    if(!guide.rigCanvas){
+      guide.rigCanvas=document.createElement('canvas');
+      guide.rigCanvas.width=source.width;
+      guide.rigCanvas.height=source.height;
+      guide.rigContext=guide.rigCanvas.getContext('2d');
+      guide.rigImage=guide.rigContext.createImageData(source.width,source.height);
+      guide.rigOutput=new Uint32Array(guide.rigImage.data.buffer);
+    }
+    const {width,height,rgba,lArm,rArm,lLeg,rLeg,neck,isDevil}=source;
+    const out=guide.rigOutput;
+    const phase=guide.phase*Math.PI*2;
+    const stride=clamp(guide.stride,0,1);
+    const step=Math.sin(phase)*stride,upLeft=Math.max(0,Math.cos(phase))*stride,
+      upRight=Math.max(0,-Math.cos(phase))*stride;
+    const quietSway=Math.sin(elapsed*1.6+(isDevil?.6:0))*.58;
+    const breath=Math.sin(elapsed*2.6+(isDevil?.7:0))*.35;
+    const gestureWeight=gesture?Math.sin(progress*Math.PI)**2:0;
+    const beckon=gesture?.name==='beckon'?gestureWeight:0;
+    const hair=gesture?.name==='hair'?gestureWeight:0;
+    const kiss=gesture?.name==='kiss'?gestureWeight:0;
+    const crouch=guide.mode==='charge'?ease(clamp(guide.timer/.38,0,1)):0;
+    const start=from*rigResolution;
+    for(let y=start;y<height;y++){
+      const py=y/rigResolution;
+      // Deformation envelopes taper to zero at each joint. The source
+      // remains intact; only actual pixels are spatially repositioned.
+      const armReach=ease(clamp((py-neck-2)/39,0,1))*
+        (1-ease(clamp((py-neck-82)/24,0,1)));
+      const legReach=ease(clamp((py-(ground-48))/36,0,1));
+      const cloth=ease(clamp((py-neck-22)/62,0,1))*
+        (1-ease(clamp((py-(ground-27))/26,0,1)));
+      const bodySway=ease(clamp((py-neck)/56,0,1));
+      const liftLeft=upLeft*5.0*legReach,liftRight=upRight*5.0*legReach;
+      const verticalCloth=cloth*(breath*.45+Math.abs(step)*.9)+crouch*2.6*bodySway;
+      const row=y*width;
+      for(let x=0;x<width;x++){
+        const leftArm=lArm[x]*armReach,rightArm=rArm[x]*armReach;
+        const leftLeg=lLeg[x]*legReach,rightLeg=rLeg[x]*legReach;
+        const dx=(quietSway*bodySway+step*(leftArm*-5.8+rightArm*5.8+
+          leftLeg*10-rightLeg*10)+
+          cloth*(Math.sin(elapsed*2+phase*.18)*1.1)+
+          rightArm*beckon*9+leftArm*hair*-6+rightArm*kiss*-4)*rigResolution;
+        const dy=(verticalCloth+leftLeg*-liftLeft+rightLeg*-liftRight-
+          rightArm*beckon*7-leftArm*hair*8-rightArm*kiss*4)*rigResolution;
+        const sx=clamp(Math.round(x-dx),0,width-1);
+        const sy=clamp(Math.round(y-dy),0,height-1);
+        out[row+x]=rgba[sy*width+sx];
+      }
+    }
+    // Upper rows are unused by the independently drawn head.
+    guide.rigContext.putImageData(guide.rigImage,0,0,0,start,width,height-start);
+    ctx.drawImage(guide.rigCanvas,0,start,width,height-start,0,from,
+      frameWidth,frameHeight-from);
   }
 
   // Independent neck-pivot sprite rig: the face stays stable during walking
@@ -467,30 +544,21 @@
     if(!ready(formId))return false;
     const form=formFor(formId);
     const gesture=!reduced?guide.gesture:null;
-    const progress=gesture?Math.min(1,guide.gestureTime/gesture.duration):0;
-    const frame=gesture?gesture.frames.findLast(([start])=>progress>=start)[1]:frameFor(guide,elapsed,reduced);
-    if(!guide.pose||reduced)guide.pose={frame,previous:frame,since:elapsed};
-    const pose=guide.pose;
-    if(frame!==pose.frame){
-      pose.previous=pose.frame;
-      pose.frame=frame;
-      pose.since=elapsed;
-    }
-    // Blend only the animated torso: whole-sprite crossfades used to make
-    // the head appear doubled and then snap when one pose disappeared.
-    const transition=guide.stride>.20?clamp(17/Math.max(1,Math.abs(guide.speed)),.06,.13):.16;
-    const blend=ease(clamp((elapsed-pose.since)/transition,0,1));
-    const isDevil=form===forms.devil;
-    const shape=(isDevil?devilShapes:winterShapes)[frame];
-    const eyes=isDevil?devilEyes:eyeAnchors;
+    const progress=gesture?clamp(guide.gestureTime/gesture.duration,0,1):0;
+    // Every animation uses the same portrait and outfit pixels. Motion is
+    // driven by the continuous rig, not swapping or fading between poses.
+    const frame=0;
+    const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
+    const eyes=form===forms.devil?devilEyes:eyeAnchors;
     const scale=height/standingHeight;
     const direction=Math.sign(guide.turn)||guide.facing;
     const turnWidth=.34+.66*Math.abs(guide.turn);
     const cycle=guide.phase*Math.PI*2;
-    const time=elapsed+(isDevil?.8:0);
+    const time=elapsed+(form===forms.devil?.8:0);
     const breathing=reduced?0:Math.sin(time*2.8)*.013;
     const step=reduced?0:Math.sin(cycle*2)*guide.stride*.009;
-    const lean=gesture?.name==='beckon'?Math.sin(progress*Math.PI)**2*.025:0;
+    const gestureBend=gesture?Math.sin(progress*Math.PI)**2:0;
+    const lean=gesture?.name==='beckon'?gestureBend*.027:0;
     ctx.save();
     ctx.imageSmoothingEnabled=false;
     ctx.translate(center,groundY+guide.y);
@@ -502,39 +570,10 @@
     ctx.transform(1,0,sway,1,0,0);
     ctx.translate(-origin,-ground);
     drawWings(ctx,form,shape,reduced?0:guide.wingAngle);
-    const walking=!reduced&&guide.mode==='follow'&&!guide.flight&&!guide.followJump&&
-      !gesture&&guide.stride>.08;
-    if(walking){
-      // Blend adjacent cycle frames by fractional travel, instead of snapping
-      // at every seventh of a step. Fade the gait in/out as speed changes.
-      const walkPhase=guide.phase*walkFrames.length;
-      const walkIndex=Math.floor(walkPhase)%walkFrames.length;
-      const nextIndex=(walkIndex+1)%walkFrames.length;
-      const fraction=ease(walkPhase-Math.floor(walkPhase));
-      const gaitFade=ease(clamp((guide.stride-.08)/.32,0,1));
-      ctx.globalAlpha=1-gaitFade;
-      drawBody(ctx,form,0);
-      ctx.globalAlpha=gaitFade*(1-fraction);
-      drawBody(ctx,form,walkFrames[walkIndex]);
-      ctx.globalAlpha=gaitFade*fraction;
-      drawBody(ctx,form,walkFrames[nextIndex]);
-    }else{
-      const transitioning=!reduced&&blend<1&&pose.previous!==frame;
-      if(transitioning){
-        ctx.globalAlpha=1-blend;
-        drawBody(ctx,form,pose.previous);
-        ctx.globalAlpha=blend;
-      }
-      drawBody(ctx,form,frame);
-    }
-    ctx.globalAlpha=1;
-    // Keep the head registration stable during idle, turning and the gait.
-    // Only gestures and airborne silhouettes change the head source frame.
-    const stableHead=guide.mode==='follow'&&!guide.flight&&!guide.followJump&&!gesture;
-    const headFrame=stableHead?0:frame;
+    drawBody(ctx,form,guide,elapsed,reduced,gesture,progress);
     const winking=gesture?.name==='wink'&&progress>.31&&progress<.57;
-    drawHead(ctx,form,headFrame,guide,elapsed,reduced,winking);
-    if(gesture)drawGestureEffect(ctx,gesture,progress,shape,eyes,frame);
+    drawHead(ctx,form,0,guide,elapsed,reduced,winking);
+    if(gesture)drawGestureEffect(ctx,gesture,progress,shape,eyes,0);
     ctx.restore();
     return true;
   }
