@@ -9,14 +9,13 @@
   devilArt.src='assets/world-pixel/curator-devil-ponytail.png';
 
   const frameWidth=188,frameHeight=194,ground=175,origin=91,standingHeight=161;
+  // Distinct non-fading, joint-driven charm actions. No sprite opacity blends.
   const gestures=[
-    {name:'wink',duration:1.08,frames:[[0,12],[.17,13],[.78,15]]},
-    {name:'hair',duration:1.28,frames:[[0,13],[.47,14],[.78,15]]},
-    {name:'kiss',duration:1.24,frames:[[0,12],[.19,13],[.74,15]]}
+    {name:'wink',duration:1.32},
+    {name:'hair',duration:1.72},
+    {name:'kiss',duration:1.95}
   ];
-  const devilGesture={name:'beckon',duration:2.85,frames:[
-    [0,12],[.24,13],[.40,14],[.78,15]
-  ]};
+  const devilGesture={name:'beckon',duration:2.65};
   const forms={
     angel:{name:'농',scale:.85,edge:'#66508b',wing:'#eeeaff',shade:'#b6a0dc',frames:[],art},
     devil:{name:'빵',scale:.98,edge:'#391925',wing:'#8e3959',shade:'#542544',art:devilArt}
@@ -29,6 +28,8 @@
   };
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
   const ease=t=>t*t*(3-2*t);
+  const smooth=(t,a,b)=>ease(clamp((t-a)/(b-a),0,1));
+  const hold=(t,a,b,c,d)=>smooth(t,a,b)*(1-smooth(t,c,d));
   const approach=(from,to,rate,dt)=>from+(to-from)*(1-Math.exp(-rate*dt));
   const ready=formId=>{
     const image=formFor(formId).art;
@@ -183,26 +184,63 @@
     guide[key]+=velocity*dt;
     guide[velocityKey]=velocity;
   }
+  // Continuous phases: prepare -> deliberate pose -> release. Each hand has
+  // its own displacement, so these gestures remain recognizably different.
+  function flirtPose(gesture,t) {
+    const still={leftX:0,leftY:0,rightX:0,rightY:0,tilt:0,lean:0};
+    if(!gesture)return still;
+    if(gesture.name==='wink'){
+      const p=hold(t,.05,.28,.63,.90);
+      return {...still,rightX:-7*p,rightY:-22*p,tilt:.085*p,lean:.025*p};
+    }
+    if(gesture.name==='hair'){
+      const sweep=hold(t,.06,.36,.64,.95);
+      const flick=Math.sin(t*Math.PI*4)*hold(t,.36,.46,.66,.80);
+      return {...still,leftX:(11+flick*4)*sweep,leftY:-37*sweep,
+        tilt:-.12*sweep,lean:-.035*sweep};
+    }
+    if(gesture.name==='kiss'){
+      const mouth=hold(t,.02,.28,.43,.68);
+      const release=hold(t,.47,.66,.83,.99);
+      return {...still,rightX:-10*mouth+24*release,
+        rightY:-30*mouth-13*release,tilt:.095*(mouth+release),
+        lean:.06*release};
+    }
+    if(gesture.name==='beckon'){
+      const reach=hold(t,.05,.33,.76,.98);
+      const tease=Math.sin((t-.38)*Math.PI*7)*hold(t,.38,.46,.77,.90);
+      return {...still,rightX:(19+tease*6)*reach,
+        rightY:-37*reach+tease*4, leftX:-5*reach,
+        tilt:-.12*reach,lean:.095*reach};
+    }
+    return still;
+  }
+
   function updateGesture(guide,watching,dt,reduced) {
-    if(reduced||!watching||guide.mode!=='follow'||guide.flight||guide.followJump){
+    if(reduced||guide.flight||guide.followJump||guide.mode!=='follow'){
       guide.gesture=null;
       guide.gestureTime=0;
-      guide.gestureWait=Math.max(.65,guide.gestureWait);
+      guide.gestureWait=Math.max(.55,guide.gestureWait);
       return;
     }
+    // Finish a charm pose even if the visitor moves briefly; the old
+    // implementation cancelled it on the first moving frame.
     if(guide.gesture){
       guide.gestureTime+=dt;
       if(guide.gestureTime>=guide.gesture.duration){
         guide.gesture=null;
-        guide.gestureWait=1.65;
+        guide.gestureTime=0;
+        guide.gestureWait=1.5;
       }
       return;
     }
-    guide.gestureWait-=dt;
-    if(guide.gestureWait<=0&&Math.abs(guide.speed)<28){
+    if(!watching)return;
+    guide.gestureWait=Math.max(0,guide.gestureWait-dt);
+    if(guide.gestureWait===0&&Math.abs(guide.speed)<48){
       guide.gesture=guide.formId==='devil'?devilGesture:gestures[guide.nextGesture];
       guide.gestureTime=0;
-      guide.nextGesture=(guide.nextGesture+1)%gestures.length;
+      guide.gestureWait=1.5;
+      if(guide.formId!=='devil')guide.nextGesture=(guide.nextGesture+1)%gestures.length;
     }
   }
 
@@ -211,7 +249,7 @@
     const groundedGuide=formId==='devil';
     const distance=player.x-guide.x;
     const close=Math.abs(distance)<gap+44;
-    const watching=player.onGround&&Math.abs(player.vx)<13&&close;
+    const watching=player.onGround&&Math.abs(player.vx)<42&&close;
     const previousX=guide.x;
     guide.cooldown=Math.max(0,guide.cooldown-dt);
     guide.landed=Math.max(0,guide.landed-dt);
@@ -249,7 +287,7 @@
     const restingGap=watching&&guide.cooldown>9.8?gap*.65:gap;
     const slot=targetX===undefined?guide.side*gap:targetX-player.x;
     const target=clamp(player.x+slot*restingGap/gap,20,limit-20);
-    const walkTarget=guide.mode==='charge'||guide.mode==='hop'?guide.x:target;
+    const walkTarget=guide.mode==='charge'||guide.mode==='hop'||guide.gesture?guide.x:target;
     guide.speed=approach(guide.speed,clamp((walkTarget-guide.x)*8,-415,415),11,dt);
     if(guide.flight){
       const flight=guide.flight;
@@ -277,10 +315,10 @@
     // Continuous secondary rig follows velocity, gaze and breathing,
     // rather than snapping every time the sprite-sheet frame changes.
     const motionDt=Math.min(dt,1/30);
-    const gestureLift=guide.gesture?Math.sin(Math.PI*clamp(guide.gestureTime/guide.gesture.duration,0,1))**2:0;
+    const action=flirtPose(guide.gesture,guide.gesture?
+      clamp(guide.gestureTime/guide.gesture.duration,0,1):0);
     const tilt=reduced?0:clamp(-guide.speed*.00011,-.05,.05)
-      +Math.sin(guide.timer*(groundedGuide?1.55:1.28))*.014+
-      (guide.gesture?.name==='hair'?-.09:guide.gesture?.name==='kiss'?.07:0)*gestureLift;
+      +Math.sin(guide.timer*(groundedGuide?1.55:1.28))*.014+action.tilt;
     const bounce=reduced?0:-Math.abs(Math.sin(guide.phase*Math.PI*2))*guide.stride*1.7
       +Math.sin(guide.timer*2.25)*.7;
     const gaze=reduced?0:clamp(distance/Math.max(gap*3,100),-1,1)*1.6;
@@ -341,9 +379,9 @@
       heart(ctx,x-5+drift*39,y-12-drift*30,3.4,'#ffd3a4');
       ctx.restore();
     }
-    if(gesture.name==='wink'&&t>.31&&t<.57){
+    if(gesture.name==='wink'&&t>.28&&t<.68){
       ctx.save();
-      ctx.globalAlpha=Math.sin((t-.31)/.26*Math.PI);
+      ctx.globalAlpha=Math.sin((t-.28)/.40*Math.PI);
       ctx.fillStyle='#fff0b8';
       const [x,y]=featurePoint(shape,128,41);
       ctx.fillRect(x,y,2,9);
@@ -357,6 +395,35 @@
       ctx.fillRect(eyeX-4,eyeY,3,1);
       ctx.fillRect(eyeX-1,eyeY+1,4,1);
       ctx.restore();
+    }
+    // Character-specific seduction accents accompany the actual arm motion,
+    // never replace it with a crossfade.
+    if(gesture.name==='hair'){
+      const flick=hold(t,.27,.46,.70,.91);
+      if(flick>.02){
+        ctx.save();
+        const [x,y]=featurePoint(shape,73,34);
+        ctx.translate(x,y);
+        ctx.rotate((t-.4)*.7);
+        ctx.globalAlpha=flick;
+        ctx.fillStyle='#ffe8ba';
+        ctx.fillRect(-4,-6,3,8);ctx.fillRect(-7,-3,9,3);
+        ctx.fillStyle='#f8a9c0';ctx.fillRect(9,0,3,3);
+        ctx.restore();
+      }
+    }
+    if(gesture.name==='beckon'){
+      const wave=hold(t,.37,.47,.80,.94);
+      if(wave>.02){
+        ctx.save();
+        const [x,y]=featurePoint(shape,119,67);
+        ctx.globalAlpha=wave;
+        ctx.translate(x+14+Math.sin(t*Math.PI*7)*3,y-18);
+        ctx.fillStyle='#ffd4df';
+        heart(ctx,0,0,4.5,'#ff83ae');
+        ctx.fillStyle='#fee5bb';ctx.fillRect(-13,-8,3,8);
+        ctx.restore();
+      }
     }
   }
 
@@ -463,10 +530,7 @@
       upRight=Math.max(0,-Math.cos(phase))*stride;
     const quietSway=Math.sin(elapsed*1.6+(isDevil?.6:0))*.58;
     const breath=Math.sin(elapsed*2.6+(isDevil?.7:0))*.35;
-    const gestureWeight=gesture?Math.sin(progress*Math.PI)**2:0;
-    const beckon=gesture?.name==='beckon'?gestureWeight:0;
-    const hair=gesture?.name==='hair'?gestureWeight:0;
-    const kiss=gesture?.name==='kiss'?gestureWeight:0;
+    const action=flirtPose(gesture,progress);
     const crouch=clamp(guide.crouch,0,1);
     const start=from*rigResolution;
     for(let y=start;y<height;y++){
@@ -488,9 +552,9 @@
         const dx=(quietSway*bodySway+step*(leftArm*-5.8+rightArm*5.8+
           leftLeg*10-rightLeg*10)+
           cloth*(Math.sin(elapsed*2+phase*.18)*1.1)+
-          rightArm*beckon*9+leftArm*hair*-6+rightArm*kiss*-4)*rigResolution;
-        const dy=(verticalCloth+leftLeg*-liftLeft+rightLeg*-liftRight-
-          rightArm*beckon*7-leftArm*hair*8-rightArm*kiss*4)*rigResolution;
+          rightArm*action.rightX+leftArm*action.leftX)*rigResolution;
+        const dy=(verticalCloth+leftLeg*-liftLeft+rightLeg*-liftRight+
+          rightArm*action.rightY+leftArm*action.leftY)*rigResolution;
         const sx=clamp(Math.round(x-dx),0,width-1);
         const sy=clamp(Math.round(y-dy),0,height-1);
         out[row+x]=rgba[sy*width+sx];
@@ -563,8 +627,8 @@
     const time=elapsed+(form===forms.devil?.8:0);
     const breathing=reduced?0:Math.sin(time*2.8)*.013;
     const step=reduced?0:Math.sin(cycle*2)*guide.stride*.009;
-    const gestureBend=gesture?Math.sin(progress*Math.PI)**2:0;
-    const lean=gesture?.name==='beckon'?gestureBend*.027:0;
+    const action=flirtPose(gesture,progress);
+    const lean=action.lean;
     ctx.save();
     ctx.imageSmoothingEnabled=false;
     ctx.translate(center,groundY+guide.y);
