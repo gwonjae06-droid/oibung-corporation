@@ -91,7 +91,9 @@ const fs=require('node:fs/promises');
       before=await page.evaluate(()=>window.OIBUNG_WORLD.getState());
       const sx=doorCenter-before.camera;
       if(sx>140&&sx<viewport.width-100){
-        await page.mouse.click(sx,57);
+        // On short landscape screens the new tall spires legitimately reach
+        // y=57. Test genuinely empty sky above their pixel silhouette instead.
+        await page.mouse.click(sx,5);
         await page.waitForTimeout(65);
         moved=await page.evaluate(()=>window.OIBUNG_WORLD.getState());
         assert.ok(Math.abs(moved.playerX-before.playerX)<8,'Empty sky click must not warp character');
