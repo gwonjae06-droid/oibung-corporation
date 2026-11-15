@@ -1,0 +1,99 @@
+/* Interior spaces are genuine playable world scenes, not full-page HTML. */
+#games .world-interior-hud{
+ position:absolute;z-index:28;
+ left:calc(12px + env(safe-area-inset-left,0px));
+ top:calc(65px + env(safe-area-inset-top,0px));
+ display:flex;align-items:center;gap:12px;
+ max-width:calc(100% - 24px);
+ color:#f6e9d4;background:#182832e7;border:2px solid #c0a47c;
+ box-shadow:3px 3px 0 #0b171a7d;
+ border-radius:3px;padding:7px 10px;
+ font:800 12px/1.4 'Noto Sans KR',system-ui,sans-serif;
+}
+#games .world-interior-hud[hidden]{display:none!important}
+#games .world-interior-location{min-width:0;white-space:nowrap;max-width:min(370px,45vw);overflow:hidden;text-overflow:ellipsis;}
+#games #world-interior-return{
+ cursor:pointer;padding:7px 11px;min-height:38px;
+ color:#fff1d9;background:#405e58;border:1px solid #e3c28f;
+ border-radius:2px;font:800 12px/1 'Noto Sans KR',system-ui,sans-serif;
+ white-space:nowrap
+}
+#games #world-interior-return:focus-visible{outline:3px solid #f9d58e;outline-offset:2px}
+#games .world-interior-info{
+ --roomAccent:#d9b88d;
+ position:absolute;z-index:48;
+ top:50%;left:50%;transform:translate(-50%,-50%);
+ width:min(620px,calc(100% - 28px));
+ max-height:min(78dvh,670px);overflow-y:auto;
+ padding:clamp(18px,3.5vw,32px);
+ background:#202d34f5;color:#f8eeda;
+ border:3px solid var(--roomAccent);
+ border-radius:3px;
+ box-shadow:0 18px 55px #07121cbd,6px 6px 0 #090f13a6;
+ backdrop-filter:blur(6px);
+ overscroll-behavior:contain;
+}
+#games .world-interior-info[hidden]{display:none!important}
+#games .world-info-close{
+ position:absolute;right:11px;top:11px;
+ display:grid;place-items:center;min-height:44px;min-width:44px;
+ cursor:pointer;color:#ffe6c6;background:#39444c;
+ border:2px solid var(--roomAccent);border-radius:2px;font:800 22px monospace;
+}
+#games .world-info-kicker{
+ display:block;margin-right:50px;
+ font:800 11px/1.5 monospace;letter-spacing:.1em;color:var(--roomAccent);
+}
+#games .world-interior-info h2{
+ margin:9px 55px 15px 0!important;
+ font:900 clamp(21px,4vw,30px)/1.4 'Noto Sans KR',system-ui,sans-serif!important;
+ color:#fff0d9!important;letter-spacing:-.04em;
+}
+#games .world-info-description{
+ margin:0 0 15px!important;white-space:pre-line;
+ color:#ebdfce!important;font:600 15px/1.85 'Noto Sans KR',system-ui,sans-serif!important;
+ word-break:keep-all;
+}
+#games .world-info-meta{
+ padding:11px 0;border-top:1px solid #9b927770;
+ color:#cabda8!important;font:600 12px/1.5 'Noto Sans KR',system-ui,sans-serif!important;
+}
+#games .world-info-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+#games .world-info-actions button,#games .world-info-actions a{
+ min-height:46px;display:flex;align-items:center;justify-content:center;
+ border:2px solid var(--roomAccent);background:#465c53;color:#fff4e0;
+ padding:10px 15px;font:800 13px/1.4 'Noto Sans KR',system-ui,sans-serif;
+ border-radius:2px;cursor:pointer;text-decoration:none;
+}
+#games .world-info-actions a{background:#896f4a}
+#games .world-info-actions button:hover,#games .world-info-actions a:hover{filter:brightness(1.1)}
+#games .world-interior-info[data-theme="castle"]{--roomAccent:#e0a5a4}
+#games .world-interior-info[data-theme="arena"]{--roomAccent:#eecf93}
+#games .world-interior-info[data-theme="duel"]{--roomAccent:#c9b4dc}
+#games .world-interior-info[data-theme="tactics"]{--roomAccent:#b3d1b1}
+#games .world-interior-info[data-theme="cat"]{--roomAccent:#f2c0d8}
+#games .world-interior-info[data-theme="tower"]{--roomAccent:#d3b8eb}
+#games .is-world-interior ~ .world-controlbar .world-enter:not(:disabled){
+ background:#4e6055e8!important;
+}
+@media(max-width:620px){
+ #games .world-interior-hud{
+  top:calc(59px + env(safe-area-inset-top,0px));
+  left:calc(8px + env(safe-area-inset-left,0px));
+  max-width:calc(100% - 80px);
+  padding:5px 7px;gap:6px;
+  font-size:10px;
+ }
+ #games .world-interior-location{max-width:120px}
+ #games #world-interior-return{min-height:34px;font-size:10px;padding:5px 8px}
+ #games .world-interior-info{max-height:calc(100dvh - 55px);padding:21px 15px}
+ #games .world-info-description{font-size:13px!important}
+ #games .world-info-actions button,#games .world-info-actions a{font-size:12px;flex:1}
+}
+@media(max-height:470px) and (orientation:landscape){
+ #games .world-interior-hud{
+  top:7px;left:calc(50% - 130px);transform:translateX(-20%);
+  max-width:calc(100% - 175px);
+ }
+ #games .world-interior-info{max-height:calc(100dvh - 20px)}
+}
