@@ -482,7 +482,7 @@
     const center=Math.round(curator.x-camera);
     const width=Math.round(height*.96);
     const top=groundY+curator.y-height;
-    const visible=curatorMotion.ready()&&center>=-width&&center<=W+width;
+    const visible=curatorMotion.ready(formId)&&center>=-width&&center<=W+width;
     if(guide===speakingGuide()){
       guideBubble.hidden=!visible||!guideBubble.textContent||elapsed>guideTextUntil||center<0||center>W;
       if(!guideBubble.hidden)positionDialogue(center,top,width,height,guide);

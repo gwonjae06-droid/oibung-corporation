@@ -4,6 +4,9 @@
   const art=new Image();
   art.decoding='async';
   art.src='assets/world-pixel/curator-winter-frames.png';
+  const devilArt=new Image();
+  devilArt.decoding='async';
+  devilArt.src='assets/world-pixel/curator-devil-frames.png';
 
   const frameWidth=188,frameHeight=194,ground=175,origin=91,standingHeight=161;
   const walkFrames=[1,2,3,4,5,6,7];
@@ -13,8 +16,8 @@
     {name:'kiss',duration:1.24,frames:[[0,12],[.19,13],[.74,15]]}
   ];
   const forms={
-    angel:{name:'농',scale:.85,edge:'#66508b',wing:'#eeeaff',shade:'#b6a0dc',frames:[]},
-    devil:{name:'빵',scale:.95,edge:'#391925',wing:'#8e3959',shade:'#542544',frames:[]}
+    angel:{name:'농',scale:.85,edge:'#66508b',wing:'#eeeaff',shade:'#b6a0dc',frames:[],art},
+    devil:{name:'빵',scale:.98,edge:'#391925',wing:'#8e3959',shade:'#542544',art:devilArt}
   };
   const formFor=id=>id==='devil'?forms.devil:forms.angel;
   const eyeAnchors={
@@ -24,7 +27,10 @@
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
   const ease=t=>t*t*(3-2*t);
   const approach=(from,to,rate,dt)=>from+(to-from)*(1-Math.exp(-rate*dt));
-  const ready=()=>art.complete&&art.naturalWidth===frameWidth*4&&art.naturalHeight===frameHeight*4;
+  const ready=formId=>{
+    const image=formFor(formId).art;
+    return image.complete&&image.naturalWidth===frameWidth*4&&image.naturalHeight===frameHeight*4;
+  };
 
   // Each cell records its crown, neck and head width in atlas pixels.
   // Airborne poses can also set a horizontal pivot and raised sole.
@@ -45,6 +51,18 @@
     };
   }
   const winterShapes=headByFrame.map(proportions);
+  const devilShapes=[
+    [15,57,91],[15,57,92],[15,57,92],[15,57,91],
+    [15,57,94],[15,57,93],[15,57,92],[15,57,91],
+    [40,84,114],[14,60,121],[49,91,117],[40,84,115],
+    [15,57,91],[15,57,91],[54,100,102],[15,57,91]
+  ].map(([top,neck,pivot])=>({
+    neck,pivot,headScale:1,source:[0,top,frameHeight],output:[0,top,frameHeight]
+  }));
+  const devilEyes={
+    0:[[92,42],[104,40]],12:[[92,42],[104,40]],
+    13:[[92,43],[104,41]],15:[[92,43],[104,41]]
+  };
 
   function mapRow(y,from,to) {
     let segment=1;
@@ -70,7 +88,7 @@
       const sourceRow=Math.min(frameHeight-1,Math.floor(mapRow(y+.5,shape.output,shape.source)));
       const scale=rowScale(sourceRow,shape);
       const left=Math.round(shape.pivot*(1-scale));
-      pixels.drawImage(art,sourceX,sourceY+sourceRow,frameWidth,1,
+      pixels.drawImage(form.art,sourceX,sourceY+sourceRow,frameWidth,1,
         left,y,Math.round(frameWidth*scale),1);
     }
     const garmentTop=Math.round(shape.output[2]+7);
@@ -79,11 +97,7 @@
     for(let i=0;i<data.length;i+=4){
       const r=data[i],g=data[i+1],b=data[i+2];
       if(!data[i+3]||r-g<15||r-b<10||g>111)continue;
-      if(form===forms.angel){
-        data[i]=clamp(r*.65+46,0,255);data[i+1]=clamp(g*.85+49,0,255);data[i+2]=clamp(b*.86+83,0,255);
-      }else{
-        data[i]=clamp(r*.88,0,255);data[i+1]=g*.72;data[i+2]=clamp(b*1.19+19,0,255);
-      }
+      data[i]=clamp(r*.65+46,0,255);data[i+1]=clamp(g*.85+49,0,255);data[i+2]=clamp(b*.86+83,0,255);
     }
     pixels.putImageData(outfit,0,garmentTop);
     form.frames[frame]=layer;
@@ -222,11 +236,11 @@
     ctx.restore();
   }
 
-  function express(ctx,guide,frame,elapsed,reduced,shape) {
+  function express(ctx,guide,frame,elapsed,reduced,shape,eyes) {
     if(guide.affection<.12)return;
     ctx.save();
     ctx.globalAlpha=guide.affection;
-    const points=eyeAnchors[frame];
+    const points=eyes[frame];
     if(points){
       for(const [i,point] of points.entries()){
         const [x,y]=featurePoint(shape,...point);
@@ -245,7 +259,7 @@
     ctx.restore();
   }
 
-  function drawGestureEffect(ctx,gesture,t,shape) {
+  function drawGestureEffect(ctx,gesture,t,shape,eyes,frame) {
     if(gesture.name==='kiss'&&t>.49){
       const progress=(t-.49)/.51;
       const drift=ease(progress);
@@ -263,7 +277,7 @@
       const [x,y]=featurePoint(shape,128,41);
       ctx.fillRect(x,y,2,9);
       ctx.fillRect(x-3,y+3,8,2);
-      const [eyeX,eyeY]=featurePoint(shape,90,58);
+      const [eyeX,eyeY]=featurePoint(shape,...(eyes[frame]?.[0]||[90,58]));
       ctx.globalAlpha=1;
       ctx.fillStyle='#f3b59d';
       ctx.fillRect(eyeX-4,eyeY-3,7,6);
@@ -286,7 +300,7 @@
     ctx.stroke();
   }
   function drawWings(ctx,form,shape,flap) {
-    const [x,y]=featurePoint(shape,76,shape.neck+28);
+    const [x,y]=featurePoint(shape,form===forms.devil?shape.pivot-23:76,shape.neck+28);
     ctx.save();
     ctx.translate(x,y);
     ctx.rotate(flap);
@@ -302,7 +316,7 @@
     ctx.restore();
   }
   function drawCrown(ctx,form,shape) {
-    const [x,y]=featurePoint(shape,100,shape.source[1]+4);
+    const [x,y]=featurePoint(shape,form===forms.devil?shape.pivot:100,shape.source[1]+4);
     ctx.save();
     ctx.translate(x,y);
     if(form===forms.angel){
@@ -317,13 +331,14 @@
     ctx.restore();
   }
   function draw(ctx,guide,{center,groundY,height,elapsed,reduced,formId}) {
-    if(!ready())return false;
+    if(!ready(formId))return false;
     const form=formFor(formId);
     const gesture=!reduced?guide.gesture:null;
     const progress=gesture?Math.min(1,guide.gestureTime/gesture.duration):0;
     const frame=gesture?gesture.frames.findLast(([start])=>progress>=start)[1]:frameFor(guide,elapsed,reduced);
-    const shape=winterShapes[frame];
-    const sprite=fitFrame(frame,shape,form);
+    const isDevil=form===forms.devil;
+    const shape=(isDevil?devilShapes:winterShapes)[frame];
+    const eyes=isDevil?devilEyes:eyeAnchors;
     const scale=height/standingHeight;
     const direction=Math.sign(guide.turn)||guide.facing;
     const turnWidth=.78+.22*Math.abs(guide.turn);
@@ -338,10 +353,12 @@
     ctx.scale(1-(breathing+step)*.32,1+breathing+step);
     ctx.translate(-origin,-ground);
     drawWings(ctx,form,shape,reduced?0:Math.sin(elapsed*(form===forms.angel?5:8))*.13);
-    ctx.drawImage(sprite,0,0);
+    if(isDevil)ctx.drawImage(form.art,(frame%4)*frameWidth,Math.floor(frame/4)*frameHeight,
+      frameWidth,frameHeight,0,0,frameWidth,frameHeight);
+    else ctx.drawImage(fitFrame(frame,shape,form),0,0);
     drawCrown(ctx,form,shape);
-    if(gesture)drawGestureEffect(ctx,gesture,progress,shape);
-    else express(ctx,guide,frame,elapsed,reduced,shape);
+    if(gesture)drawGestureEffect(ctx,gesture,progress,shape,eyes,frame);
+    else express(ctx,guide,frame,elapsed,reduced,shape,eyes);
     ctx.restore();
     return true;
   }
