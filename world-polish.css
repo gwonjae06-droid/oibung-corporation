@@ -1,0 +1,97 @@
+/*
+ * OIBUNG WORLD visual/presentation QA fixes, layered over the existing shell.
+ * Keep native interactive labels, no extra HUD panels or document scrolling.
+ */
+#games .world-building-sign {
+  max-width:min(156px,43vw)!important;
+  min-width:78px!important;
+  padding:5px 10px!important;
+  border:1px solid #e7d7ab!important;
+  border-bottom:2px solid #9e8e6d!important;
+  background:#28363acf!important;
+  color:#fff6dd!important;
+  box-shadow:2px 3px 0 #131e2380!important;
+  font-size:clamp(11px,1.1vw,13px)!important;
+  font-weight:800!important;
+  line-height:1.3!important;
+  letter-spacing:0!important;
+  text-shadow:0 1px 2px #080b0f7d!important;
+  transform:translateX(-50%)!important;
+}
+#games .world-building-sign:hover,
+#games .world-building-sign:focus-visible{
+  background:#485953!important;
+  box-shadow:2px 4px 0 #131e2380!important;
+  transform:translate(-50%,-2px)!important;
+}
+#games .world-guide-bubble{
+  max-width:min(215px,49vw)!important;
+  min-width:95px!important;
+  padding:7px 9px!important;
+  line-height:1.5!important;
+  border:1px solid #9b8e80!important;
+  border-bottom:2px solid #7c6a59!important;
+  border-radius:4px!important;
+  box-shadow:2px 3px 0 #1f272b54!important;
+  background:#fff8e9ed!important;
+  color:#3b403b!important;
+  font-size:11px!important;
+  font-weight:650!important;
+  pointer-events:none!important;
+  text-shadow:none!important;
+}
+#games .world-guide-bubble[hidden]{display:none!important}
+#games .world-guide-bubble::after{
+  width:8px!important;height:8px!important;bottom:-6px!important;
+  background:#fff8e9!important;border-width:1px!important;
+}
+#games .world-stage-stats{
+  background:#202f35da!important;
+  border:1px solid #d4b884!important;
+  border-bottom:2px solid #a48b61!important;
+  border-radius:3px!important;
+  box-shadow:2px 3px 0 #131e2365!important;
+  pointer-events:none!important;
+}
+#games #world-menu-toggle{
+  border:1px solid #dfc797!important;
+  border-bottom:2px solid #ae9065!important;
+  box-shadow:2px 3px 0 #16232983!important;
+}
+/* The old theme switch only recolored HTML, so it appeared broken while
+   exploring the actual canvas. Apply gentle lighting to the WORLD art too.
+   This preserves the crisp pixel boundaries without any blur/filter resizing. */
+html[data-gallery-mode="dark"] #games #oibung-world-canvas{
+  filter:brightness(.76) saturate(.86) contrast(1.08)!important;
+}
+html[data-gallery-mode="dark"] #games .world-guide-bubble{
+  background:#e8dfcaed!important;
+}
+html[data-gallery-mode="dark"] #games .world-building-sign{
+  background:#1c2c36ed!important;
+}
+#games .world-direction-pad button:focus-visible,
+#games .world-enter:focus-visible{
+  outline:3px solid #f7d28c!important;outline-offset:3px!important;
+}
+@media(max-width:620px){
+  #games .world-guide-bubble{
+    max-width:145px!important;min-width:83px!important;
+    padding:5px 7px!important;font-size:10px!important
+  }
+  #games .world-building-sign{
+    padding:4px 7px!important;
+    max-width:120px!important;
+    font-size:11px!important;
+  }
+  #games .world-stage-stats{
+    max-width:calc(100vw - 110px)!important
+  }
+}
+@media(max-height:470px) and (orientation:landscape){
+  #games .world-guide-bubble{max-width:150px!important}
+  #games .world-building-sign{max-width:140px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #games .world-building-sign{transition:none!important}
+}
