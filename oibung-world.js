@@ -28,6 +28,7 @@
   const DISTRICT_GAP = 760;
   const GRAVITY = 720;
   const scenes = window.OIBUNG_PIXEL_SCENES;
+  const curatorMotion = window.OIBUNG_CURATOR;
   const districtLabels = new Map([
     ['finished', '완결'],
     ['released', '정식 출시'],
@@ -55,7 +56,7 @@
   let W=640,H=330,groundY=276,worldEnd=1550,camera=0;
   let lastFrame=0,elapsed=0,frameId=0,paused=false;
   let player={x:165,y:0,vx:0,vy:0,direction:1,walk:0,onGround:true};
-  let curator={x:111,direction:1,walk:0};
+  const curator=curatorMotion.reset({},111);
   let keys={left:false,right:false};
   let guideTextUntil=0;
   let didInitialSpawn=false;
@@ -107,7 +108,7 @@
     }else if(!wasInterior){
       if(!didInitialSpawn&&buildings.length){
         player.x=entrance(buildings[0])-105;
-        curator.x=player.x-curatorGap();
+        curatorMotion.reset(curator,player.x-curatorGap());
         didInitialSpawn=true;
       }else if(offset){
         player.x+=offset;
@@ -197,7 +198,7 @@
     // Let the player stand beside the monumental door, not on top of it.
     player.x=b.x+b.width*.5-105;
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
-    curator.x=player.x-curatorGap();
+    curatorMotion.reset(curator,player.x-curatorGap());
     const target=Math.max(0,Math.min(worldEnd-W,player.x-W*.5));
     camera=target;
     updateNearby(true);updateSigns();render();
@@ -261,7 +262,7 @@
     const origin=room().leave();
     interiorOrigin=null;
     player.x=clamp(origin?.playerX??player.x,18,worldEnd-35);
-    curator.x=origin?.curatorX??player.x-curatorGap();
+    curatorMotion.reset(curator,origin?.curatorX??player.x-curatorGap());
     camera=clamp(origin?.camera??0,0,Math.max(0,worldEnd-W));
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
     previousInteriorObject=null;
@@ -282,7 +283,7 @@
     const origin={playerX:player.x,curatorX:curator.x,camera};
     if(!room().enter(b.game,b.style,origin))return false;
     interiorOrigin=origin;
-    player.x=room().spawnX();curator.x=player.x-curatorGap();camera=0;
+    player.x=room().spawnX();curatorMotion.reset(curator,player.x-curatorGap());camera=0;
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
     keys.left=false;keys.right=false;previousInteriorObject=null;
     signs.hidden=true;
@@ -336,7 +337,7 @@
     if(room().nearest(player.x)?.id===object.id){
       return room().interact(object,{leave:leaveInterior});
     }
-    player.x=object.x-38;curator.x=player.x-curatorGap();
+    player.x=object.x-38;curatorMotion.reset(curator,player.x-curatorGap());
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;keys.left=false;keys.right=false;
     camera=clamp(player.x-W*.49,0,Math.max(0,room().roomWidth()-W));
     updateNearby(true);render();stage.focus({preventScroll:true});
@@ -401,48 +402,6 @@
     if(window.OIBUNG_CURRENT_VIEW==='games')resize();
   });
 
-  const curatorAtlas=new Image();
-  curatorAtlas.decoding='async';
-  curatorAtlas.src='assets/world-pixel/curator.webp';
-  const atlasReady=()=>curatorAtlas.complete&&curatorAtlas.naturalWidth===1024&&curatorAtlas.naturalHeight===768;
-  const guideImages={};
-  for(const pose of ['neutral','present']){
-    const image=new Image();
-    image.decoding='async';
-    image.onload=()=>{guideImages[pose]=image;};
-    image.src='assets/curator-v5/guide-'+pose+'.webp';
-  }
-  const guideBounds=new WeakMap();
-
-  function spriteBounds(image,sx,sy,width,height){
-    let frames=guideBounds.get(image);
-    if(!frames)guideBounds.set(image,frames=new Map());
-    const key=sx+':'+sy;
-    if(frames.has(key))return frames.get(key);
-    const cell=document.createElement('canvas');
-    cell.width=width;cell.height=height;
-    const scan=cell.getContext('2d',{willReadFrequently:true});
-    scan.drawImage(image,sx,sy,width,height,0,0,width,height);
-    const pixels=scan.getImageData(0,0,width,height).data;
-    const minimumRowPixels=Math.max(2,Math.round(width*.012));
-    const rows=new Array(height).fill(0);
-    let left=width,right=-1;
-    for(let y=0;y<height;y++){
-      for(let x=0;x<width;x++){
-        if(pixels[(y*width+x)*4+3]<128)continue;
-        rows[y]++;
-        left=Math.min(left,x);right=Math.max(right,x);
-      }
-    }
-    const first=rows.findIndex(count=>count>=minimumRowPixels);
-    const last=rows.findLastIndex(count=>count>=minimumRowPixels);
-    const bounds=last<first||first<0?{left:0,top:0,width,height}:{
-      left,top:first,width:right-left+1,height:last-first+1
-    };
-    frames.set(key,bounds);
-    return bounds;
-  }
-
   function footShadow(x,ground,width,strength){
     ctx.fillStyle='rgba(12,17,25,'+strength+')';
     ctx.beginPath();
@@ -480,33 +439,17 @@
     guideBubble.style.setProperty('--guide-tail-x',Math.round(center-x)+'px');
   }
   function drawCurator(){
-    const moving=curator.walk>.1;
-    let image,sx=0,sy=0,frameWidth,frameHeight;
-    if(atlasReady()){
-      const pose=moving&&!reduceMotion.matches?2+Math.floor(elapsed*7.6)%4:nearest>=0?6:0;
-      sx=(pose%4)*256;sy=Math.floor(pose/4)*384;
-      image=curatorAtlas;
-      frameWidth=256;frameHeight=384;
-    }else{
-      image=guideImages[nearest>=0?'present':'neutral']||guideImages.neutral;
-      if(!image){guideBubble.hidden=true;return;}
-      frameWidth=image.naturalWidth;frameHeight=image.naturalHeight;
-    }
-    const bounds=spriteBounds(image,sx,sy,frameWidth,frameHeight);
     const height=curatorHeight();
-    const width=Math.round(height*bounds.width/bounds.height);
     const center=Math.round(curator.x-camera);
-    guideBubble.hidden=!guideBubble.textContent||elapsed>guideTextUntil||center<0||center>W;
-    if(!guideBubble.hidden)positionDialogue(center,groundY+1-height,width);
-    footShadow(curator.x,groundY,Math.max(9,width*.22),.44);
-    ctx.save();
-    ctx.translate(center,groundY);
-    ctx.scale(curator.direction,1);
-    ctx.drawImage(image,sx+bounds.left,sy+bounds.top,bounds.width,bounds.height,
-      -Math.round(width/2),1-height,width,height);
-    ctx.restore();
+    const width=Math.round(height*.39);
+    const top=groundY+curator.y-height;
+    const visible=curatorMotion.ready()&&center>=-width&&center<=W+width;
+    guideBubble.hidden=!visible||!guideBubble.textContent||elapsed>guideTextUntil||center<0||center>W;
+    if(!visible)return;
+    if(!guideBubble.hidden)positionDialogue(center,top,width);
+    footShadow(curator.x,groundY,Math.max(9,width*.26),.44+curator.y*.004);
+    curatorMotion.draw(ctx,curator,{center,groundY,height,elapsed,reduced:reduceMotion.matches});
   }
-
   function draw(){
     ctx.imageSmoothingEnabled=false;
     const view={W,H,groundY,camera,elapsed,reducedMotion:reduceMotion.matches};
@@ -537,13 +480,7 @@
       if(player.y>=0){player.y=0;player.vy=0;player.onGround=true;}
     }
     player.walk=Math.abs(player.vx)>10?1:0;
-    const followTarget=clamp(player.x-player.direction*curatorGap(),20,limit-20);
-    const diff=followTarget-curator.x;
-    if(Math.abs(diff)>8){
-      curator.direction=diff>0?1:-1;
-      curator.x+=Math.sign(diff)*Math.min(Math.abs(diff),MOVE_SPEED*1.23*dt);
-      curator.walk=1;
-    }else curator.walk=0;
+    curatorMotion.update(curator,{dt,player,limit,gap:curatorGap(),height:curatorHeight(),reduced:reduceMotion.matches});
     const maxCam=Math.max(0,limit-W);
     const follow=Math.max(0,Math.min(maxCam,player.x-W*.49));
     camera+=(follow-camera)*Math.min(1,dt*5.6);
@@ -572,7 +509,7 @@
   resize();rebuild();
   frameId=requestAnimationFrame(frame);
   window.OIBUNG_WORLD={
-    getState:()=>({inside:inRoom(),interior:room()?.state(),playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingWidths:buildings.map(b=>b.width),district:districts.findLast(d=>d.start<=player.x)?.status||null,districts:districts.map(d=>({...d})),buildingPositions:buildings.map(b=>({id:b.game.id,x:entrance(b),district:b.status})),guideBubbleVisible:!guideBubble.hidden,pixelArtReady:scenes.ready(nearest<0?(buildings[0]?.style||'studio'):buildings[nearest].style),renderDensity:LOGICAL_PIXEL_SIZE,curatorArtLoaded:!!(atlasReady()||guideImages.neutral),curatorHdAtlasReady:atlasReady()}),
+    getState:()=>({inside:inRoom(),interior:room()?.state(),playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingWidths:buildings.map(b=>b.width),district:districts.findLast(d=>d.start<=player.x)?.status||null,districts:districts.map(d=>({...d})),buildingPositions:buildings.map(b=>({id:b.game.id,x:entrance(b),district:b.status})),guideBubbleVisible:!guideBubble.hidden,pixelArtReady:scenes.ready(nearest<0?(buildings[0]?.style||'studio'):buildings[nearest].style),renderDensity:LOGICAL_PIXEL_SIZE,curatorArtLoaded:curatorMotion.ready(),curatorHdAtlasReady:curatorMotion.ready(),curatorY:curator.y,curatorMode:curator.mode,curatorAffection:curator.affection}),
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
     enter,leaveInterior,approachInterior,refresh:rebuild,jump,movement
   };
