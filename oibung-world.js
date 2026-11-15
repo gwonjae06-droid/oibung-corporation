@@ -23,6 +23,8 @@
   const listButton = document.getElementById('world-list-toggle');
   const list = document.getElementById('world-directory');
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const room=()=>window.OIBUNG_INTERIORS;
+  const inRoom=()=>!!room()?.isActive();
   if (!ctx) return;
 
   // A native logical pixel per CSS pixel gives four times the pixel density
@@ -111,12 +113,14 @@
   let justWarped=false;
   let didInitialSpawn=false;
   let inputIsActive=false;
+  let previousInteriorObject=null;
 
   function canRun(){
     return !document.hidden&&window.OIBUNG_CURRENT_VIEW!=='reviews'&&
       !world.classList.contains('world-menu-open')&&
       !document.getElementById('world-all-games')?.open&&
-      !document.querySelector('dialog[open]')&&world.isConnected;
+      !document.querySelector('dialog[open]')&&
+      !room()?.isInfoOpen()&&world.isConnected;
   }
   function listCatalog(){
     const api=window.OIBUNG_CATALOG;
@@ -127,6 +131,7 @@
     const next=listCatalog();
     const oldId=nearest>=0?buildings[nearest]?.game.id:null;
     const previousX=player.x;
+    const wasInterior=inRoom();
     games=next;
     buildings=next.map((game,i)=>{
       const style=themeOf(game,i);
@@ -136,7 +141,8 @@
     });
     worldEnd=FIRST_BUILDING+next.length*BUILDING_SPACING+390;
     // First visit should reveal an actual game landmark, not a blank sky.
-    if(!didInitialSpawn&&buildings.length){
+    if(wasInterior){ /* Preserve the live indoor visitor position during catalog refresh. */ }
+    else if(!didInitialSpawn&&buildings.length){
       player.x=buildings[0].x+65;
       curator.x=player.x-64;
       camera=Math.max(0,Math.min(worldEnd-W,player.x-W*.49));
@@ -184,8 +190,9 @@
     groundY=H-Math.max(43,Math.min(83,Math.round(H*.092)));
     canvas.width=W;canvas.height=H;
     ctx.imageSmoothingEnabled=false;
-    camera=Math.max(0,Math.min(Math.max(0,worldEnd-W),player.x-W*.49));
-    updateSigns();
+    const extent=inRoom()?room().roomWidth():worldEnd;
+    camera=Math.max(0,Math.min(Math.max(0,extent-W),player.x-W*.49));
+    if(!inRoom())updateSigns();
   }
   function buildingScale(b){return Math.min(1,Math.max(.24,(groundY-39)/(b.height+126)));}
   function updateSigns(){
@@ -208,6 +215,7 @@
   }
   function warp(i){
     const b=buildings[i];if(!b)return;
+    if(inRoom()){room().leave();signs.hidden=false;previousInteriorObject=null;}
     // Let the player stand beside the monumental door, not on top of it.
     player.x=b.x+b.width*.5-105;
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
@@ -231,6 +239,21 @@
     guideBubble.hidden=false;
   }
   function updateNearby(force=false){
+    if(inRoom()){
+      const object=room().nearest(player.x);
+      const id=object?.id||null;
+      if(id!==previousInteriorObject||force){
+        previousInteriorObject=id;
+        interactButton.disabled=!object;
+        interactButton.textContent=object?.kind==='play'&& !room().currentGame()?.playUrl
+          ?'작품 상세 보기':object?.label||'전시물에 가까이';
+        nearbyLabel.textContent=object
+          ?room().currentGame().title+' · '+object.label
+          :room().currentGame().title+' · 전시실을 탐험하세요';
+        if(object&&id!=='exit')announce('여기서는 '+object.label+'를 할 수 있어요.',3.5);
+      }
+      return;
+    }
     const n=nearbyBuilding();
     if(n!==nearest||force){
       nearest=n;
@@ -249,18 +272,37 @@
     }
     if(!games.length)interactButton.disabled=true;
   }
+  function leaveInterior(){
+    if(!inRoom())return false;
+    const origin=room().leave();
+    player.x=origin?.playerX??player.x;
+    curator.x=origin?.curatorX??player.x-65;
+    camera=origin?.camera??0;
+    player.vx=0;player.vy=0;player.y=0;player.onGround=true;
+    previousInteriorObject=null;
+    signs.hidden=false;keys.left=false;keys.right=false;
+    updateNearby(true);updateSigns();render();
+    stage.focus({preventScroll:true});
+    return true;
+  }
   function enter(){
-    if(nearest<0||!canRun())return false;
+    if(!canRun())return false;
+    if(inRoom()){
+      const object=room().nearest(player.x);
+      return !!room().interact(object,{leave:leaveInterior});
+    }
+    if(nearest<0)return false;
     const b=buildings[nearest];
-    if(!b)return false;
-    const api=window.OIBUNG_CATALOG;
-    if(!api||typeof api.openDetail!=='function')return false;
-    announce(b.game.title+'을(를) 소개할게요!',3);
-    const detail=document.getElementById('game-dialog');
-    if(detail)detail.dataset.worldTheme=b.style;
-    const bannerName=document.getElementById('world-interior-name');
-    if(bannerName)bannerName.textContent=b.game.title+'의 세계';
-    api.openDetail(b.game.id);
+    if(!b||!room())return false;
+    const origin={playerX:player.x,curatorX:curator.x,camera};
+    if(!room().enter(b.game,b.style,origin))return false;
+    player.x=245;curator.x=player.x-53;camera=0;
+    player.vx=0;player.vy=0;player.y=0;player.onGround=true;
+    keys.left=false;keys.right=false;previousInteriorObject=null;
+    signs.hidden=true;
+    updateNearby(true);
+    announce('여기는 '+b.game.title+'의 전시실이에요. 오른쪽으로 걸어가 보세요!',5);
+    render();stage.focus({preventScroll:true});
     return true;
   }
   function jump(){
@@ -306,6 +348,7 @@
   });
   world.addEventListener('click',e=>{
     if(e.target!==canvas||!canRun())return;
+    if(inRoom())return; // Interiors are explored with real movement and nearby E interaction.
     const bounds=canvas.getBoundingClientRect();
     const x=(e.clientX-bounds.left)/LOGICAL_PIXEL_SIZE+camera;
     const y=(e.clientY-bounds.top)/LOGICAL_PIXEL_SIZE;
@@ -339,7 +382,7 @@
       movement(map[e.code],true);e.preventDefault();return;
     }
     if(e.code==='KeyE'||e.code==='Enter'){
-      if(nearbyBuilding()>=0){enter();e.preventDefault();}
+      if(inRoom()||nearbyBuilding()>=0){enter();e.preventDefault();}
     }
     if(e.code==='Space'||e.code==='ArrowUp'||e.code==='KeyW'){
       jump();e.preventDefault();
@@ -831,18 +874,26 @@
   }
   function draw(){
     ctx.imageSmoothingEnabled=false;
-    drawSky();drawPlaza();
-    for(const b of buildings)drawBuilding(b);
-    if(window.OIBUNG_CINEMATIC){
+    if(inRoom()){
+      room().draw(ctx,{W,H,groundY,camera,elapsed,reducedMotion:reduceMotion.matches});
+    }else{
+      drawSky();drawPlaza();
+      window.OIBUNG_WORLD_MAP_DETAILS?.drawMid(ctx,{W,groundY,camera,elapsed,buildings,reducedMotion:reduceMotion.matches});
+      for(const b of buildings)drawBuilding(b);
+    }
+    if(!inRoom()&&window.OIBUNG_CINEMATIC){
       window.OIBUNG_CINEMATIC.archGlow(ctx,{
         groundY,camera,elapsed,buildings,reducedMotion:reduceMotion.matches
       });
     }
-    drawGround();
-    if(window.OIBUNG_CINEMATIC){
-      window.OIBUNG_CINEMATIC.facadeProps(ctx,{
-        W,groundY,camera,elapsed,buildings,reducedMotion:reduceMotion.matches
-      });
+    if(!inRoom()){
+      drawGround();
+      if(window.OIBUNG_CINEMATIC){
+        window.OIBUNG_CINEMATIC.facadeProps(ctx,{
+          W,groundY,camera,elapsed,buildings,reducedMotion:reduceMotion.matches
+        });
+      }
+      window.OIBUNG_WORLD_MAP_DETAILS?.drawFore(ctx,{W,groundY,camera,elapsed,buildings,reducedMotion:reduceMotion.matches});
     }
     drawCurator(curator.x,groundY,curator.direction,curator.walk);
     // Reuse the cached, proportional visitor animation; retain the old
@@ -853,7 +904,8 @@
       scale:Math.max(.82,Math.min(1.13,H/750))
     });
     else drawPlayerHD(player.x,groundY,player.direction,player.walk,player.y);
-    if(window.OIBUNG_CINEMATIC)window.OIBUNG_CINEMATIC.foregroundDust(ctx,{
+    if(inRoom())room().drawForeground(ctx,{W,H,groundY,camera,elapsed});
+    if(!inRoom()&&window.OIBUNG_CINEMATIC)window.OIBUNG_CINEMATIC.foregroundDust(ctx,{
       W,groundY,elapsed,reducedMotion:reduceMotion.matches
     });
     // Guide stays visible with a caption at stops, without blocking entrances.
@@ -871,7 +923,8 @@
     player.vx+=(speed-player.vx)*Math.min(1,dt*13);
     if(!axis&&Math.abs(player.vx)<.15)player.vx=0;
     if(player.vx)player.direction=player.vx>=0?1:-1;
-    player.x=Math.max(18,Math.min(worldEnd-35,player.x+player.vx*dt));
+    const limit=inRoom()?room().roomWidth():worldEnd;
+    player.x=Math.max(18,Math.min(limit-35,player.x+player.vx*dt));
     if(!player.onGround){
       player.y+=player.vy*dt;player.vy+=GRAVITY*dt;
       if(player.y>=0){player.y=0;player.vy=0;player.onGround=true;}
@@ -884,11 +937,11 @@
       curator.x+=Math.sign(diff)*Math.min(Math.abs(diff),MOVE_SPEED*.9*dt);
       curator.walk=1;
     }else curator.walk=0;
-    const maxCam=Math.max(0,worldEnd-W);
+    const maxCam=Math.max(0,limit-W);
     const follow=Math.max(0,Math.min(maxCam,player.x-W*.49));
     camera+=(follow-camera)*Math.min(1,dt*5.6);
     updateNearby();
-    updateSigns();
+    if(!inRoom())updateSigns();
   }
   function render(){draw();}
   function frame(timestamp){
@@ -912,8 +965,8 @@
   resize();rebuild();
   frameId=requestAnimationFrame(frame);
   window.OIBUNG_WORLD={
-    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),skyColor:skyTransition().colors.sky,guideBubbleVisible:!guideBubble.hidden,renderDensity:LOGICAL_PIXEL_SIZE,cinematicFX:!!window.OIBUNG_CINEMATIC,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!(window.OIBUNG_CINEMATIC_ART?.ready('curator_atlas')||guideImages.neutral),curatorHdAtlasReady:!!window.OIBUNG_CINEMATIC_ART?.ready('curator_atlas'),castleHdArtReady:!!window.OIBUNG_CINEMATIC_ART?.ready('castle_facade')}),
+    getState:()=>({inside:inRoom(),interior:room()?.state(),playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),skyColor:skyTransition().colors.sky,guideBubbleVisible:!guideBubble.hidden,renderDensity:LOGICAL_PIXEL_SIZE,cinematicFX:!!window.OIBUNG_CINEMATIC,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!(window.OIBUNG_CINEMATIC_ART?.ready('curator_atlas')||guideImages.neutral),curatorHdAtlasReady:!!window.OIBUNG_CINEMATIC_ART?.ready('curator_atlas'),castleHdArtReady:!!window.OIBUNG_CINEMATIC_ART?.ready('castle_facade')}),
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
-    enter,refresh:rebuild,jump,movement
+    enter,leaveInterior,refresh:rebuild,jump,movement
   };
 })();
