@@ -76,6 +76,10 @@ const fs=require('node:fs/promises');
           bubbles:true,clientX:rect.x+sx,clientY:rect.y+sy
         }));
       });
+      if(name==='desktop'){
+        assert.equal((await page.evaluate(()=>window.OIBUNG_WORLD.getState())).interior.nearest,'gallery',
+          'Clicking a visible indoor exhibition moves beside the framed gallery');
+      }
       // The internal play portal doesn't destroy the room state.
       const infoAPI=await page.evaluate(()=>typeof window.OIBUNG_INTERIORS.interact);
       assert.equal(infoAPI,'function');
@@ -96,7 +100,10 @@ const fs=require('node:fs/promises');
       assert.equal(room.theme,'duel');
       await page.locator('#world-enter').click();
       assert.equal((await page.evaluate(()=>window.OIBUNG_WORLD.getState())).interior.gameId,'ochams');
-      await page.locator('#world-interior-return').click();
+      await stage.focus();
+      await page.keyboard.press('Escape');
+      assert.equal((await page.evaluate(()=>window.OIBUNG_WORLD.getState())).inside,false,
+        'Escape safely returns to the exterior without opening the menu');
       await page.locator('#world-menu-toggle').click();
       await page.locator('#world-catalog-toggle').click();
       assert.equal(await page.locator('#game-grid').isVisible(),true,'Existing game catalog must be intact');
