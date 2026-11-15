@@ -9,6 +9,7 @@ on:
       - "world-hd-architecture.js"
       - "oibung-world.js"
       - "tests/world-cinematic.cjs"
+      - "tests/world-polish.cjs"
       - ".github/workflows/world-cinematic.yml"
   workflow_dispatch:
 
