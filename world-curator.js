@@ -6,7 +6,7 @@
   art.src='assets/world-pixel/curator-winter-frames.png';
   const devilArt=new Image();
   devilArt.decoding='async';
-  devilArt.src='assets/world-pixel/curator-devil-frames.png';
+  devilArt.src='assets/world-pixel/curator-devil-ponytail.png';
 
   const frameWidth=188,frameHeight=194,ground=175,origin=91,standingHeight=161;
   const walkFrames=[1,2,3,4,5,6,7];
@@ -15,14 +15,17 @@
     {name:'hair',duration:1.28,frames:[[0,13],[.47,14],[.78,15]]},
     {name:'kiss',duration:1.24,frames:[[0,12],[.19,13],[.74,15]]}
   ];
+  const devilGesture={name:'beckon',duration:2.85,frames:[
+    [0,12],[.24,13],[.40,14],[.78,15]
+  ]};
   const forms={
     angel:{name:'농',scale:.85,edge:'#66508b',wing:'#eeeaff',shade:'#b6a0dc',frames:[],art},
     devil:{name:'빵',scale:.98,edge:'#391925',wing:'#8e3959',shade:'#542544',art:devilArt}
   };
   const formFor=id=>id==='devil'?forms.devil:forms.angel;
   const eyeAnchors={
-    0:[[95,55],[112,53]],12:[[95,55],[112,53]],
-    13:[[90,58],[109,62]],15:[[94,55],[111,53]]
+    0:[[95,56,2.4],[112,55,1.4]],12:[[95,56,2.4],[112,55,1.4]],
+    13:[[92,58,2.2],[108,61,1.45]],15:[[95,56,2.4],[111,55,1.4]]
   };
   const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
   const ease=t=>t*t*(3-2*t);
@@ -52,16 +55,17 @@
   }
   const winterShapes=headByFrame.map(proportions);
   const devilShapes=[
-    [15,57,91],[15,57,92],[15,57,92],[15,57,91],
-    [15,57,94],[15,57,93],[15,57,92],[15,57,91],
-    [40,84,114],[14,60,121],[49,91,117],[40,84,115],
-    [15,57,91],[15,57,91],[54,100,102],[15,57,91]
+    [14,45,87],[17,47,89],[16,46,88],[16,46,93],
+    [18,48,93],[18,48,99],[18,48,95],[18,48,99],
+    [15,45,87],[14,45,90],[14,45,89],[16,47,89],
+    [10,39,86],[16,46,106],[9,39,85],[10,40,90]
   ].map(([top,neck,pivot])=>({
     neck,pivot,headScale:1,source:[0,top,frameHeight],output:[0,top,frameHeight]
   }));
   const devilEyes={
-    0:[[92,42],[104,40]],12:[[92,42],[104,40]],
-    13:[[92,43],[104,41]],15:[[92,43],[104,41]]
+    0:[[91,33,1.7],[99,33,1.12]],
+    12:[[91,26.5,1.7],[99,25.5,1.12]],
+    14:[[88.5,26.5,1.7],[97,26.5,1.12]]
   };
 
   function mapRow(y,from,to) {
@@ -127,13 +131,15 @@
     }
     guide.gestureWait-=dt;
     if(guide.gestureWait<=0&&Math.abs(guide.speed)<28){
-      guide.gesture=gestures[guide.nextGesture];
+      guide.gesture=guide.formId==='devil'?devilGesture:gestures[guide.nextGesture];
       guide.gestureTime=0;
       guide.nextGesture=(guide.nextGesture+1)%gestures.length;
     }
   }
 
-  function update(guide,{dt,player,limit,gap,height,reduced,targetX,allowHop=true,jumpDelay=.11}) {
+  function update(guide,{dt,player,limit,gap,height,reduced,targetX,allowHop=true,jumpDelay=.11,formId='angel'}) {
+    guide.formId=formId;
+    const groundedGuide=formId==='devil';
     const distance=player.x-guide.x;
     const close=Math.abs(distance)<gap+44;
     const watching=player.onGround&&Math.abs(player.vx)<13&&close;
@@ -143,7 +149,7 @@
     guide.still=watching?guide.still+dt:0;
     guide.timer+=dt;
     if(player.onGround!==guide.playerGrounded){
-      if(!player.onGround&&!reduced&&guide.mode!=='hop'&&(close||targetX!==undefined))guide.followJump=jumpDelay;
+      if(!groundedGuide&&!player.onGround&&!reduced&&guide.mode!=='hop'&&(close||targetX!==undefined))guide.followJump=jumpDelay;
       guide.playerGrounded=player.onGround;
     }
     if(guide.mode==='charge'&&!watching){
@@ -151,7 +157,7 @@
       guide.cooldown=2;
     }
     if(guide.mode==='admire'&&(!watching||guide.timer>.85))guide.mode='follow';
-    if(allowHop&&guide.mode==='follow'&&guide.still>1.25&&guide.cooldown===0&&!guide.flight&&!guide.followJump&&!guide.gesture){
+    if(!groundedGuide&&allowHop&&guide.mode==='follow'&&guide.still>1.25&&guide.cooldown===0&&!guide.flight&&!guide.followJump&&!guide.gesture){
       guide.mode=reduced?'admire':'charge';
       guide.timer=0;
       guide.cooldown=11;
@@ -202,8 +208,8 @@
     updateGesture(guide,watching,dt,reduced);
   }
 
-  function frameFor({mode,timer,flight,followJump,landed,phase,stride,affection},elapsed,reduced) {
-    if(reduced)return affection>.55?13:0;
+  function frameFor({mode,timer,flight,followJump,landed,phase,stride,affection,formId},elapsed,reduced) {
+    if(reduced)return affection>.55&&formId!=='devil'?13:0;
     if(flight){
       const progress=flight.time/flight.duration;
       if(progress<.22)return 9;
@@ -216,6 +222,7 @@
     if(mode==='admire')return 13;
     if(stride>.27)return walkFrames[Math.floor(phase*walkFrames.length)];
     if(stride>.10)return 7;
+    if(formId==='devil')return 0;
     if(affection>.60)return 13;
     const idle=elapsed%3.4;
     return idle>2.95?15:idle>1.65?12:0;
@@ -236,21 +243,19 @@
     ctx.restore();
   }
 
-  function express(ctx,guide,frame,elapsed,reduced,shape,eyes) {
+  function express(ctx,guide,frame,elapsed,reduced,shape,eyes,winking) {
     if(guide.affection<.12)return;
     ctx.save();
     ctx.globalAlpha=guide.affection;
     const points=eyes[frame];
     if(points){
-      for(const [i,point] of points.entries()){
-        const [x,y]=featurePoint(shape,...point);
-        const size=i?2.35:3.4;
-        heart(ctx,x,y,size+1,'#842654');
-        heart(ctx,x,y,size,'#f64f90');
-        heart(ctx,x,y,size*.56,'#ffe3b3');
+      for(const [i,[eyeX,eyeY,size]] of points.entries()){
+        if(winking&&i===0)continue;
+        const [x,y]=featurePoint(shape,eyeX,eyeY);
+        heart(ctx,x,y,size,'#ff81b4');
       }
     }
-    if(!reduced&&(frame===14||guide.mode==='hop')){
+    if(!reduced&&guide.formId!=='devil'&&(frame===14||guide.mode==='hop')){
       const lift=Math.sin(elapsed*6)*3;
       const [x,y]=featurePoint(shape,134,48);
       heart(ctx,x,y+lift,7,'#f55499');
@@ -277,7 +282,8 @@
       const [x,y]=featurePoint(shape,128,41);
       ctx.fillRect(x,y,2,9);
       ctx.fillRect(x-3,y+3,8,2);
-      const [eyeX,eyeY]=featurePoint(shape,...(eyes[frame]?.[0]||[90,58]));
+      const [sourceX,sourceY]=eyes[frame]?.[0]||[90,58];
+      const [eyeX,eyeY]=featurePoint(shape,sourceX,sourceY);
       ctx.globalAlpha=1;
       ctx.fillStyle='#f3b59d';
       ctx.fillRect(eyeX-4,eyeY-3,7,6);
@@ -300,7 +306,7 @@
     ctx.stroke();
   }
   function drawWings(ctx,form,shape,flap) {
-    const [x,y]=featurePoint(shape,form===forms.devil?shape.pivot-23:76,shape.neck+28);
+    const [x,y]=featurePoint(shape,form===forms.devil?shape.pivot-16:76,shape.neck+(form===forms.devil?24:28));
     ctx.save();
     ctx.translate(x,y);
     ctx.rotate(flap);
@@ -325,8 +331,8 @@
       ctx.strokeStyle='#ffe5a0';ctx.lineWidth=3;ctx.stroke();
       ctx.fillStyle='#fff8d6';ctx.fillRect(-13,-17,7,2);
     }else{
-      pixelShape(ctx,form,[[-16,5],[-23,-2],[-24,-13],[-11,-4],[-8,5]],'#ac4769');
-      pixelShape(ctx,form,[[8,4],[11,-7],[19,-14],[18,-2],[15,6]],'#d06483');
+      pixelShape(ctx,form,[[-12,4],[-17,-2],[-17,-11],[-8,-4],[-6,4]],'#ac4769');
+      pixelShape(ctx,form,[[7,4],[9,-5],[15,-12],[15,-2],[12,5]],'#d06483');
     }
     ctx.restore();
   }
@@ -345,11 +351,12 @@
     const cycle=guide.phase*Math.PI*2;
     const breathing=reduced?0:Math.sin(elapsed*2.8)*.009;
     const step=reduced?0:Math.sin(cycle*2)*guide.stride*.009;
+    const lean=gesture?.name==='beckon'?Math.sin(progress*Math.PI)**2*.025:0;
     ctx.save();
     ctx.imageSmoothingEnabled=false;
     ctx.translate(center,groundY+guide.y);
     ctx.scale(scale*direction*turnWidth,scale);
-    ctx.rotate(reduced?0:Math.sin(cycle)*guide.stride*.012);
+    ctx.rotate(reduced?0:Math.sin(cycle)*guide.stride*.012+lean);
     ctx.scale(1-(breathing+step)*.32,1+breathing+step);
     ctx.translate(-origin,-ground);
     drawWings(ctx,form,shape,reduced?0:Math.sin(elapsed*(form===forms.angel?5:8))*.13);
@@ -357,8 +364,9 @@
       frameWidth,frameHeight,0,0,frameWidth,frameHeight);
     else ctx.drawImage(fitFrame(frame,shape,form),0,0);
     drawCrown(ctx,form,shape);
+    const winking=gesture?.name==='wink'&&progress>.31&&progress<.57;
     if(gesture)drawGestureEffect(ctx,gesture,progress,shape,eyes,frame);
-    else express(ctx,guide,frame,elapsed,reduced,shape,eyes);
+    express(ctx,guide,frame,elapsed,reduced,shape,eyes,winking);
     ctx.restore();
     return true;
   }

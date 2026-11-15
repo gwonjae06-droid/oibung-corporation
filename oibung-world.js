@@ -526,7 +526,8 @@
     const speaker=speakingGuide();
     for(const [index,guide] of guides.entries()){
       curatorMotion.update(guide.state,{dt,player,limit,gap:curatorGap(),height:curatorHeight(guide.formId),
-        reduced:reduceMotion.matches,targetX:slots[index],allowHop:guide===speaker,jumpDelay:.11+index*.07});
+        reduced:reduceMotion.matches,targetX:slots[index],allowHop:guide===speaker,
+        jumpDelay:.11+index*.07,formId:guide.formId});
     }
     const maxCam=Math.max(0,limit-W);
     const follow=Math.max(0,Math.min(maxCam,player.x-W*.49));
