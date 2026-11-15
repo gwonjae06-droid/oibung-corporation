@@ -1,0 +1,313 @@
+/*
+ * OIBUNG WORLD — fullscreen game shell.
+ * Zero page chrome and zero document scrolling. Secondary catalog/reviews
+ * stay available in overlays; existing dialogs and Supabase integration stay.
+ */
+html, body {
+  width:100%!important; height:100%!important;
+  max-width:none!important; min-height:0!important;
+  margin:0!important; padding:0!important;
+  overflow:hidden!important; overscroll-behavior:none!important;
+  background:#1a2f36!important;
+}
+body::before,body::after{display:none!important;content:none!important}
+body .site-header,
+main>.page-switcher.container,
+#games>.container>.section-heading-row,
+#games .featured-exhibit,
+#games .world-hint,
+#games .world-topbar,
+#games .world-stage-help {
+  display:none!important;
+}
+main {
+  position:fixed!important; inset:0!important;
+  display:block!important; width:100%!important; height:100%!important;
+  min-height:0!important; padding:0!important; margin:0!important;
+  overflow:hidden!important; transform:none!important;
+}
+#games.library.section-pad{
+  position:fixed!important;inset:0!important;z-index:1!important;
+  width:100%!important;height:100%!important;max-width:none!important;
+  min-height:0!important;max-height:none!important;
+  padding:0!important;margin:0!important;
+  overflow:hidden!important;background:transparent!important;border:0!important
+}
+#games>.container {
+  position:absolute!important;inset:0!important;
+  max-width:none!important;width:100%!important;
+  height:100%!important;min-height:0!important;
+  padding:0!important;margin:0!important;overflow:hidden!important;
+}
+#games .oibung-world{
+  position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;
+  min-width:0!important;min-height:0!important;
+  margin:0!important;padding:0!important;
+  max-width:none!important;max-height:none!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;
+  background:#54717a!important;overflow:hidden!important
+}
+#games .oibung-world .world-stage{
+  position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;
+  max-height:none!important;min-height:0!important;
+  overflow:hidden!important;border:0!important;
+  border-radius:0!important;
+  touch-action:none!important;cursor:default!important;
+}
+#games #oibung-world-canvas{
+  position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;
+  image-rendering:pixelated!important;object-fit:fill!important;
+}
+/* The scene itself owns all permanent HUD elements. */
+#games .world-stage-stats{
+  position:absolute!important;
+  left:calc(14px + env(safe-area-inset-left,0px))!important;
+  top:calc(12px + env(safe-area-inset-top,0px))!important;
+  right:auto!important;
+  z-index:15!important;
+  padding:7px 10px!important;gap:8px!important;
+  font-size:11px!important;background:#1b3038d9!important;
+  border:2px solid #dbc091!important;
+  box-shadow:3px 3px 0 #172a3391!important;
+  max-width:calc(100vw - 104px)!important
+}
+#games .world-stage-stats .world-stage-logo{font-size:13px!important}
+#games #world-menu-toggle{
+  position:absolute!important;z-index:50!important;
+  right:calc(14px + env(safe-area-inset-right,0px))!important;
+  top:calc(12px + env(safe-area-inset-top,0px))!important;
+  display:flex!important;align-items:center;justify-content:center;gap:6px;
+  min-height:44px;min-width:86px;padding:8px 12px;
+  font:800 13px/1.2 'Noto Sans KR',sans-serif;
+  color:#fff4d3;background:#223b46e8;
+  border:2px solid #e8c78a;border-radius:3px;
+  box-shadow:3px 3px 0 #17242f8c;cursor:pointer;
+}
+#games #world-menu-toggle[aria-expanded="true"]{background:#6a5a45}
+#games #world-menu-toggle:focus-visible,
+#games #world-menu-close:focus-visible,
+#games .world-overlay-menu button:focus-visible,
+#games .world-overlay-menu select:focus-visible {
+  outline:3px solid #ffd78a;outline-offset:2px
+}
+/* World navigation is an in-game pause menu, not a separate webpage. */
+#games #world-overlay-menu {
+  position:absolute!important;
+  top:calc(64px + env(safe-area-inset-top,0px))!important;
+  right:calc(14px + env(safe-area-inset-right,0px))!important;
+  left:auto!important;bottom:auto!important;z-index:49!important;
+  display:block!important;
+  width:min(360px,calc(100vw - 28px))!important;
+  max-height:calc(100dvh - 82px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important;
+  padding:0!important;margin:0!important;
+  overflow-x:hidden!important;overflow-y:auto!important;
+  color:#ffeed2!important;background:#1e333bdc!important;
+  border:3px solid #d9b983!important;border-radius:2px!important;
+  box-shadow:6px 7px 0 #16293196,0 15px 45px #111a21a6!important;
+  backdrop-filter:blur(7px);overscroll-behavior:contain!important
+}
+#games #world-overlay-menu[hidden]{display:none!important}
+#games .world-overlay-menu-header{
+  position:sticky;top:0;z-index:3;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:#2f434b;border-bottom:2px solid #9e8a6b;
+  padding:9px 10px;font:800 12px/1.3 monospace;letter-spacing:.06em;
+}
+#games #world-menu-close{
+  min-width:40px;min-height:38px;cursor:pointer;
+  border:2px solid #be9b6a;border-radius:2px;
+  background:#534b45;color:#fff5df;font:bold 19px monospace
+}
+#games #world-overlay-menu .world-toolbar{
+  display:flex!important;flex-direction:column;align-items:stretch!important;
+  justify-content:stretch!important;gap:8px!important;
+  padding:13px!important;margin:0!important;width:100%!important;
+}
+#games #world-overlay-menu .world-select-label{
+  display:block!important;color:#e6d5b2!important;font-size:12px!important
+}
+#games #world-overlay-menu #world-jump-select{
+  display:block!important;max-width:none!important;width:100%!important;
+  background:#fff9e5!important;color:#263a32!important;
+  min-height:45px!important;border:2px solid #c2ab83!important
+}
+#games #world-overlay-menu .world-toolbar-button{
+  display:flex!important;width:100%!important;max-width:none!important;
+  min-height:43px!important;align-items:center;justify-content:flex-start;
+  text-align:left;padding:10px 13px!important;
+  background:#405853!important;color:#fff4df!important;
+  border:2px solid #a89072!important;
+  font-size:13px!important;box-shadow:none!important;white-space:normal
+}
+#games #world-overlay-menu .world-toolbar-button:hover{background:#60716a!important}
+#games #world-overlay-menu .world-directory{
+  display:grid!important;grid-template-columns:1fr!important;
+  position:relative!important;inset:auto!important;
+  max-height:min(31vh,230px);overflow-y:auto!important;
+  padding:8px 13px 13px!important;margin:0!important;
+  background:#e9dbbd!important;
+  border-top:2px solid #d6b886!important
+}
+#games #world-overlay-menu .world-directory[hidden]{display:none!important}
+#games .world-overlay-menu .world-menu-hint{
+  color:#dfcba9;margin:0;padding:9px 13px 13px;
+  font:600 11px/1.5 'Noto Sans KR',sans-serif
+}
+/* Virtual game controls hug the viewport and don't occupy layout space. */
+#games .world-controlbar {
+  position:absolute!important;
+  z-index:35!important;
+  left:calc(14px + env(safe-area-inset-left,0px))!important;
+  right:calc(14px + env(safe-area-inset-right,0px))!important;
+  bottom:calc(16px + env(safe-area-inset-bottom,0px))!important;
+  top:auto!important;
+  display:flex!important;flex-wrap:nowrap!important;
+  align-items:end!important;justify-content:space-between!important;
+  width:auto!important;height:auto!important;min-height:0!important;
+  margin:0!important;padding:0!important;
+  background:transparent!important;border:0!important;
+  box-shadow:none!important;pointer-events:none!important
+}
+#games .world-controlbar button{
+  pointer-events:auto!important;
+  min-height:52px!important;min-width:54px!important;
+  border:2px solid #e6c58d!important;
+  color:#fff3d9!important;background:#243e49e8!important;
+  box-shadow:3px 3px 0 #182730bd!important;border-radius:3px!important
+}
+#games .world-controlbar button:active{transform:translateY(2px)!important}
+#games .world-direction-pad{display:flex!important;gap:10px!important}
+#games .world-enter{
+  order:3!important;flex:0 0 auto!important;
+  min-width:138px!important;padding:10px 15px!important;
+  font:800 13px/1.2 'Noto Sans KR',sans-serif!important
+}
+#games .world-enter:disabled{visibility:hidden!important}
+#games .world-nearby{display:none!important}
+/* Full-screen pixel catalog overlay. The same real game cards are reused. */
+#games #world-all-games{
+  position:fixed!important;inset:0!important;z-index:80!important;
+  display:block!important;
+  width:100vw!important;max-width:none!important;
+  height:100dvh!important;max-height:none!important;
+  margin:0!important;padding:0!important;
+  border:0!important;border-radius:0!important;
+  overflow:hidden!important;background:transparent!important;
+  pointer-events:none!important;box-shadow:none!important
+}
+#games #world-all-games:not([open]){visibility:hidden!important}
+#games #world-all-games[open]{
+  overflow-y:auto!important;overscroll-behavior:contain!important;
+  pointer-events:auto!important;visibility:visible!important;
+  background:#f0e6d1!important;
+}
+#games #world-all-games>summary{
+  position:sticky!important;top:0!important;z-index:2!important;
+  display:block!important;list-style:none!important;
+  min-height:65px!important;padding:16px clamp(16px,3vw,36px)!important;
+  border:0!important;border-bottom:3px solid #536553!important;
+  background:#273c39!important;color:#fff0d0!important;
+  font:800 15px/1.5 'Noto Sans KR',sans-serif!important;
+  cursor:pointer
+}
+#games #world-all-games>summary::-webkit-details-marker{display:none!important}
+#games #world-all-games>summary::after{
+  content:'✕';float:right;font:bold 22px/1 monospace;
+  border:2px solid #bea272;padding:4px 7px;color:#fff0d0
+}
+#games #world-all-games .walk-filter-drawer,
+#games #world-all-games .catalog-count,
+#games #world-all-games .direct-catalog,
+#games #world-all-games #empty-state{
+  width:min(1350px,calc(100% - 32px))!important;
+  max-width:none!important;margin-left:auto!important;margin-right:auto!important;
+}
+#games #world-all-games .walk-filter-drawer{margin-top:18px!important}
+#games #world-all-games .direct-catalog{margin-bottom:30px!important}
+#games #world-all-games .game-grid{padding-bottom:22px!important}
+/* Reviews are a second in-game window. Existing review/filter controls stay. */
+#reviews.review-board.section-pad{
+  position:fixed!important;inset:0!important;z-index:90!important;
+  display:block!important;
+  width:100vw!important;height:100dvh!important;
+  min-height:0!important;max-height:none!important;
+  padding:75px 17px 26px!important;margin:0!important;
+  background:#eee4d0!important;overflow-y:auto!important;
+  overscroll-behavior:contain!important;
+}
+#reviews.review-board[hidden]{display:none!important}
+#reviews .container{width:min(1240px,100%)!important;max-width:1240px!important;margin:auto!important}
+#reviews .section-heading-row{display:flex!important;align-items:center;gap:12px}
+#reviews #close-reviews-overlay{
+  position:fixed!important;top:13px!important;right:18px!important;
+  z-index:96!important;display:grid!important;place-items:center!important;
+  width:45px!important;height:45px!important;
+  border:2px solid #bca272!important;background:#283d39!important;
+  color:#fff0d7!important;border-radius:2px!important;font-size:26px!important
+}
+#reviews .section-heading-row h1{color:#283b32!important}
+/* The original detail dialog becomes a pixel-framed interior screen. */
+#game-dialog.detail-dialog{
+  width:min(1100px,calc(100vw - 22px))!important;
+  max-width:1100px!important;
+  max-height:calc(100dvh - 22px)!important;
+  border:4px solid #b99a69!important;border-radius:2px!important;
+  box-shadow:7px 9px 0 #172831b3,0 18px 55px #0a1a20b8!important;
+  background:#f5ebd8!important;overflow-y:auto!important;
+}
+#game-dialog::backdrop{background:#101c25c9;backdrop-filter:blur(2px)}
+#game-dialog .dialog-inner{border:0!important;border-radius:0!important}
+#game-dialog .dialog-close{min-height:42px}
+#game-dialog .world-interior-banner{border-radius:0!important}
+/* Other existing editor and media dialogs are native modals above the world. */
+dialog[open]:not(#game-dialog){max-height:calc(100dvh - 12px)}
+@media(hover:hover) and (pointer:fine) and (min-width:820px){
+  #games .world-direction-pad{display:none!important}
+  #games .world-controlbar{justify-content:flex-end!important}
+}
+@media(max-width:620px){
+  #games .world-stage-stats{
+    top:calc(9px + env(safe-area-inset-top,0px))!important;
+    left:calc(9px + env(safe-area-inset-left,0px))!important;
+    padding:5px 7px!important;font-size:10px!important;max-width:calc(100vw - 99px)!important
+  }
+  #games .world-stage-stats .world-stage-logo{font-size:10px!important}
+  #games #world-menu-toggle{
+    top:calc(9px + env(safe-area-inset-top,0px))!important;
+    right:calc(9px + env(safe-area-inset-right,0px))!important;
+    min-width:69px!important;padding:7px 9px!important;font-size:12px!important
+  }
+  #games #world-overlay-menu{
+    top:calc(59px + env(safe-area-inset-top,0px))!important;
+    right:calc(9px + env(safe-area-inset-right,0px))!important;
+    max-height:calc(100dvh - 70px - env(safe-area-inset-bottom,0px))!important
+  }
+  #games .world-controlbar{
+    left:calc(10px + env(safe-area-inset-left,0px))!important;
+    right:calc(10px + env(safe-area-inset-right,0px))!important;
+    bottom:calc(15px + env(safe-area-inset-bottom,0px))!important;
+  }
+  #games .world-direction-pad{gap:7px!important}
+  #games .world-controlbar button{min-height:55px!important;min-width:54px!important;padding:9px!important}
+  #games .world-enter{font-size:12px!important;min-width:118px!important;padding:9px 11px!important}
+  #games #world-all-games>summary{min-height:56px!important;padding:12px 15px!important;font-size:13px!important}
+  #reviews.review-board.section-pad{padding:71px 10px 26px!important}
+}
+@media(max-height:480px) and (orientation:landscape){
+  #games .world-controlbar {
+    left:calc(9px + env(safe-area-inset-left,0px))!important;
+    right:calc(9px + env(safe-area-inset-right,0px))!important;
+    bottom:calc(9px + env(safe-area-inset-bottom,0px))!important;
+  }
+  #games .world-controlbar button{min-height:45px!important;min-width:47px!important}
+  #games .world-enter{min-width:114px!important}
+  #games .world-stage-stats{top:8px!important}
+  #games #world-menu-toggle{top:8px!important}
+  #games #world-overlay-menu{top:57px!important;max-height:calc(100dvh - 64px)!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #games #world-menu-toggle,#games #world-overlay-menu *{transition:none!important;animation:none!important}
+}
