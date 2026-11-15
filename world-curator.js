@@ -502,16 +502,35 @@
     ctx.transform(1,0,sway,1,0,0);
     ctx.translate(-origin,-ground);
     drawWings(ctx,form,shape,reduced?0:guide.wingAngle);
-    const transitioning=!reduced&&blend<1&&pose.previous!==frame;
-    if(transitioning){
-      ctx.globalAlpha=1-blend;
-      drawBody(ctx,form,pose.previous);
-      ctx.globalAlpha=blend;
+    const walking=!reduced&&guide.mode==='follow'&&!guide.flight&&!guide.followJump&&
+      !gesture&&guide.stride>.08;
+    if(walking){
+      // Blend adjacent cycle frames by fractional travel, instead of snapping
+      // at every seventh of a step. Fade the gait in/out as speed changes.
+      const walkPhase=guide.phase*walkFrames.length;
+      const walkIndex=Math.floor(walkPhase)%walkFrames.length;
+      const nextIndex=(walkIndex+1)%walkFrames.length;
+      const fraction=ease(walkPhase-Math.floor(walkPhase));
+      const gaitFade=ease(clamp((guide.stride-.08)/.32,0,1));
+      ctx.globalAlpha=1-gaitFade;
+      drawBody(ctx,form,0);
+      ctx.globalAlpha=gaitFade*(1-fraction);
+      drawBody(ctx,form,walkFrames[walkIndex]);
+      ctx.globalAlpha=gaitFade*fraction;
+      drawBody(ctx,form,walkFrames[nextIndex]);
+    }else{
+      const transitioning=!reduced&&blend<1&&pose.previous!==frame;
+      if(transitioning){
+        ctx.globalAlpha=1-blend;
+        drawBody(ctx,form,pose.previous);
+        ctx.globalAlpha=blend;
+      }
+      drawBody(ctx,form,frame);
     }
-    drawBody(ctx,form,frame);
     ctx.globalAlpha=1;
-    // Walk cycles use the stable, independently articulated head.
-    const stableHead=guide.stride>.15&&!guide.flight&&!guide.followJump&&!gesture;
+    // Keep the head registration stable during idle, turning and the gait.
+    // Only gestures and airborne silhouettes change the head source frame.
+    const stableHead=guide.mode==='follow'&&!guide.flight&&!guide.followJump&&!gesture;
     const headFrame=stableHead?0:frame;
     const winking=gesture?.name==='wink'&&progress>.31&&progress<.57;
     drawHead(ctx,form,headFrame,guide,elapsed,reduced,winking);
