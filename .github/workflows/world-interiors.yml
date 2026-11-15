@@ -1,0 +1,48 @@
+name: Walkable World Interiors QA
+on:
+  push:
+    branches: ["feat/walkable-interiors-world-upgrade"]
+    paths:
+      - "index.html"
+      - "oibung-world.js"
+      - "world-interiors.js"
+      - "world-interiors.css"
+      - "world-map-details.js"
+      - "tests/world-interiors.cjs"
+      - ".github/workflows/world-interiors.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  interiors-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify world and room source syntax
+        run: |
+          node --check world-interiors.js
+          node --check world-map-details.js
+          node --check oibung-world.js
+          node --check tests/world-interiors.cjs
+      - name: Install Playwright browser
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Test desktop and mobile interior navigation
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/world-interior.log 2>&1 &
+          sleep 2
+          node tests/world-interiors.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: world-interior-screenshots-${{ github.run_number }}
+          path: artifacts/*.png
+          retention-days: 14
+          if-no-files-found: ignore
