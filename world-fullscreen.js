@@ -102,6 +102,10 @@
     }
     if(menuOpen()){
       setMenu(false,true);
+      event.preventDefault();return;
+    }
+    if(window.OIBUNG_WORLD?.getState?.().inside&&!window.OIBUNG_INTERIORS?.isInfoOpen?.()){
+      window.OIBUNG_WORLD.leaveInterior();
       event.preventDefault();
     }
   });
