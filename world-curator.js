@@ -586,117 +586,97 @@
     }
     ctx.restore();
   }
-  // Live pixel rig: deform ONE opaque source pose using a smoothly varying
-  // inverse displacement field. No translucent overlays or sprite-frame swaps.
-  // Each guide keeps one reusable bitmap; the 2x texture preserves subpixel
-  // limb movement without introducing an expensive new atlas per frame.
-  const rigSources=new WeakMap();
-  const rigResolution=2;
-  function rigSource(form,frame) {
-    if(!rigSources.has(form))rigSources.set(form,new Map());
-    const cache=rigSources.get(form);
-    if(cache.has(frame)){
-      const cached=cache.get(frame);
-      cache.delete(frame);cache.set(frame,cached);
-      return cached;
-    }
-    const isDevil=form===forms.devil;
-    const shape=(isDevil?devilShapes:winterShapes)[frame];
-    const width=frameWidth*rigResolution,height=frameHeight*rigResolution;
+  // A real, pixel-perfect in-between frame is baked for each gesture step.
+  // The source is always the unchanged, approved character portrait. There
+  // is no fade, opacity blending, silhouette flashing or whole-sprite zoom.
+  // Cached 188x194 frames replace the old per-pixel 376x388 deformation
+  // performed on EVERY animation tick (a major mobile frame-time spike).
+  const actionSource=new WeakMap();
+  const bodyFilm=new WeakMap();
+  const INBETWEEN_STEPS=28;
+  const BODY_FILM_LIMIT=42;
+
+  function actionPixels(form) {
+    if(actionSource.has(form))return actionSource.get(form);
+    const shape=(form===forms.devil?devilShapes:winterShapes)[0];
+    const layer=detailedFrame(form,0,shape);
     const canvas=document.createElement('canvas');
-    canvas.width=width;canvas.height=height;
-    const pixels=canvas.getContext('2d',{willReadFrequently:true});
-    pixels.imageSmoothingEnabled=true;
-    pixels.drawImage(detailedFrame(form,frame,shape),0,0,width,height);
-    const rgba=new Uint32Array(pixels.getImageData(0,0,width,height).data.buffer);
-    const lArm=new Float32Array(width),rArm=new Float32Array(width);
-    const lLeg=new Float32Array(width),rLeg=new Float32Array(width);
+    canvas.width=frameWidth;canvas.height=frameHeight;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(layer,0,0,layer.width,layer.height,0,0,frameWidth,frameHeight);
+    const rgba=new Uint32Array(ctx.getImageData(0,0,frameWidth,frameHeight).data.buffer);
+    const isDevil=form===forms.devil;
+    const left=new Float32Array(frameWidth),right=new Float32Array(frameWidth);
     function influence(x,pivot,radius){
-      const u=clamp(1-Math.abs(x-pivot)/radius,0,1);
-      return u*u*(3-2*u);
+      const a=clamp(1-Math.abs(x-pivot)/radius,0,1);
+      return a*a*(3-2*a);
     }
-    for(let x=0;x<width;x++){
-      const u=x/rigResolution;
-      lArm[x]=influence(u,isDevil?75:68,17);
-      rArm[x]=influence(u,isDevil?110:117,16);
-      lLeg[x]=influence(u,isDevil?87:87,15);
-      rLeg[x]=influence(u,isDevil?105:108,15);
+    for(let x=0;x<frameWidth;x++){
+      left[x]=influence(x,isDevil?75:68,isDevil?14:17);
+      right[x]=influence(x,isDevil?111:117,isDevil?15:16);
     }
-    const source={width,height,rgba,lArm,rArm,lLeg,rLeg,neck:shape.output[2],
-      isDevil};
-    cache.set(frame,source);
-    if(cache.size>10)cache.delete(cache.keys().next().value);
-    return source;
+    const obj={rgba,left,right,neck:shape.output[2],from:Math.max(0,Math.floor(shape.output[2]-4))};
+    actionSource.set(form,obj);
+    return obj;
   }
+
+  function actionBodyFrame(form,gesture,step) {
+    if(!bodyFilm.has(form))bodyFilm.set(form,new Map());
+    const cache=bodyFilm.get(form);
+    const key=gesture.name+':'+step;
+    if(cache.has(key)){
+      const saved=cache.get(key);
+      cache.delete(key);cache.set(key,saved);
+      return saved;
+    }
+    const source=actionPixels(form);
+    const t=step/INBETWEEN_STEPS;
+    const move=flirtPose(gesture,t);
+    const result=document.createElement('canvas');
+    result.width=frameWidth;result.height=frameHeight;
+    const ctx=result.getContext('2d');
+    const dst=ctx.createImageData(frameWidth,frameHeight);
+    const pixels=new Uint32Array(dst.data.buffer);
+    const {rgba,left,right,neck}=source;
+    // Joint-centred displacement with a soft spatial envelope. Each baked
+    // frame contains actual opaque image pixels in new positions.
+    for(let y=0;y<frameHeight;y++){
+      const arm=ease(clamp((y-neck-2)/31,0,1))*
+        (1-ease(clamp((y-neck-89)/27,0,1)));
+      const cloth=ease(clamp((y-neck-17)/54,0,1))*
+        (1-ease(clamp((y-(ground-23))/24,0,1)));
+      const hem=Math.sin(t*Math.PI*2)*.55*cloth;
+      const row=y*frameWidth;
+      for(let x=0;x<frameWidth;x++){
+        const la=left[x]*arm,ra=right[x]*arm;
+        const sx=clamp(Math.round(x-la*move.leftX-ra*move.rightX-hem),0,frameWidth-1);
+        const sy=clamp(Math.round(y-la*move.leftY-ra*move.rightY),0,frameHeight-1);
+        pixels[row+x]=rgba[sy*frameWidth+sx];
+      }
+    }
+    ctx.putImageData(dst,0,0);
+    cache.set(key,result);
+    if(cache.size>BODY_FILM_LIMIT)cache.delete(cache.keys().next().value);
+    return result;
+  }
+
   function drawBody(ctx,form,frame,guide,elapsed,reduced,gesture,progress) {
     const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
-    const from=clamp(Math.floor(shape.output[2]-4),0,frameHeight-1);
-    if(reduced){
+    const from=Math.max(0,Math.floor(shape.output[2]-4));
+    if(reduced||!gesture){
+      // Original atlas frames provide 8 completely drawn walking poses.
+      // No dynamic pixel readback is needed during walking or idle.
       const layer=detailedFrame(form,frame,shape);
       ctx.drawImage(layer,0,from*3,layer.width,(frameHeight-from)*3,
         0,from,frameWidth,frameHeight-from);
       return;
     }
-    const source=rigSource(form,frame);
-    if(!guide.rigCanvas){
-      guide.rigCanvas=document.createElement('canvas');
-      guide.rigCanvas.width=source.width;
-      guide.rigCanvas.height=source.height;
-      guide.rigContext=guide.rigCanvas.getContext('2d');
-      guide.rigImage=guide.rigContext.createImageData(source.width,source.height);
-      guide.rigOutput=new Uint32Array(guide.rigImage.data.buffer);
-    }
-    const {width,height,rgba,lArm,rArm,lLeg,rLeg,neck,isDevil}=source;
-    const out=guide.rigOutput;
-    const phase=guide.phase*Math.PI*2;
-    const stride=clamp(guide.stride,0,1);
-    const step=Math.sin(phase)*stride,upLeft=Math.max(0,Math.cos(phase))*stride,
-      upRight=Math.max(0,-Math.cos(phase))*stride;
-    const quietSway=Math.sin(elapsed*1.6+(isDevil?.6:0))*.58;
-    const breath=Math.sin(elapsed*2.6+(isDevil?.7:0))*.35;
-    const action=flirtPose(gesture,progress);
-    const crouch=clamp(guide.crouch,0,1);
-    const start=from*rigResolution;
-    // Animate the head at display FPS; cap expensive per-pixel body deformation
-    // around 36 FPS on mobile, without fading or scaling the sprite frames.
-    if(guide.rigFrame!==frame||elapsed-(guide.rigStamp??-1)>1/36){
-      guide.rigFrame=frame;guide.rigStamp=elapsed;
-    for(let y=start;y<height;y++){
-      const py=y/rigResolution;
-      // Deformation envelopes taper to zero at each joint. The source
-      // remains intact; only actual pixels are spatially repositioned.
-      const armReach=ease(clamp((py-neck-2)/39,0,1))*
-        (1-ease(clamp((py-neck-82)/24,0,1)));
-      const legReach=ease(clamp((py-(ground-48))/36,0,1));
-      const cloth=ease(clamp((py-neck-22)/62,0,1))*
-        (1-ease(clamp((py-(ground-27))/26,0,1)));
-      const bodySway=ease(clamp((py-neck)/56,0,1));
-      const liftLeft=upLeft*5.0*legReach,liftRight=upRight*5.0*legReach;
-      const verticalCloth=cloth*(breath*.45+Math.abs(step)*.9)+crouch*2.6*bodySway;
-      const row=y*width;
-      for(let x=0;x<width;x++){
-        const leftArm=lArm[x]*armReach,rightArm=rArm[x]*armReach;
-        const leftLeg=lLeg[x]*legReach,rightLeg=rLeg[x]*legReach;
-        const dx=(quietSway*bodySway+step*(leftArm*-5.8+rightArm*5.8+
-          leftLeg*10-rightLeg*10)+
-          cloth*(Math.sin(elapsed*2+phase*.18)*1.1)+
-          rightArm*action.rightX+leftArm*action.leftX)*rigResolution;
-        const dy=(verticalCloth+leftLeg*-liftLeft+rightLeg*-liftRight+
-          rightArm*action.rightY+leftArm*action.leftY)*rigResolution;
-        const sx=clamp(Math.round(x-dx),0,width-1);
-        const sy=clamp(Math.round(y-dy),0,height-1);
-        out[row+x]=rgba[sy*width+sx];
-      }
-    }
-    // Upper rows are unused by the independently drawn head.
-    guide.rigContext.putImageData(guide.rigImage,0,0,0,start,width,height-start);
-    }
-    // Filter only the subpixel-deformed body; preserve nearest-neighbour
-    // pixels on the face and high-resolution eye details.
-    ctx.imageSmoothingEnabled=true;
-    ctx.drawImage(guide.rigCanvas,0,start,width,height-start,0,from,
-      frameWidth,frameHeight-from);
+    const tick=Math.round(clamp(progress,0,1)*INBETWEEN_STEPS);
+    const drawn=actionBodyFrame(form,gesture,tick);
     ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(drawn,0,from,frameWidth,frameHeight-from,
+      0,from,frameWidth,frameHeight-from);
   }
 
   function drawEmotion(ctx,guide,shape,frame,eyes,gesture,progress) {
@@ -718,12 +698,35 @@
       ctx.fillStyle='#c27679';
       ctx.fillRect(left[0]-7,left[1]-3,6,2);
       ctx.fillRect(right[0]-5,right[1]-3,6,2);
-      const mouth=featurePoint(shape,101,79);
+      const mouth=featurePoint(shape,
+        guide.formId==='devil'?95:102,guide.formId==='devil'?40:68);
       ctx.fillStyle='#7e3c49';ctx.fillRect(mouth[0],mouth[1],3,2);
     }else if(name==='surprise'){
-      const mouth=featurePoint(shape,102,80);
+      const mouth=featurePoint(shape,
+        guide.formId==='devil'?95:102,guide.formId==='devil'?40:68);
       ctx.fillStyle='#653b49';ctx.fillRect(mouth[0],mouth[1]-2,4,5);
       ctx.fillStyle='#f2b49e';ctx.fillRect(mouth[0]+1,mouth[1]+2,2,1);
+    }
+    if(name==='cheer'||name==='pairCheer'){
+      // New hand-plotted happy eyelids and mouth, independent of body shape.
+      const skin=guide.formId==='devil'?'#d8a5a2':'#f4c4b5';
+      const ink=guide.formId==='devil'?'#59343a':'#68434c';
+      for(const [x,y] of [left,right]){
+        ctx.fillStyle=skin;ctx.fillRect(Math.round(x-3),Math.round(y-2),7,5);
+        ctx.fillStyle=ink;
+        ctx.fillRect(Math.round(x-3),Math.round(y+1),3,1);
+        ctx.fillRect(Math.round(x),Math.round(y+2),3,1);
+      }
+      const [mx,my]=featurePoint(shape,guide.formId==='devil'?95:102,
+        guide.formId==='devil'?39:68);
+      ctx.fillStyle=ink;ctx.fillRect(Math.round(mx-2),Math.round(my),6,2);
+      ctx.fillStyle='#f8d4c4';ctx.fillRect(Math.round(mx),Math.round(my+2),3,1);
+    }
+    if(name==='stretch'||name==='hair'){
+      const [x,y]=featurePoint(shape,guide.formId==='devil'?102:120,
+        guide.formId==='devil'?25:40);
+      ctx.fillStyle='#fff1cb';ctx.fillRect(Math.round(x),Math.round(y),2,6);
+      ctx.fillRect(Math.round(x-3),Math.round(y+2),8,2);
     }
     ctx.restore();
   }
