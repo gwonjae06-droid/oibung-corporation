@@ -1,23 +1,24 @@
-/* Side-view companion animation, using the guide atlas as its art source. */
+/* Layered pixel-art guide, with independent head, hair, arms and legs. */
 (() => {
   'use strict';
-  const atlas = new Image();
-  atlas.decoding = 'async';
-  atlas.src = 'assets/world-pixel/curator.webp';
+  const art = new Image();
+  art.decoding = 'async';
+  art.src = 'assets/world-pixel/curator-rig.png';
 
-  const sole = 340;
-  const ankleY = 310;
-  const hipY = 176;
-  const hip = [128,181], knee = [153,237], ankle = [172,310];
+  const sole = 352;
+  const ankleY = 321;
+  const hipY = 151;
+  const hip = [62,hipY], knee = [65,246], ankle = [69,ankleY];
+  const shoulder = [46,76], elbow = [36,114], neck = [57,62];
   const thighLength = Math.hypot(knee[0]-hip[0],knee[1]-hip[1]);
   const shinLength = Math.hypot(ankle[0]-knee[0],ankle[1]-knee[1]);
   const clamp = (value, low, high) => Math.max(low,Math.min(high,value));
   const approach = (from,to,rate,dt) => from+(to-from)*(1-Math.exp(-rate*dt));
   const ease = t => t*t*(3-2*t);
-  const ready = () => atlas.complete&&atlas.naturalWidth===1024&&atlas.naturalHeight===768;
+  const ready = () => art.complete&&art.naturalWidth===103&&art.naturalHeight===356;
   let rig;
 
-  function cut(column,points) {
+  function cut(points) {
     const layer=document.createElement('canvas');
     const left=Math.min(...points.map(point=>point[0]));
     const top=Math.min(...points.map(point=>point[1]));
@@ -30,7 +31,7 @@
     for(let i=1;i<points.length;i++)brush.lineTo(...points[i]);
     brush.closePath();
     brush.clip();
-    brush.drawImage(atlas,column*256,0,256,350,0,0,256,350);
+    brush.drawImage(art,0,0);
     return {layer,left,top};
   }
   function shade(part) {
@@ -41,22 +42,50 @@
     brush.drawImage(part.layer,0,0);
     return {layer,left:part.left,top:part.top};
   }
+  function paintIris() {
+    const layer=document.createElement('canvas');
+    layer.width=13;layer.height=10;
+    const brush=layer.getContext('2d');
+    const colors={s:'#361831',p:'#ef5aab',v:'#7d56ed',c:'#56def6',g:'#ffce70',w:'#fff7dc'};
+    const rows=['....sssss....','..sspvvpss...','.spvgggggvps.','spvgwwgwwgvps',
+      'spvgwwwwwgvps','spvgcwwwcgvps','.spvgcwcgvps.','..spvgcgvps..','...sspvpss...','.....sss.....'];
+    rows.forEach((row,y)=>[...row].forEach((color,x)=>{
+      if(!colors[color])return;
+      brush.fillStyle=colors[color];
+      brush.fillRect(x,y,1,1);
+    }));
+    return layer;
+  }
   function prepare() {
     if(!rig){
-      const body=cut(1,[[61,0],[177,0],[177,175],[146,180],[140,179],[140,195],[122,195],[118,179],[61,175]]);
-      const front={
-        thigh:cut(2,[[102,173],[150,170],[156,188],[166,226],[165,246],[142,248],[130,226],[118,208],[103,195]]),
-        shin:cut(2,[[139,225],[164,222],[167,254],[171,274],[183,308],[178,320],[165,319],[153,290],[140,255]]),
-        shoe:cut(1,[[106,300],[142,300],[168,314],[171,340],[104,345]])
+      const legs={
+        thigh:cut([[57,222],[80,223],[80,240],[75,258],[55,259],[55,244]]),
+        shin:cut([[58,240],[78,241],[76,266],[75,302],[79,321],[61,325],[62,303],[55,278],[55,257]]),
+        shoe:cut([[59,311],[79,311],[83,330],[102,337],[101,353],[57,353],[58,325]])
       };
-      rig={body,front,rear:{thigh:shade(front.thigh),shin:shade(front.shin),shoe:shade(front.shoe)}};
+      const arms={
+        upper:cut([[31,63],[46,64],[54,72],[59,84],[53,96],[47,113],[37,125],[27,121],[31,106],[33,85]]),
+        lower:cut([[31,105],[47,108],[44,123],[35,146],[28,159],[25,174],[16,194],[6,193],
+          [5,172],[14,154],[21,136],[26,119]])
+      };
+      rig={
+        hair:cut([[13,14],[48,12],[57,21],[51,43],[51,59],[41,67],[35,75],[34,96],
+          [31,115],[27,137],[8,141],[0,134],[0,35]]),
+        head:cut([[31,0],[96,0],[96,47],[78,61],[67,65],[53,65],[49,57],[41,51],[37,40],[30,22]]),
+        torso:cut([[48,55],[65,58],[97,73],[103,102],[95,123],[94,151],[53,158],[45,147],
+          [52,128],[55,112],[50,104],[53,94],[56,84],[48,74],[42,69]]),
+        skirt:cut([[44,135],[63,140],[90,134],[95,150],[94,179],[90,196],[85,221],[83,233],
+          [68,234],[44,233],[42,204],[36,185],[34,166],[36,153]]),
+        iris:paintIris(),arms,rearArms:{upper:shade(arms.upper),lower:shade(arms.lower)},
+        legs,rearLegs:{thigh:shade(legs.thigh),shin:shade(legs.shin),shoe:shade(legs.shoe)}
+      };
     }
     return rig;
   }
 
   function reset(guide,x) {
     Object.assign(guide,{x,y:0,speed:0,facing:1,side:-1,phase:0,stride:0,crouch:0,lean:0,tuck:0,
-      affection:0,still:0,cooldown:.7,mode:'follow',timer:0,flight:null,followJump:0,
+      affection:0,prep:0,reach:0,still:0,cooldown:.7,mode:'follow',timer:0,flight:null,followJump:0,
       landed:0,playerGrounded:true});
     return guide;
   }
@@ -128,7 +157,9 @@
     guide.crouch=approach(guide.crouch,
       guide.mode==='charge'?ease(clamp(guide.timer/.29,0,1)):guide.landed/.18*.5,18,dt);
     guide.lean=approach(guide.lean,
-      guide.mode==='charge'?.32:guide.mode==='hop'?.24:guide.stride*.07,14,dt);
+      guide.mode==='charge'?.26:guide.mode==='hop'?.21:guide.stride*.09,14,dt);
+    guide.prep=approach(guide.prep,!reduced&&guide.mode==='charge'?1:0,16,dt);
+    guide.reach=approach(guide.reach,!reduced&&guide.mode==='hop'?1:0,12,dt);
     const hearts=watching&&guide.still>.36||guide.mode==='hop'||guide.mode==='admire';
     guide.affection=approach(guide.affection,hearts?1:0,12,dt);
   }
@@ -151,7 +182,7 @@
     const step=(phase+(rear?.5:0))%1;
     const swing=step>=.5;
     const t=swing?(step-.5)*2:step*2;
-    const plantedX=(swing?-1+2*ease(t):1-2*t)*52*stride+(rear?-9:1);
+    const plantedX=(swing?-1+2*ease(t):1-2*t)*44*stride+(rear?-7:2);
     const lift=swing?Math.sin(t*Math.PI)*32*stride:0;
     const turn=swing?Math.sin(t*Math.PI*2)*.22*stride:0;
     return {
@@ -186,7 +217,39 @@
     bone(ctx,parts.thigh,hipPosition,joint,hip,knee);
     ctx.translate(...end);
     ctx.rotate(target.tilt);
-    drawPart(ctx,parts.shoe,122,ankleY);
+    drawPart(ctx,parts.shoe,...ankle);
+    ctx.restore();
+  }
+  function arm(ctx,parts,swing,flex) {
+    ctx.save();
+    ctx.translate(...shoulder);
+    ctx.rotate(swing);
+    drawPart(ctx,parts.upper,...shoulder);
+    ctx.translate(elbow[0]-shoulder[0],elbow[1]-shoulder[1]);
+    ctx.rotate(flex);
+    drawPart(ctx,parts.lower,...elbow);
+    ctx.restore();
+  }
+  function expression(ctx,iris,{affection,prep,reach},elapsed,reduced) {
+    if(affection<.06)return;
+    ctx.save();
+    ctx.globalAlpha=affection;
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(iris,60,32,13,10);
+    ctx.drawImage(iris,74,32,8,8);
+    ctx.fillStyle='#f6a0b5';
+    ctx.fillRect(60,43,10,2);
+    ctx.fillRect(74,42,5,1);
+    const emphasis=Math.max(prep,reach);
+    if(emphasis>.25){
+      const rise=reduced?0:Math.sin(elapsed*7)*3;
+      ctx.globalAlpha=affection*emphasis;
+      heart(ctx,96,24+rise,8,'#f64da7');
+      heart(ctx,106,5-rise,4,'#b4ebfb');
+      ctx.fillStyle='#fdf6c9';
+      ctx.fillRect(87,9,2,10);
+      ctx.fillRect(83,13,10,2);
+    }
     ctx.restore();
   }
 
@@ -198,27 +261,48 @@
     const rear=foot(guide.phase,guide.stride,guide.tuck,true);
     const maximumReach=thighLength+shinLength-1;
     const minHip=target=>target.y-Math.sqrt(maximumReach*maximumReach-target.x*target.x);
-    const bodyY=Math.max(hipY+guide.crouch*30-guide.tuck*2,minHip(front),minHip(rear));
+    const cycle=guide.phase*Math.PI*2;
+    const gait=Math.cos(cycle)*guide.stride;
+    const bob=(1-Math.cos(cycle*2))*guide.stride*2;
+    const bodyY=Math.max(hipY+guide.crouch*23-guide.tuck*3-bob,minHip(front),minHip(rear));
+    const breath=reduced?0:Math.sin(elapsed*2.9)*.018;
+    const sway=guide.lean+gait*.076+breath;
+    const lift=guide.tuck*.22;
+    const nearSwing=-gait*.48-guide.prep*.34-guide.reach*.77-lift;
+    const farSwing=gait*.43-guide.prep*.29-guide.reach*.86-lift*.75;
+    const nearFlex=-.06-Math.max(0,gait)*.25-guide.prep*.91-guide.reach*.22-lift*.9;
+    const farFlex=-.06-Math.max(0,-gait)*.23-guide.prep*.8-guide.reach*.17-lift;
     const top=groundY+guide.y-height;
     ctx.save();
     ctx.translate(center,top);
     ctx.scale(scale*guide.facing,scale);
-    leg(ctx,parts.rear,[0,bodyY],rear);
-    leg(ctx,parts.front,[0,bodyY],front);
+    ctx.imageSmoothingEnabled=true;
+    leg(ctx,parts.rearLegs,[0,bodyY],rear);
+    leg(ctx,parts.legs,[0,bodyY],front);
     ctx.translate(0,bodyY);
-    ctx.rotate(guide.lean);
-    drawPart(ctx,parts.body,132,hipY);
-    if(guide.affection>.1){
-      ctx.save();
-      ctx.globalAlpha=guide.affection;
-      heart(ctx,16,43-hipY,6.6,'#671a40');
-      heart(ctx,16,43-hipY,5.1,'#fa458c');
-      heart(ctx,15,42-hipY,2.1,'#ffd5e8');
-      const rise=reduced?0:Math.sin(elapsed*5)*5;
-      heart(ctx,42,18-hipY+rise,9,'#f1457f');
-      heart(ctx,58,3-hipY-rise,5,'#ff86a8');
-      ctx.restore();
-    }
+    ctx.save();
+    ctx.rotate(gait*.046-guide.crouch*.08);
+    drawPart(ctx,parts.skirt,...hip);
+    ctx.restore();
+    ctx.rotate(sway);
+    ctx.translate(-hip[0],-hip[1]);
+    ctx.save();
+    ctx.translate(10,-2);
+    arm(ctx,parts.rearArms,farSwing,farFlex);
+    ctx.restore();
+    const hairSway=-gait*.14-guide.tuck*.21+breath*2;
+    ctx.save();
+    ctx.translate(43,32);
+    ctx.rotate(hairSway);
+    drawPart(ctx,parts.hair,43,32);
+    ctx.restore();
+    drawPart(ctx,parts.torso,0,0);
+    arm(ctx,parts.arms,nearSwing,nearFlex);
+    ctx.translate(...neck);
+    ctx.rotate(-sway*.44+breath+guide.affection*.07-guide.tuck*.12);
+    ctx.translate(-neck[0],-neck[1]);
+    drawPart(ctx,parts.head,0,0);
+    expression(ctx,parts.iris,guide,elapsed,reduced);
     ctx.restore();
     return true;
   }
