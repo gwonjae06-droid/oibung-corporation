@@ -134,6 +134,18 @@
     const sky=c.createLinearGradient(0,0,0,groundY);
     sky.addColorStop(0,t.shadow);sky.addColorStop(.65,t.wall);sky.addColorStop(1,t.stone);
     c.fillStyle=sky;c.fillRect(0,0,W,H);
+    // Original WebP masonry is used at low opacity, so hall stone gains
+    // fine detail without extra network requests or giant new textures.
+    const textureAtlas=window.OIBUNG_CINEMATIC_ART;
+    if(textureAtlas?.ready('ornate_stone')){
+      const texture=textureAtlas.images.ornate_stone;
+      c.save();c.globalAlpha=.115;
+      const tw=238,shift=Math.floor(camera*.17)%tw;
+      for(let x=-tw-shift;x<W+tw;x+=tw){
+        for(let y=0;y<groundY;y+=tw)c.drawImage(texture,x,y,tw,tw);
+      }
+      c.restore();
+    }
     // Fill the viewport with the actual hall. The original short backdrop
     // left a giant featureless black ceiling on tall phones and desktops.
     const top=Math.max(10,groundY-Math.max(690,H*.86));
@@ -153,6 +165,23 @@
         const dx=Math.round(Math.cos(a)*25),dy=Math.round(Math.sin(a)*20);
         rect(c,x+160+dx,top+108+dy,3,3,t.light);
       }
+    }
+    // Hanging chandeliers and flickering candles add depth and scale.
+    for(let xx=Math.floor(camera/410)*410-410;xx<camera+W+410;xx+=410){
+      const x=xx-camera+205,baseY=top+68;
+      line(c,x,top+14,x,baseY+68,t.shadow,5);
+      line(c,x+1,top+16,x+1,baseY+66,t.trim,1);
+      ellipse(c,x,baseY+73,66,13,t.shadow);
+      ellipse(c,x,baseY+69,62,8,t.trim);
+      for(let k=-2;k<=2;k++){
+        const px=x+k*24;
+        rect(c,px-3,baseY+47,6,17,t.stone);
+        rect(c,px-2,baseY+40,4,10,t.light);
+        const flame=reducedMotion?0:Math.sin(elapsed*4+k*2.7)*2;
+        ellipse(c,px+flame,baseY+35,4,8,t.glass);
+        ellipse(c,px,baseY+35,2,4,t.light);
+      }
+      ellipse(c,x,baseY+73,8,8,t.light);
     }
     // Warm diagonal illumination through the glass. Static when reduced
     // motion is preferred; no blur filter or GPU compositing needed.
