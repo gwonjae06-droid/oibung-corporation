@@ -40,24 +40,44 @@
     return '#'+channels.map(n=>Math.max(0,Math.min(255,n+delta)).toString(16).padStart(2,'0')).join('');
   }
   function skyCloud(){
-    return tile('sky-cloud',()=>surface(310,106,(c)=>{
+    return tile('sky-cloud-v2',()=>surface(286,83,(c)=>{
+      // Restrained banks of peach-gray cloud shadows instead of noisy
+      // uniform blobs. All geometry stays pixel-sharp at game resolution.
       const r=seedRandom(231);
-      // Volumetric-looking clusters, built with hard pixel edges and stippled shading.
       for(let layer=0;layer<3;layer++){
-        const yy=20+layer*11;
-        const col=['#a89aab','#e6c4c9','#fce7d5'][layer];
-        for(let i=0;i<27;i++){
-          const x=12+i*10+(r()-.5)*17,y=yy+(r()-.5)*33;
-          const h=17+r()*29,w=19+r()*27;
-          orb(c,x,y,w*.56,h*.58,col);
-          box(c,x-w*.43,y+h*.26,w*.8,h*.19,col);
+        const yy=28+layer*10;
+        const col=['#776e92','#b7a3b5','#e0c7c3'][layer];
+        for(let i=0;i<17;i++){
+          const x=9+i*16+(r()-.5)*8;
+          const y=yy+Math.sin(i*.86+layer)*9+(r()-.5)*7;
+          const h=12+r()*14,w=16+r()*26;
+          orb(c,x,y,w*.55,h*.55,col);
+          box(c,x-w*.38,y+h*.20,w*.83,h*.18,col);
         }
       }
-      for(let i=0;i<170;i++){
-        const x=r()*300,y=r()*80;
-        box(c,x,y,2+r()*6,1+r()*2,i%3===0?'#fff3e6':'#c2a7bb');
+      for(let i=0;i<68;i++){
+        const x=r()*277,y=25+r()*42;
+        box(c,x,y,2+r()*5,1,i%3?'#ceb4c0':'#f5d5c5');
       }
     }));
+  }
+  function artPlate(name){
+    const art=window.OIBUNG_CINEMATIC_ART;
+    if(!art?.ready(name))return null;
+    return tile('scenic-'+name,()=>{
+      const source=art.images[name];
+      return surface(source.naturalWidth,source.naturalHeight,(c,w,h)=>{
+        c.drawImage(source,0,0);
+        c.globalCompositeOperation='destination-in';
+        const g=c.createRadialGradient(w*.52,h*.52,w*.18,w*.52,h*.52,w*.69);
+        g.addColorStop(0,'rgba(0,0,0,1)');
+        g.addColorStop(.59,'rgba(0,0,0,.96)');
+        g.addColorStop(.82,'rgba(0,0,0,.53)');
+        g.addColorStop(1,'rgba(0,0,0,0)');
+        c.fillStyle=g;c.fillRect(0,0,w,h);
+        c.globalCompositeOperation='source-over';
+      });
+    });
   }
   function tallPine(seed=27){
     const key='pine'+seed;
@@ -209,45 +229,71 @@
     }));
   }
   function sky(ctx,{W,groundY,camera,elapsed,castleStrength=0,reducedMotion=false}){
+    const scenic=artPlate('night_skyline');
+    if(castleStrength>.03&&scenic){
+      // Original painted skyline fades into the rest of the procedurally
+      // generated world. Soft alpha is confined to the DISTANT sky only.
+      ctx.save();
+      ctx.globalAlpha=.83*castleStrength;
+      const w=Math.min(590,Math.max(370,W*.49)),h=w*.88;
+      const x=Math.round(W*.045-camera*.047),y=Math.round(Math.max(-35,groundY*.055));
+      ctx.imageSmoothingEnabled=true;
+      ctx.drawImage(scenic,x,y,Math.round(w),Math.round(h));
+      ctx.restore();
+    }
     const cloud=skyCloud();
-    // Three independent slow layers, gentle time-scrolling at native-pixel edges.
-    for(let layer=0;layer<3;layer++){
-      const interval=420+layer*145;
-      const scroll=camera*(.055+layer*.042)+(reducedMotion?0:elapsed*(1.2+layer*.5));
-      const drift=Math.floor(scroll%interval);
-      ctx.save();ctx.globalAlpha=[.18,.24,.35][layer];
+    for(let layer=0;layer<2;layer++){
+      const interval=500+layer*155;
+      const scroll=camera*(.043+layer*.038)+(reducedMotion?0:elapsed*(.69+layer*.47));
+      const drift=Math.floor(((scroll%interval)+interval)%interval);
+      ctx.save();ctx.globalAlpha=[.12,.16][layer];
       for(let x=-interval;x<W+interval;x+=interval){
-        const destX=x-drift,y=24+layer*34+(Math.floor(x/interval)*29+layer*13)%57;
-        const scale=[.72,.94,1.13][layer];
-        ctx.drawImage(cloud,destX,Math.floor(y),Math.floor(cloud.width*scale),Math.floor(cloud.height*scale));
+        const destX=x-drift;
+        const y=26+layer*55+(Math.floor(x/interval)*23+layer*11)%31;
+        const scale=[.7,.95][layer];
+        ctx.drawImage(cloud,Math.round(destX),Math.round(y),
+          Math.floor(cloud.width*scale),Math.floor(cloud.height*scale));
       }
       ctx.restore();
     }
-    if(castleStrength>.08){
-      ctx.save();ctx.globalAlpha=Math.min(.77,castleStrength*.77);
+    if(castleStrength>.08&&!scenic){
+      ctx.save();ctx.globalAlpha=Math.min(.45,castleStrength*.45);
       const castle=floatingPalace();
-      const x=W*.26-(camera*.048)%380;
-      ctx.drawImage(castle,Math.round(x),Math.round(Math.max(48,groundY*.19)),260,170);
+      ctx.drawImage(castle,Math.round(W*.26-camera*.048),
+        Math.round(Math.max(48,groundY*.19)),260,170);
       ctx.restore();
     }
   }
   function far(ctx,{W,groundY,camera,castleStrength=0}){
+    // A painterly town beneath the fantasy island adds small windows,
+    // actual terraces and waterfalls to the parallax silhouette.
+    const city=artPlate('distant_city');
+    if(city){
+      const width=Math.min(480,Math.max(300,W*.37)),height=Math.min(420,groundY*.62);
+      ctx.save();ctx.globalAlpha=.34;
+      ctx.imageSmoothingEnabled=true;
+      const offset=((camera*.09)%780+780)%780;
+      for(let x=-780;x<W+780;x+=780){
+        ctx.drawImage(city,Math.round(x-offset+120),
+          Math.round(groundY-height+10),Math.round(width),Math.round(height));
+      }
+      ctx.restore();
+    }
     const mountains=distantMountains();
-    const h=Math.min(290,Math.max(174,groundY*.39));
-    const base=groundY-38;
+    const h=Math.min(240,Math.max(146,groundY*.30));
+    const base=groundY-45;
     ctx.save();
-    ctx.globalAlpha=.73;
+    ctx.globalAlpha=.43;
     const span=1400,offset=((Math.round(camera*.10)%span)+span)%span;
     for(let x=-span;x<W+span;x+=span){
       ctx.drawImage(mountains,x-offset,Math.round(base-h),span,h);
     }
     ctx.restore();
-    // Accent towers occupy the farthest skyline, not the actual doorway.
     if(castleStrength>.03){
-      ctx.save();ctx.globalAlpha=.52*castleStrength;
+      ctx.save();ctx.globalAlpha=.25*castleStrength;
       const horizon=groundY-94;
-      for(let i=-1;i<Math.ceil(W/160)+1;i++){
-        const x=i*160-Math.floor(camera*.155)%160;
+      for(let i=-1;i<Math.ceil(W/190)+1;i++){
+        const x=i*190-Math.floor(camera*.155)%190;
         const height=30+((i*i*13+17)%61);
         box(ctx,x,horizon-height,25,height+45,'#484151');
         poly(ctx,[[x-8,horizon-height],[x+12,horizon-height-26],[x+33,horizon-height]],'#62516a');
