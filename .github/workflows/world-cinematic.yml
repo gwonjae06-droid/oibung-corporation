@@ -1,0 +1,57 @@
+name: Cinematic pixel world browser QA
+on:
+  push:
+    branches: ["feat/cinematic-pixel-world-v2"]
+    paths:
+      - "index.html"
+      - "world-cinematic-art.js"
+      - "world-cinematic-fx.js"
+      - "world-hd-architecture.js"
+      - "oibung-world.js"
+      - "tests/world-cinematic.cjs"
+      - "tests/world-polish.cjs"
+      - ".github/workflows/world-cinematic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  chromium-art-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify source JavaScript parses
+        run: |
+          node --check world-cinematic-art.js
+          node --check world-cinematic-fx.js
+          node --check world-hd-architecture.js
+          node --check oibung-world.js
+          node --check tests/world-cinematic.cjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright
+          npx playwright install --with-deps chromium
+      - name: Run cinematic HD art and gameplay tests
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 >/tmp/oibung-cinematic.log 2>&1 &
+          sleep 2
+          node tests/world-cinematic.cjs
+      - name: Verify existing fullscreen workflows
+        run: node tests/world-fullscreen.cjs
+      - name: Exercise keyboard, touch and landmark regressions
+        run: node tests/world-polish.cjs
+      - name: Measure previous HD performance contract
+        run: node tests/world-hd.cjs
+      - name: Inspect scene screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cinematic-pixel-world-screenshots-${{ github.run_number }}
+          path: artifacts/*.png
+          retention-days: 14
+          if-no-files-found: warn

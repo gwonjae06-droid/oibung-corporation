@@ -346,6 +346,144 @@
     for(let side of [-1,1])banner(c,mid+side*w*.40,top+260,90,p,rand);
     stoneColumns(c,mid-w*.40,base-235,w*.80,195,p,rand,8);
   }
+  function sourceArt(name){
+    const source=window.OIBUNG_CINEMATIC_ART;
+    return source?.ready(name)?source.images[name]:null;
+  }
+  function applySurfaceDetail(c,w,base,b){
+    const masonry=sourceArt('ornate_stone');
+    if(masonry){
+      c.save();
+      c.globalCompositeOperation='source-atop';
+      c.globalAlpha=b.style==='cat'?.13:b.style==='arena'?.23:.18;
+      c.fillStyle=c.createPattern(masonry,'repeat');
+      c.fillRect(16,65,w-32,base-70);
+      c.restore();
+    }
+    // Stone shields and polished bronze roses at precise facade points.
+    const p=palette[b.style]||palette.studio;
+    for(const dir of [-1,1]){
+      const x=w/2+dir*(b.width*.36),y=base-244;
+      ellipse(c,x,y,18,23,p.dark);
+      ellipse(c,x,y-3,12,16,p.gold);
+      path(c,[[x-10,y-8],[x,y-16],[x+10,y-8],[x+4,y+12],[x,y+17],[x-5,y+12]],p.accent);
+      box(c,x-2,y-9,4,20,p.light);
+      box(c,x-8,y-2,16,3,p.light);
+      for(let j=0;j<6;j++){
+        const yy=base-145-j*30,xx=w/2+dir*(b.width*.43);
+        box(c,xx,yy,3,9,j%2?p.gold:p.light);
+      }
+    }
+  }
+  function decorateIdentity(c,b,p,w,base,rand){
+    const mid=w/2;
+    // Every game retains unique architecture. These distinctive heraldic
+    // ornaments are additional *pixel art*, not a generic copied castle.
+    const trim=p.gold;
+    if(b.style==='arena'){
+      const y=base-b.height*.80;
+      ellipse(c,mid,y,92,52,p.dark);
+      ellipse(c,mid,y,84,44,trim);
+      ellipse(c,mid,y,74,35,p.roof);
+      for(let i=0;i<30;i++){
+        const a=i*Math.PI*2/30;
+        const x=mid+Math.cos(a)*80,yy=y+Math.sin(a)*40;
+        box(c,x,yy,4,3,i%3?p.accent:p.light);
+      }
+      box(c,mid-12,y-57,24,17,p.accent);
+      box(c,mid-3,y-73,6,19,p.light);
+      for(const sign of [-1,1]){
+        const x=mid+sign*155;
+        for(let row=0;row<5;row++){
+          ellipse(c,x+sign*row*8,y+row*9,13-row*.8,4,p.gold);
+          box(c,x+sign*row*8,y+row*9,5,2,p.light);
+        }
+      }
+    }else if(b.style==='duel'){
+      const y=base-b.height*.73;
+      for(const dir of [-1,1]){
+        const bottomX=mid+dir*84;
+        const topX=mid-dir*84;
+        stroke(c,bottomX,y+90,topX,y-114,trim,12);
+        stroke(c,bottomX-3,y+85,topX-3,y-107,p.light,3);
+        stroke(c,bottomX+dir*25,y+66,bottomX-dir*25,y+66,p.accent,11);
+        box(c,topX-5,y-128,10,13,p.light);
+        box(c,bottomX-3,y+90,7,24,p.dark);
+      }
+      for(let i=0;i<10;i++){
+        const a=i*Math.PI*2/10;
+        const x=mid+Math.cos(a)*70,y0=y+Math.sin(a)*45;
+        box(c,x,y0,3,3,i%2?p.accent:p.gold);
+      }
+    }else if(b.style==='tactics'){
+      const top=base-b.height*.89;
+      for(let i=-3;i<=3;i++){
+        const x=mid+i*46,yy=top+Math.abs(i)*9;
+        box(c,x,yy,6,64,p.dark);
+        box(c,x+2,yy,2,40,p.light);
+        path(c,[[x,yy+3],[x+29,yy+11],[x+2,yy+30]],i%2?p.accent:p.gold);
+        box(c,x+10,yy+12,8,2,p.light);
+      }
+      // Glowing tactical observatory dial / great mechanical clock.
+      const cy=top+126;
+      ellipse(c,mid,cy,56,56,p.dark);
+      ellipse(c,mid,cy,49,49,p.gold);
+      ellipse(c,mid,cy,43,43,p.glass);
+      for(let i=0;i<12;i++){
+        const a=i*Math.PI/6,xx=mid+Math.cos(a)*35,yy=cy+Math.sin(a)*35;
+        box(c,xx,yy,3,3,p.dark);
+      }
+      stroke(c,mid,cy,mid+21,cy-29,p.dark,5);
+      stroke(c,mid,cy,mid-14,cy+13,p.light,4);
+      ellipse(c,mid,cy,5,5,p.gold);
+    }else if(b.style==='cat'){
+      // Warm fantasy cafe balconies and layered cherry blossoms.
+      for(let row=0;row<3;row++){
+        const y=base-280-row*101;
+        for(let i=-3;i<=3;i++){
+          const x=mid+i*70;
+          box(c,x-25,y,48,6,p.gold);
+          box(c,x-23,y+5,44,4,p.dark);
+          for(let n=0;n<6;n++){
+            const xx=x-28+rand()*56,yy=y-18+rand()*22;
+            ellipse(c,xx,yy,4+rand()*3,3,p.accent);
+            box(c,xx+1,yy,2,1,p.light);
+          }
+        }
+      }
+      for(const sign of [-1,1]){
+        const x=mid+sign*235,cy=base-380;
+        ellipse(c,x,cy,36,31,p.gold);
+        ellipse(c,x,cy,29,24,p.light);
+        path(c,[[x-29,cy-11],[x-26,cy-36],[x-6,cy-22]],p.accent);
+        path(c,[[x+29,cy-11],[x+26,cy-36],[x+6,cy-22]],p.accent);
+        box(c,x-16,cy-2,8,4,p.dark);box(c,x+8,cy-2,8,4,p.dark);
+      }
+    }else{
+      // A bespoke orrery/rose-window ornament for studio and tower exhibits.
+      const cy=base-b.height*.75;
+      ellipse(c,mid,cy,62,62,p.dark);
+      ellipse(c,mid,cy,56,56,trim);
+      ellipse(c,mid,cy,45,45,p.glass);
+      ellipse(c,mid,cy,30,30,p.roof);
+      for(let i=0;i<16;i++){
+        const a=i*Math.PI/8;
+        const x=mid+Math.cos(a)*38,yy=cy+Math.sin(a)*38;
+        box(c,x,yy,4,4,i%4===0?p.accent:p.gold);
+      }
+      for(let i=0;i<8;i++){
+        const a=i*Math.PI/4;
+        stroke(c,mid,cy,mid+Math.cos(a)*30,cy+Math.sin(a)*30,p.light,2);
+      }
+      ellipse(c,mid,cy,8,8,p.gold);
+    }
+    // Fine decorative stone joints and mosaic pixels are baked once.
+    for(let i=0;i<90;i++){
+      const x=mid+(rand()-.5)*b.width*.84;
+      const y=base-45-rand()*140;
+      box(c,x,y,i%5===0?3:1,1,i%3?p.light:p.gold);
+    }
+  }
   function makeBuilding(b){
     const p=palette[b.style]||palette.studio;
     const w=Math.round(b.width+170),h=Math.round(b.height+126);
@@ -354,11 +492,38 @@
     const c=surface.getContext('2d',{alpha:true});
     const random=rng((b.seed>>>0)||71);
     const base=h-24;
+    // Odenring is a single original monumental HD facade from the art pass.
+    // The transparent illustration is baked directly into the same cached
+    // canvas, so door position, alpha hit test and LRU still share one source.
+    const castleArt=b.style==='castle'?sourceArt('castle_facade'):null;
+    if(castleArt){
+      const bw=Math.round(w*1.01),bh=base;
+      c.imageSmoothingEnabled=true; // detailed source stays legible when fitted
+      const left=Math.floor((w-bw)/2);
+      c.drawImage(castleArt,left,0,bw,bh);
+      // The generated concept source included a stray presenting hand from
+      // its reference guide at the outer left edge. Remove that tiny piece
+      // from the *building* canvas to avoid a floating human hand on the wall.
+      c.save();c.globalCompositeOperation='destination-out';
+      const sx=bw/844,sy=bh/836;
+      const off=[[0,516],[26,529],[50,530],[86,541],[87,562],
+        [62,569],[47,584],[30,623],[0,633]];
+      c.beginPath();
+      c.moveTo(left+off[0][0]*sx,off[0][1]*sy);
+      for(let i=1;i<off.length;i++)c.lineTo(left+off[i][0]*sx,off[i][1]*sy);
+      c.closePath();c.fill();
+      c.restore();
+      c.imageSmoothingEnabled=false;
+      surface.buildingInfo={base,width:w,height:h,hires:true};
+      return surface;
+    }
     // Distant buttress, side walls and roof foundations.
     box(c,28,base-21,w-56,22,p.dark);
     box(c,24,base-18,w-48,7,p.light);
     const fn={castle,arena,duel,tactics,cat,studio:generic,tower:generic}[b.style]||generic;
     fn(c,w,h,b,p,random,base);
+    applySurfaceDetail(c,w,base,b);
+    decorateIdentity(c,b,p,w,base,random);
     portal(c,w/2,base,p,random);
     for(let i=0;i<8;i++){
       const x=55+(i+.5)*(w-110)/8;
@@ -383,7 +548,10 @@
     return surface;
   }
   function get(b){
-    const key=b.style+':'+b.width+':'+b.height+':'+b.seed;
+    // Loading the art asynchronously upgrades a fallback building without
+    // requiring a page refresh, while keeping legacy local render behavior.
+    const type=b.style==='castle'&&sourceArt('castle_facade')?'illustrated':'procedural';
+    const key=type+':'+b.style+':'+b.width+':'+b.height+':'+b.seed;
     if(cache.has(key)){
       // A tiny LRU avoids holding old giant canvases after fast travel.
       const sprite=cache.get(key);

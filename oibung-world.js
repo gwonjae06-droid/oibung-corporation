@@ -396,12 +396,14 @@
     gradient.addColorStop(1,mix(c.sky,c.far,.78));
     ctx.fillStyle=gradient;
     ctx.fillRect(0,0,W,groundY);
-    // Layered film-grain sky haze drawn at native-pixel density.
-    for(let i=0;i<Math.min(1300,W*1.2);i++){
+    if(window.OIBUNG_CINEMATIC)window.OIBUNG_CINEMATIC.sky(ctx,{
+      W,groundY,camera,elapsed,castleStrength:zone.castleStrength,
+      reducedMotion:reduceMotion.matches
+    });
+    else for(let i=0;i<Math.min(650,W*.7);i++){
       const x=(i*193+Math.floor(camera*.018))%W;
       const y=(i*79+(i%7)*23)%Math.max(10,groundY-30);
-      const mod=(i*29+i*i*7)%97;
-      rect(x,y,1,mod%5===0?2:1,mod%3?'#ffffff11':'#0d19200a');
+      rect(x,y,1,1,i%3?'#ffffff11':'#0d19200a');
     }
     const sunX=Math.round(((W*.75-camera*.02)%W+W)%W);
     if(zone.castleStrength>.01){
@@ -420,34 +422,24 @@
       }
       ctx.restore();
     }
-    // Pixel-parallax distant town and mountain silhouettes.
-    for(let x=-80;x<W+100;x+=68){
-      const v=(x+Math.round(camera*.18))%157;
-      const h=40+(Math.abs(v*13)%41);
-      polygon([[x,groundY-22],[x+35,groundY-75-h],[x+83,groundY-22]],mix(c.far,c.facade,.36));
-    }
-    for(let x=-60;x<W+80;x+=37){
-      const elevation=32+Math.abs((x+Math.floor(camera*.34))%29);
-      rect(x-Math.floor(camera*.24)%37,groundY-elevation,19,elevation,mix(c.facade,c.sky,.24));
-      rect(x+4-Math.floor(camera*.24)%37,groundY-elevation-10,11,10,mix(c.facade,c.sky,.24));
-      rect(x+5-Math.floor(camera*.24)%37,groundY-elevation+12,4,5,c.window);
-    }
-    // Distant rooflines add city scale, window lights and layered parallax.
-    for(let i=0;i<Math.ceil(W/37)+8;i++){
-      const xx=i*37-(Math.floor(camera*.13)%37)-25;
-      const v=(i*119+Math.floor(camera*.02))%103;
-      const yy=groundY-90-v;
-      rect(xx,yy,30,groundY-yy-18,mix(c.facade,c.sky,.30));
-      if(i%3===0){
-        polygon([[xx-5,yy+3],[xx+15,yy-28],[xx+37,yy+3]],mix(c.facade,c.roof,.35));
-        rect(xx+13,yy-34,4,8,c.trim);
-      }
-      for(let r=0;r<5;r++){
-        rect(xx+5+(r%2)*13,yy+17+r*18,3,6,i%3?c.window:'#c7b69b');
+    if(window.OIBUNG_CINEMATIC){
+      window.OIBUNG_CINEMATIC.far(ctx,{
+        W,groundY,camera,castleStrength:zone.castleStrength
+      });
+    }else{
+      // Fallback silhouette if the cinematic renderer fails to load.
+      for(let x=-80;x<W+100;x+=68){
+        const v=(x+Math.round(camera*.18))%157;
+        const h=40+(Math.abs(v*13)%41);
+        polygon([[x,groundY-22],[x+35,groundY-75-h],[x+83,groundY-22]],mix(c.far,c.facade,.36));
       }
     }
   }
   function drawGround(){
+    if(window.OIBUNG_CINEMATIC){
+      window.OIBUNG_CINEMATIC.ground(ctx,{W,groundY,camera});
+      return;
+    }
     // Cobblestones: sunlit chipped surfaces, fine joints and wet reflections.
     rect(0,groundY-8,W,11,'#42584b');
     for(let x=0;x<W;x+=7){rect(x,groundY-8,3,1,x%3?'#9cab85':'#617a65');}
@@ -685,24 +677,43 @@
   }
   function characterScale(){return Math.max(.68,Math.min(1.46,H/625));}
   function drawCurator(x,ground,direction,walk){
-    const cx=Math.round(x-camera),scale=characterScale();
+    const cx=Math.round(x-camera);
+    const atlas=window.OIBUNG_CINEMATIC_ART;
+    const ready=atlas?.ready('curator_atlas');
     const moving=walk>.1;
-    const bounce=moving?Math.round(Math.abs(Math.sin(elapsed*12))*2*scale):Math.round(Math.sin(elapsed*1.8)*scale);
-    const pose=moving
-      ? (Math.floor(elapsed*5)%2?'present':'neutral')
-      : (nearest>=0?(Math.floor(elapsed/3)%2?'present':'explain'):'neutral');
-    const image=guideImages[pose]||guideImages.neutral;
-    if(!image){avatar(x,ground,direction,walk,true);return;}
-    // Larger than the player by only 10%; high-density detailing survives.
-    const height=Math.round(120*scale);
-    const width=Math.round(height*(image.naturalWidth/image.naturalHeight));
+    const height=Math.round(Math.max(112,Math.min(205,H*.235)));
+    const width=Math.round(height*256/384);
+    const sway=moving?Math.round(Math.abs(Math.sin(elapsed*10))*2):Math.round(Math.sin(elapsed*1.8));
     ctx.save();
-    ctx.translate(cx,Math.round(ground-bounce));
+    ctx.translate(cx,Math.round(ground-sway));
     if(direction<0)ctx.scale(-1,1);
-    // Native pixel art contains true transparent edges. Pixel interpolation
-    // is disabled to avoid the previous blurred character silhouettes.
-    ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(image,-Math.round(width/2),-height,width,height);
+    // Shared shadow and subtle ground-contact shine make the painted sprite
+    // sit in the actual world instead of floating like an HTML sticker.
+    ctx.fillStyle='rgba(18,20,30,.32)';
+    ctx.beginPath();
+    ctx.ellipse(0,2,Math.round(width*.21),4,0,0,Math.PI*2);
+    ctx.fill();
+    if(ready){
+      // 4 × 2 atlas: idle, profile, four walk frames, present, cheerful greet.
+      let pose=0;
+      if(moving)pose=2+Math.floor(elapsed*7.6)%4;
+      else if(nearest>=0)pose=Math.floor(elapsed/3.2)%2===0?6:0;
+      else pose=Math.floor(elapsed/4.5)%5===0?7:0;
+      const sx=(pose%4)*256,sy=Math.floor(pose/4)*384;
+      ctx.imageSmoothingEnabled=true; // graceful fine pixel clusters on reduction
+      ctx.drawImage(atlas.images.curator_atlas,sx,sy,256,384,
+        -Math.round(width/2),-height,width,height);
+    }else{
+      // The original approved in-repository art remains the offline fallback.
+      const pose=moving
+        ?(Math.floor(elapsed*5)%2?'present':'neutral')
+        :(nearest>=0?(Math.floor(elapsed/3)%2?'present':'explain'):'neutral');
+      const image=guideImages[pose]||guideImages.neutral;
+      if(image){
+        ctx.imageSmoothingEnabled=true;
+        ctx.drawImage(image,-Math.round(width/2),-height,width,height);
+      }
+    }
     ctx.restore();
   }
   function drawPlayerHD(x,ground,direction,walk,yOffset=0){
@@ -822,7 +833,17 @@
     ctx.imageSmoothingEnabled=false;
     drawSky();drawPlaza();
     for(const b of buildings)drawBuilding(b);
+    if(window.OIBUNG_CINEMATIC){
+      window.OIBUNG_CINEMATIC.archGlow(ctx,{
+        groundY,camera,elapsed,buildings,reducedMotion:reduceMotion.matches
+      });
+    }
     drawGround();
+    if(window.OIBUNG_CINEMATIC){
+      window.OIBUNG_CINEMATIC.facadeProps(ctx,{
+        W,groundY,camera,elapsed,buildings,reducedMotion:reduceMotion.matches
+      });
+    }
     drawCurator(curator.x,groundY,curator.direction,curator.walk);
     // Reuse the cached, proportional visitor animation; retain the old
     // function solely as a safe fallback if artwork cannot initialize.
@@ -832,6 +853,9 @@
       scale:Math.max(.82,Math.min(1.13,H/750))
     });
     else drawPlayerHD(player.x,groundY,player.direction,player.walk,player.y);
+    if(window.OIBUNG_CINEMATIC)window.OIBUNG_CINEMATIC.foregroundDust(ctx,{
+      W,groundY,elapsed,reducedMotion:reduceMotion.matches
+    });
     // Guide stays visible with a caption at stops, without blocking entrances.
     const guideX=(curator.x-camera)*LOGICAL_PIXEL_SIZE;
     guideBubble.style.left=Math.round(Math.min(stage.clientWidth-80,Math.max(80,guideX)))+'px';
@@ -888,7 +912,7 @@
   resize();rebuild();
   frameId=requestAnimationFrame(frame);
   window.OIBUNG_WORLD={
-    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),skyColor:skyTransition().colors.sky,guideBubbleVisible:!guideBubble.hidden,renderDensity:LOGICAL_PIXEL_SIZE,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!guideImages.neutral}),
+    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),skyColor:skyTransition().colors.sky,guideBubbleVisible:!guideBubble.hidden,renderDensity:LOGICAL_PIXEL_SIZE,cinematicFX:!!window.OIBUNG_CINEMATIC,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!(window.OIBUNG_CINEMATIC_ART?.ready('curator_atlas')||guideImages.neutral),curatorHdAtlasReady:!!window.OIBUNG_CINEMATIC_ART?.ready('curator_atlas'),castleHdArtReady:!!window.OIBUNG_CINEMATIC_ART?.ready('castle_facade')}),
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
     enter,refresh:rebuild,jump,movement
   };
