@@ -27,26 +27,31 @@
   const winterFrames=[];
   const gestureFrames=[];
 
-  // Coordinates are relative to each cell's standing baseline.
+  // Each cell records its crown, neck and head width in atlas pixels.
+  // Airborne poses can also set a horizontal pivot and raised sole.
   const headByFrame=[
-    [15,75],[15,75],[15,75],[16,76],
-    [16,76],[16,77],[16,75],[16,76],
-    [37,96,106],[16,78,112],[40,100,104,164],[30,89,105],
-    [15,75],[15,78],[28,89,110],[15,75]
+    [14,74,81],[15,75,84],[15,75,84],[16,75,85],
+    [17,77,84],[16,75,83],[17,75,83],[16,75,82],
+    [37,94,86,106],[16,79,88,112],[39,95,90,104,164],[30,88,87,105],
+    [14,74,81],[15,80,83],[28,88,86,110],[14,74,81]
   ];
-  const gestureHead=[14,77,94];
-  const headScale=.84;
+  const gestureHeads=[
+    [13,77,87],[13,79,87],[13,79,87],[13,77,87],
+    [13,77,87],[13,78,87],[13,79,87],[13,77,87],
+    [14,80,85],[13,78,87],[14,79,85],[13,76,87]
+  ];
+  const fittedHeadWidth=68,fittedHeadHeight=50;
 
-  function proportions([top,neck,pivot=98,sole=ground]) {
+  function proportions([top,neck,width,pivot=98,sole=ground]) {
     const hip=neck+(sole-neck)*.57;
-    const saved=(neck-top)*(1-headScale);
+    const saved=neck-top-fittedHeadHeight;
     return {
-      neck,pivot,source:[0,top,neck,hip,sole,frameHeight],
+      neck,pivot,headScale:fittedHeadWidth/width,source:[0,top,neck,hip,sole,frameHeight],
       output:[0,top,neck-saved,hip-saved*.63,sole,frameHeight]
     };
   }
   const winterShapes=headByFrame.map(proportions);
-  const gestureShape=proportions(gestureHead);
+  const gestureShapes=gestureHeads.map(head=>proportions([...head,108]));
 
   function mapRow(y,from,to) {
     let segment=1;
@@ -54,11 +59,11 @@
     const t=(y-from[segment-1])/(from[segment]-from[segment-1]);
     return to[segment-1]+t*(to[segment]-to[segment-1]);
   }
-  function rowScale(y,neck) {
+  function rowScale(y,{neck,headScale}) {
     return headScale+(1-headScale)*ease(clamp((y-neck+4)/22,0,1));
   }
   function featurePoint(shape,x,y) {
-    return [shape.pivot+(x-shape.pivot)*rowScale(y,shape.neck),mapRow(y,shape.source,shape.output)];
+    return [shape.pivot+(x-shape.pivot)*rowScale(y,shape),mapRow(y,shape.source,shape.output)];
   }
   function fitFrame(image,frame,shape,cache) {
     if(cache[frame])return cache[frame];
@@ -70,7 +75,7 @@
     const sourceY=Math.floor(frame/4)*frameHeight;
     for(let y=0;y<frameHeight;y++){
       const sourceRow=Math.min(frameHeight-1,Math.floor(mapRow(y+.5,shape.output,shape.source)));
-      const scale=rowScale(sourceRow,shape.neck);
+      const scale=rowScale(sourceRow,shape);
       const left=Math.round(shape.pivot*(1-scale));
       pixels.drawImage(image,sourceX,sourceY+sourceRow,frameWidth,1,
         left,y,Math.round(frameWidth*scale),1);
@@ -233,13 +238,13 @@
     ctx.restore();
   }
 
-  function drawGestureEffect(ctx,gesture,t) {
+  function drawGestureEffect(ctx,gesture,t,shape) {
     if(gesture.name==='kiss'&&t>.49){
       const progress=(t-.49)/.51;
       const drift=ease(progress);
       ctx.save();
       ctx.globalAlpha=Math.sin(progress*Math.PI);
-      const [x,y]=featurePoint(gestureShape,118,61);
+      const [x,y]=featurePoint(shape,118,61);
       heart(ctx,x+drift*57,y-drift*40,5+3*drift,'#f55a94');
       heart(ctx,x-5+drift*39,y-12-drift*30,3.4,'#ffd3a4');
       ctx.restore();
@@ -248,7 +253,7 @@
       ctx.save();
       ctx.globalAlpha=Math.sin((t-.31)/.26*Math.PI);
       ctx.fillStyle='#fff0b8';
-      const [x,y]=featurePoint(gestureShape,128,41);
+      const [x,y]=featurePoint(shape,128,41);
       ctx.fillRect(x,y,2,9);
       ctx.fillRect(x-3,y+3,8,2);
       ctx.restore();
@@ -260,7 +265,7 @@
     const gesture=!reduced&&gesturesReady()?guide.gesture:null;
     const progress=gesture?Math.min(1,guide.gestureTime/gesture.duration):0;
     const frame=gesture?gesture.frames.findLast(([start])=>progress>=start)[1]:frameFor(guide,elapsed,reduced);
-    const shape=gesture?gestureShape:winterShapes[frame];
+    const shape=gesture?gestureShapes[frame]:winterShapes[frame];
     const sprite=gesture?fitFrame(gestureArt,frame,shape,gestureFrames):fitFrame(art,frame,shape,winterFrames);
     const scale=height/standingHeight;
     const direction=Math.sign(guide.turn)||guide.facing;
@@ -276,7 +281,7 @@
     ctx.scale(1-(breathing+step)*.32,1+breathing+step);
     ctx.translate(-origin,-ground);
     ctx.drawImage(sprite,0,0);
-    if(gesture)drawGestureEffect(ctx,gesture,progress);
+    if(gesture)drawGestureEffect(ctx,gesture,progress,shape);
     else express(ctx,guide,frame,elapsed,reduced,shape);
     ctx.restore();
     return true;
