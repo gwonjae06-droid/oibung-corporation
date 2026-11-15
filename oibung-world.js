@@ -66,6 +66,8 @@
   const speakingGuide=()=>guides[curatorForm==='devil'?1:0];
   let keys={left:false,right:false};
   let guideTextUntil=0;
+  // Synchronized interactions happen only when both guides and the player are still.
+  let duetWait=8.5,duetIndex=0;
   let didInitialSpawn=false;
   let previousInteriorObject=null;
   let interiorOrigin=null;
@@ -78,6 +80,7 @@
     return [clamp(first,20,limit-20),clamp(second,20,limit-20)];
   }
   function resetGuides(positions=guideSlots(inRoom()?room().roomWidth():worldEnd)){
+    duetWait=8.5;
     for(const [index,guide] of guides.entries()){
       const facing=player.x>=positions[index]?1:-1;
       curatorMotion.reset(guide.state,positions[index]);
@@ -384,6 +387,23 @@
     if(e.target!==canvas||!canRun())return;
     const bounds=canvas.getBoundingClientRect();
     const x=(e.clientX-bounds.left)/LOGICAL_PIXEL_SIZE+camera;
+    const tapY=(e.clientY-bounds.top)/LOGICAL_PIXEL_SIZE;
+    // Tap either character to play its next hand-drawn expression or pose.
+    if(!reduceMotion.matches){
+      const guide=guides.find(({formId,state})=>
+        Math.abs(x-state.x)<curatorHeight(formId)*.45&&
+        tapY>groundY+state.y-curatorHeight(formId)*1.12&&
+        tapY<groundY+state.y+8);
+      if(guide){
+        const catalog=guide.formId==='devil'
+          ?['beckon','hair','kiss','shy','cheer','pout','surprise','stretch','wave']
+          :['wink','hair','kiss','shy','cheer','pout','surprise','stretch','wave'];
+        if(curatorMotion.play(guide.state,catalog[guide.state.nextGesture%catalog.length]))
+          guide.state.nextGesture++;
+        stage.focus({preventScroll:true});
+        return;
+      }
+    }
     if(inRoom()){
       const object=room().objects().find(obj=>Math.abs(obj.x-x)<72);
       if(object&&room().nearest(player.x)?.id!==object.id)approachInterior(object);
@@ -531,6 +551,20 @@
         reduced:reduceMotion.matches,targetX:slots[index],allowHop:guide===speaker,
         jumpDelay:.11+index*.07,formId:guide.formId});
     }
+    const canDuet=!reduceMotion.matches&&player.onGround&&Math.abs(player.vx)<32&&
+      guides.every(({state})=>state.mode==='follow'&&!state.flight&&
+        Math.abs(state.speed)<35&&Math.abs(state.x-player.x)<curatorGap()*2.1);
+    if(canDuet){
+      duetWait=Math.max(0,duetWait-dt);
+      if(duetWait===0&&guides.every(({state})=>!state.gesture)){
+        const action=['pairWave','pairShy','pairCheer'][duetIndex%3];
+        if(curatorMotion.play(guides[0].state,action)&&
+           curatorMotion.play(guides[1].state,action)){
+          duetIndex++;
+          duetWait=11.5;
+        }
+      }
+    }else duetWait=Math.max(4,duetWait);
     const maxCam=Math.max(0,limit-W);
     const follow=Math.max(0,Math.min(maxCam,player.x-W*.49));
     camera+=(follow-camera)*Math.min(1,dt*5.6);
@@ -568,7 +602,8 @@
         guideBubbleVisible:!guideBubble.hidden,pixelArtReady:scenes.ready(nearest<0?(buildings[0]?.style||'studio'):buildings[nearest].style),
         renderDensity:LOGICAL_PIXEL_SIZE,curatorArtLoaded:curatorMotion.ready(),curatorHdAtlasReady:curatorMotion.ready(),
         curatorY:curator.y,curatorMode:curator.mode,curatorAffection:curator.affection,curatorForm,
-        guides:guides.map(({formId,state})=>({formId,x:state.x,y:state.y}))};
+        guides:guides.map(({formId,state})=>({formId,x:state.x,y:state.y,
+          motion:state.gesture?.name||(Math.abs(state.speed)>24?'walk':'idle')}))};
     },
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
     enter,leaveInterior,approachInterior,refresh:rebuild,jump,movement
