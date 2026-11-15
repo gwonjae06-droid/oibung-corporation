@@ -24,28 +24,48 @@
     if(!open) {
       if(directory)directory.hidden=true;
       listButton?.setAttribute('aria-expanded','false');
-      if(returnFocus)toggle.focus({preventScroll:true});
+      // Return keyboard focus to the playable stage, not the closed menu
+      // button (world movement intentionally ignores focused buttons).
+      if(returnFocus)stage.focus({preventScroll:true});
     }else{
       closeButton?.focus({preventScroll:true});
     }
   }
-  toggle.addEventListener('click',()=>setMenu(!menuOpen(),menuOpen()));
+  toggle.addEventListener('click',()=>{const wasOpen=menuOpen();setMenu(!wasOpen,wasOpen);});
   closeButton?.addEventListener('click',()=>setMenu(false,true));
+  let suppressNextWorldClick=false;
   stage.addEventListener('pointerdown',event=>{
-    if(menuOpen()&&!event.target.closest('#world-overlay-menu,#world-menu-toggle'))setMenu(false);
+    if(menuOpen()&&!event.target.closest('#world-overlay-menu,#world-menu-toggle')){
+      suppressNextWorldClick=true;
+      setMenu(false,true);
+    }
   });
+  // Clicking outside the pause menu dismisses it without also triggering a
+  // second, surprising teleport action on the underlying canvas.
+  stage.addEventListener('click',event=>{
+    if(!suppressNextWorldClick)return;
+    suppressNextWorldClick=false;
+    if(event.target.tagName==='CANVAS'){
+      event.preventDefault();event.stopImmediatePropagation();
+    }
+  },true);
   document.getElementById('world-catalog-toggle')?.addEventListener('click',()=>{
     setMenu(false);
     catalog.open=true;
     requestAnimationFrame(()=>search?.focus({preventScroll:true}));
   });
-  document.getElementById('world-theme-toggle')?.addEventListener('click',()=>{
+  const themeButton=document.getElementById('world-theme-toggle');
+  const syncThemeLabel=()=>{
+    if(themeButton)themeButton.textContent=document.documentElement.dataset.galleryMode==='dark'
+      ?'☀ 밝은 테마로':'☾ 어두운 테마로';
+  };
+  themeButton?.addEventListener('click',()=>{
     const current=document.documentElement.dataset.galleryMode;
     const target=current==='dark'?'light':'dark';
     document.querySelector('[data-gallery-mode-choice="'+target+'"]')?.click();
-    const trigger=document.getElementById('world-theme-toggle');
-    if(trigger)trigger.textContent=target==='dark'?'☀ 밝은 테마로':'☾ 어두운 테마로';
+    syncThemeLabel();
   });
+  syncThemeLabel();
   reviews?.addEventListener('click',()=>setMenu(false));
   menu.querySelectorAll('[data-open-editor]').forEach(button=>{
     button.addEventListener('click',()=>setMenu(false));
