@@ -612,6 +612,107 @@
     }
     ctx.restore();
   }
+  // The museum's approved high-resolution anime pixel curator replaces the
+  // former 15x29 primitive guide. Assets are local, already bundled in GitHub.
+  const guideImages={};
+  for(const pose of ['neutral','present','explain','alert']){
+    const image=new Image();
+    image.decoding='async';
+    image.onload=()=>{guideImages[pose]=image;};
+    image.src='assets/curator-v5/guide-'+pose+'.webp';
+  }
+  function characterScale(){return Math.max(.68,Math.min(1.46,H/625));}
+  function drawCurator(x,ground,direction,walk){
+    const cx=Math.round(x-camera),scale=characterScale();
+    const moving=walk>.1;
+    const bounce=moving?Math.round(Math.abs(Math.sin(elapsed*12))*2*scale):Math.round(Math.sin(elapsed*1.8)*scale);
+    const pose=moving
+      ? (Math.floor(elapsed*5)%2?'present':'neutral')
+      : (nearest>=0?(Math.floor(elapsed/3)%2?'present':'explain'):'neutral');
+    const image=guideImages[pose]||guideImages.neutral;
+    if(!image){avatar(x,ground,direction,walk,true);return;}
+    // Larger than the player by only 10%; high-density detailing survives.
+    const height=Math.round(120*scale);
+    const width=Math.round(height*(image.naturalWidth/image.naturalHeight));
+    ctx.save();
+    ctx.translate(cx,Math.round(ground-bounce));
+    if(direction<0)ctx.scale(-1,1);
+    // Native pixel art contains true transparent edges. Pixel interpolation
+    // is disabled to avoid the previous blurred character silhouettes.
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(image,-Math.round(width/2),-height,width,height);
+    ctx.restore();
+  }
+  function drawPlayerHD(x,ground,direction,walk,yOffset=0){
+    const cx=Math.round(x-camera),scale=characterScale();
+    if(cx<-100||cx>W+100)return;
+    const moving=walk>.1;
+    const stride=moving?Math.sin(elapsed*12):0;
+    const bob=moving?Math.abs(stride)*2.5:Math.sin(elapsed*2)*.5;
+    ctx.save();
+    ctx.translate(cx,ground+yOffset-Math.round(bob*scale));
+    ctx.scale((direction<0?-1:1)*scale,scale);
+    const bx=(x,y,w,h,color)=>rect(bx.x??x,y,w,h,color);
+    // Metallic leather boots, synchronized asymmetric leg motion.
+    const lead=Math.round(stride*8),trail=-lead;
+    rect(-15+lead,-29,12,34,'#253344');
+    rect(-12+lead,-27,8,27,'#51677b');
+    rect(3+trail,-29,12,34,'#253344');
+    rect(4+trail,-26,9,28,'#536981');
+    rect(-16+lead,-3,20,7,'#1c252d');
+    rect(3+trail,-3,20,7,'#1c252d');
+    rect(-15+lead,-2,16,1,'#c3ac7b');
+    rect(5+trail,-2,15,1,'#c3ac7b');
+    // Waist, stitched jacket, lapels and small gold fasteners.
+    rect(-17,-65,35,41,'#26364b');
+    rect(-14,-61,29,34,'#42647c');
+    rect(-17,-62,6,34,'#22394b');
+    rect(11,-62,7,35,'#1e3449');
+    rect(-9,-60,6,31,'#5c8196');
+    rect(3,-59,5,29,'#244052');
+    rect(-5,-59,9,31,'#e3d5bd');
+    rect(-2,-57,5,21,'#b67a66');
+    rect(-1,-52,2,11,'#e1bb8b');
+    rect(-10,-34,21,6,'#273242');
+    rect(-11,-33,22,2,'#b29b74');
+    for(let i=0;i<4;i++)rect(6,-49+i*8,2,2,'#e8c898');
+    // Arm swing and gloves.
+    const armA=moving?Math.round(stride*8):1,armB=moving?-Math.round(stride*7):-1;
+    rect(-23+armA,-60,7,30,'#243b53');
+    rect(-22+armA,-57,3,22,'#7291a1');
+    rect(-23+armA,-30,7,9,'#cf9d85');
+    rect(18+armB,-60,7,30,'#253a54');
+    rect(20+armB,-56,3,22,'#86a2ad');
+    rect(18+armB,-30,7,9,'#cc9a80');
+    // Neck and expressive face, shaded pixel-by-pixel.
+    rect(-7,-76,15,14,'#b9826f');
+    rect(-17,-106,35,37,'#2a292f');
+    rect(-14,-101,29,33,'#d3a18a');
+    rect(-12,-96,25,15,'#e7b59b');
+    rect(-11,-87,8,4,'#f1c5a7');
+    rect(4,-87,8,4,'#f1c5a7');
+    rect(2,-90,3,3,'#c58c79');
+    rect(-10,-94,5,3,'#22212b');
+    rect(5,-94,5,3,'#23202a');
+    rect(-8,-94,1,1,'#f5ead1');
+    rect(7,-94,1,1,'#f5ead1');
+    rect(-4,-77,8,2,'#955f5a');
+    // Layered hair with dozens of reflective strands, not flat polygons.
+    rect(-20,-112,39,14,'#21232d');
+    rect(-22,-104,13,34,'#242730');
+    rect(12,-103,10,35,'#292b34');
+    rect(-15,-117,31,8,'#323342');
+    for(let i=0;i<22;i++){
+      const xx=-18+i*1.6;
+      rect(xx,-112+(i%5),1,4+(i%7)*2,i%4?'#45404b':'#746371');
+    }
+    rect(-19,-86,7,12,'#2e2938');
+    rect(15,-85,7,11,'#2f2d38');
+    rect(-18,-105,1,13,'#8f6c77');
+    rect(11,-111,2,13,'#675361');
+    rect(-5,-113,2,4,'#8d7480');
+    ctx.restore();
+  }
   function avatar(x,ground,direction,walk,guide=false,yOffset=0){
     const sx=Math.round(x-camera), sy=Math.round(ground+yOffset);
     if(sx<-24||sx>W+24)return;
@@ -661,7 +762,7 @@
     for(const b of buildings)drawBuilding(b);
     drawGround();
     drawCurator(curator.x,groundY,curator.direction,curator.walk);
-    avatar(player.x,groundY,player.direction,player.walk,false,player.y);
+    drawPlayerHD(player.x,groundY,player.direction,player.walk,player.y);
     // Guide stays visible with a caption at stops, without blocking entrances.
     const guideX=(curator.x-camera)*LOGICAL_PIXEL_SIZE;
     guideBubble.style.left=Math.round(Math.min(stage.clientWidth-80,Math.max(80,guideX)))+'px';
@@ -712,7 +813,7 @@
   rebuild();resize();
   frameId=requestAnimationFrame(frame);
   window.OIBUNG_WORLD={
-    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style}),
+    getState:()=>({playerX:player.x,curatorX:curator.x,camera,nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,buildingHeights:buildings.map(b=>b.height),buildingWidths:buildings.map(b=>b.width),renderDensity:LOGICAL_PIXEL_SIZE,hdRenderer:!!window.OIBUNG_HD_ARCHITECTURE,curatorArtLoaded:!!guideImages.neutral}),
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
     enter,refresh:rebuild,jump,movement
   };
