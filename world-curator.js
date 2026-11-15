@@ -218,6 +218,8 @@
     delete guide.rigContext;
     delete guide.rigImage;
     delete guide.rigOutput;
+    delete guide.rigFrame;
+    delete guide.rigStamp;
     Object.assign(guide,{x,y:0,speed:0,facing:1,turn:1,side:-1,phase:0,stride:0,
       affection:0,still:0,cooldown:.7,mode:'follow',timer:0,flight:null,followJump:0,
       landed:0,playerGrounded:true,gesture:null,gestureTime:0,gestureWait:2.8,nextGesture:0,
