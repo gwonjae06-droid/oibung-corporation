@@ -182,13 +182,17 @@
     signs.style.pointerEvents='none';
     for(let i=0;i<signButtons.length;i++){
       const b=buildings[i],button=signButtons[i];
+      const scale=buildingScale(b);
       const sx=(b.x+b.width*.5-camera)*LOGICAL_PIXEL_SIZE;
-      const sy=(groundY-(b.height-33)*buildingScale(b))*LOGICAL_PIXEL_SIZE;
-      const visible=sx>-90&&sx<stage.clientWidth+90;
+      // A small plaque above the doorway is easier to read and leaves
+      // the grand roof and towers unobscured.
+      const sy=(groundY-212*scale)*LOGICAL_PIXEL_SIZE;
+      const visible=sx>-70&&sx<stage.clientWidth+70&&
+        Math.abs(player.x-(b.x+b.width*.5))<Math.max(410,W*.68);
       button.hidden=!visible;
       if(visible){
         button.style.left=Math.round(sx)+'px';
-        button.style.top=Math.round(Math.max(66,sy))+'px';
+        button.style.top=Math.round(Math.max(75,sy))+'px';
       }
     }
   }
@@ -291,11 +295,19 @@
     panel.scrollIntoView({behavior:reduceMotion.matches?'auto':'smooth',block:'start'});
   });
   world.addEventListener('click',e=>{
-    if(e.target!==canvas)return;
-    const rect=canvas.getBoundingClientRect();
-    const x=(e.clientX-rect.left)/LOGICAL_PIXEL_SIZE+camera;
-    const y=(e.clientY-rect.top)/LOGICAL_PIXEL_SIZE;
-    const idx=buildings.findIndex(b=>x>=b.x-12&&x<=b.x+b.width+12&&y>groundY-b.height-25&&y<groundY+8);
+    if(e.target!==canvas||!canRun())return;
+    const bounds=canvas.getBoundingClientRect();
+    const x=(e.clientX-bounds.left)/LOGICAL_PIXEL_SIZE+camera;
+    const y=(e.clientY-bounds.top)/LOGICAL_PIXEL_SIZE;
+    const idx=buildings.findIndex(b=>{
+      const scale=buildingScale(b);
+      const center=b.x+b.width*.5;
+      const half=(b.width+170)*scale*.5;
+      // Match click targets to actual scaled artwork; empty sky no
+      // longer acts as an invisible building-teleport button.
+      return x>=center-half&&x<=center+half&&
+        y>=groundY-(b.height+112)*scale&&y<=groundY+4;
+    });
     if(idx<0)return;
     if(nearest===idx)enter();
     else warp(idx);
