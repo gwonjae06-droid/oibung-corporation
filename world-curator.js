@@ -24,6 +24,60 @@
   const approach=(from,to,rate,dt)=>from+(to-from)*(1-Math.exp(-rate*dt));
   const ready=()=>art.complete&&art.naturalWidth===frameWidth*4&&art.naturalHeight===frameHeight*4;
   const gesturesReady=()=>gestureArt.complete&&gestureArt.naturalWidth===frameWidth*4&&gestureArt.naturalHeight===frameHeight*3;
+  const winterFrames=[];
+  const gestureFrames=[];
+
+  // Coordinates are relative to each cell's standing baseline.
+  const headByFrame=[
+    [15,75],[15,75],[15,75],[16,76],
+    [16,76],[16,77],[16,75],[16,76],
+    [37,96,106],[16,78,112],[40,100,104,164],[30,89,105],
+    [15,75],[15,78],[28,89,110],[15,75]
+  ];
+  const gestureHead=[14,77,94];
+  const headScale=.84;
+
+  function proportions([top,neck,pivot=98,sole=ground]) {
+    const hip=neck+(sole-neck)*.57;
+    const saved=(neck-top)*(1-headScale);
+    return {
+      neck,pivot,source:[0,top,neck,hip,sole,frameHeight],
+      output:[0,top,neck-saved,hip-saved*.63,sole,frameHeight]
+    };
+  }
+  const winterShapes=headByFrame.map(proportions);
+  const gestureShape=proportions(gestureHead);
+
+  function mapRow(y,from,to) {
+    let segment=1;
+    while(segment<from.length-1&&y>from[segment])segment++;
+    const t=(y-from[segment-1])/(from[segment]-from[segment-1]);
+    return to[segment-1]+t*(to[segment]-to[segment-1]);
+  }
+  function rowScale(y,neck) {
+    return headScale+(1-headScale)*ease(clamp((y-neck+4)/22,0,1));
+  }
+  function featurePoint(shape,x,y) {
+    return [shape.pivot+(x-shape.pivot)*rowScale(y,shape.neck),mapRow(y,shape.source,shape.output)];
+  }
+  function fitFrame(image,frame,shape,cache) {
+    if(cache[frame])return cache[frame];
+    const layer=document.createElement('canvas');
+    layer.width=frameWidth;layer.height=frameHeight;
+    const pixels=layer.getContext('2d');
+    pixels.imageSmoothingEnabled=false;
+    const sourceX=(frame%4)*frameWidth;
+    const sourceY=Math.floor(frame/4)*frameHeight;
+    for(let y=0;y<frameHeight;y++){
+      const sourceRow=Math.min(frameHeight-1,Math.floor(mapRow(y+.5,shape.output,shape.source)));
+      const scale=rowScale(sourceRow,shape.neck);
+      const left=Math.round(shape.pivot*(1-scale));
+      pixels.drawImage(image,sourceX,sourceY+sourceRow,frameWidth,1,
+        left,y,Math.round(frameWidth*scale),1);
+    }
+    cache[frame]=layer;
+    return layer;
+  }
 
   function reset(guide,x) {
     Object.assign(guide,{x,y:0,speed:0,facing:1,turn:1,side:-1,phase:0,stride:0,
@@ -156,14 +210,15 @@
     ctx.restore();
   }
 
-  function express(ctx,guide,frame,elapsed,reduced) {
+  function express(ctx,guide,frame,elapsed,reduced,shape) {
     if(guide.affection<.12)return;
     ctx.save();
     ctx.globalAlpha=guide.affection;
     const points=eyeAnchors[frame];
     if(points){
-      for(const [i,[x,y]] of points.entries()){
-        const size=i?2.8:4;
+      for(const [i,point] of points.entries()){
+        const [x,y]=featurePoint(shape,...point);
+        const size=i?2.5:3.6;
         heart(ctx,x,y,size+1,'#842654');
         heart(ctx,x,y,size,'#f64f90');
         heart(ctx,x,y,size*.56,'#ffe3b3');
@@ -171,8 +226,9 @@
     }
     if(!reduced&&(frame===14||guide.mode==='hop')){
       const lift=Math.sin(elapsed*6)*3;
-      heart(ctx,134,48+lift,7,'#f55499');
-      heart(ctx,145,33-lift,4,'#ff9eba');
+      const [x,y]=featurePoint(shape,134,48);
+      heart(ctx,x,y+lift,7,'#f55499');
+      heart(ctx,x+11,y-15-lift,4,'#ff9eba');
     }
     ctx.restore();
   }
@@ -183,16 +239,18 @@
       const drift=ease(progress);
       ctx.save();
       ctx.globalAlpha=Math.sin(progress*Math.PI);
-      heart(ctx,118+drift*57,61-drift*40,5+3*drift,'#f55a94');
-      heart(ctx,113+drift*39,49-drift*30,3.4,'#ffd3a4');
+      const [x,y]=featurePoint(gestureShape,118,61);
+      heart(ctx,x+drift*57,y-drift*40,5+3*drift,'#f55a94');
+      heart(ctx,x-5+drift*39,y-12-drift*30,3.4,'#ffd3a4');
       ctx.restore();
     }
     if(gesture.name==='wink'&&t>.31&&t<.57){
       ctx.save();
       ctx.globalAlpha=Math.sin((t-.31)/.26*Math.PI);
       ctx.fillStyle='#fff0b8';
-      ctx.fillRect(128,41,2,9);
-      ctx.fillRect(125,44,8,2);
+      const [x,y]=featurePoint(gestureShape,128,41);
+      ctx.fillRect(x,y,2,9);
+      ctx.fillRect(x-3,y+3,8,2);
       ctx.restore();
     }
   }
@@ -202,6 +260,8 @@
     const gesture=!reduced&&gesturesReady()?guide.gesture:null;
     const progress=gesture?Math.min(1,guide.gestureTime/gesture.duration):0;
     const frame=gesture?gesture.frames.findLast(([start])=>progress>=start)[1]:frameFor(guide,elapsed,reduced);
+    const shape=gesture?gestureShape:winterShapes[frame];
+    const sprite=gesture?fitFrame(gestureArt,frame,shape,gestureFrames):fitFrame(art,frame,shape,winterFrames);
     const scale=height/standingHeight;
     const direction=Math.sign(guide.turn)||guide.facing;
     const turnWidth=.78+.22*Math.abs(guide.turn);
@@ -215,10 +275,9 @@
     ctx.rotate(reduced?0:Math.sin(cycle)*guide.stride*.012);
     ctx.scale(1-(breathing+step)*.32,1+breathing+step);
     ctx.translate(-origin,-ground);
-    ctx.drawImage(gesture?gestureArt:art,(frame%4)*frameWidth,Math.floor(frame/4)*frameHeight,
-      frameWidth,frameHeight,0,0,frameWidth,frameHeight);
+    ctx.drawImage(sprite,0,0);
     if(gesture)drawGestureEffect(ctx,gesture,progress);
-    else express(ctx,guide,frame,elapsed,reduced);
+    else express(ctx,guide,frame,elapsed,reduced,shape);
     ctx.restore();
     return true;
   }
