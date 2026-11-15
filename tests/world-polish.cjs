@@ -88,7 +88,7 @@ const fs=require('node:fs/promises');
       assert.equal(await page.locator('#game-dialog').evaluate(el=>el.open),true);
       assert.match(await page.locator('#detail-title').textContent(),/오든링/);
       await page.locator('#close-detail').click();
-      assert.equal(await page.evaluate(()=>document.activeElement?.id),'oibung-world-stage');
+      await page.waitForFunction(()=>document.activeElement?.id==='oibung-world-stage',{timeout:2500});
       await page.locator('#world-menu-toggle').click();
       // The in-game theme button used to recolor HTML but not the world art.
       const oldFilter=await page.locator('#oibung-world-canvas').evaluate(el=>getComputedStyle(el).filter);
