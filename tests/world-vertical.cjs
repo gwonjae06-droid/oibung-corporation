@@ -62,7 +62,9 @@ const fs=require('node:fs/promises');
    await page.keyboard.up('ArrowLeft');
    const advanced=await page.evaluate(()=>window.OIBUNG_WORLD.getState());
    assert.ok(advanced.route>upper.route+40,
-     'reverse walking direction continues on upper terrace');
+     'reverse walking direction continues on upper terrace: '+JSON.stringify({
+       upperRoute:upper.route,upperFloor:upper.floor,
+       afterRoute:advanced.route,afterFloor:advanced.floor}));
    await page.screenshot({path:'artifacts/vertical-'+name+'-upper.png',animations:'disabled'});
    // Directory still warps accurately to a specific floor's door.
    const top=start.buildingPositions.at(-1);
