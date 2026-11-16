@@ -367,9 +367,20 @@
     }
 
     if(Math.abs(distance)>20)guide.side=distance>0?-1:1;
+    // An explicit follower slot must remain stable. The old rest-gap scaling
+    // silently pulled characters toward the player during hop cooldown.
     const restingGap=watching&&guide.cooldown>9.8?gap*.65:gap;
-    const slot=targetX===undefined?guide.side*gap:targetX-player.x;
-    const target=clamp(player.x+slot*restingGap/gap,20,limit-20);
+    const target=targetX===undefined
+      ?clamp(player.x+guide.side*restingGap,20,limit-20)
+      :clamp(targetX,20,limit-20);
+    // Do not finish a two-second charm action while the visitor runs away:
+    // cancel it only if the gap is already large, then catch up normally.
+    if(guide.gesture&&Math.abs(player.vx)>45&&
+       Math.abs(guide.x-target)>Math.max(132,gap*1.7)){
+      guide.gesture=null;
+      guide.gestureTime=0;
+      guide.gestureWait=2.3;
+    }
     const walkTarget=guide.mode==='charge'||guide.mode==='hop'||guide.gesture?guide.x:target;
     guide.speed=approach(guide.speed,clamp((walkTarget-guide.x)*8,-415,415),11,dt);
     if(guide.flight){
