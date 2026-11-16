@@ -370,7 +370,7 @@
       guide.still=watching?guide.still+dt:0;
       guide.affection=approach(guide.affection,watching&&guide.still>.4?1:0,10,dt);
       const motionDt=Math.min(dt,1/30);
-      const wing=reduced?.12:
+      const wing=reduced?0.12:
         .17+Math.sin(guide.timer*(groundedGuide?9.5:8.2)+phase)*.43;
       spring(guide,'wingAngle',wing,150,19,motionDt);
       spring(guide,'headAngle',reduced?0:Math.sin(guide.timer*1.9+phase)*.02,
