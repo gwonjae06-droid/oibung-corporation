@@ -16,6 +16,19 @@
   celSheets.angel.src='assets/world-pixel/curator-nong-cels.png?v=registered-cels-v2';
   celSheets.devil.decoding='async';
   celSheets.devil.src='assets/world-pixel/curator-bbang-cels.png?v=registered-cels-v2';
+  // Six additional fully painted PNG sheets share the ORIGINAL 188x194
+  // cell size, foot registration, frame count and action row order.
+  // Index 0 remains the unchanged Nong/Bbang sheet.
+  const costumeSheets={angel:[celSheets.angel],devil:[celSheets.devil]};
+  for(const [form,stem] of [['angel','nong'],['devil','bbang']]){
+    for(let variant=1;variant<4;variant++){
+      const image=new Image();
+      image.decoding='async';
+      image.src='assets/world-pixel/curator-'+stem+'-variant-'+variant+
+        '.png?v=vertical-village-v1';
+      costumeSheets[form].push(image);
+    }
+  }
   const CEL_COLUMNS=8,CEL_ROWS=9;
   const celRow={
     angel:{wink:0,hair:1,kiss:2,shy:3,cheer:4,pout:5,surprise:6,stretch:7,wave:8,
@@ -792,7 +805,7 @@
     ctx.restore();
   }
 
-  function draw(ctx,guide,{center,groundY,height,elapsed,reduced,formId}) {
+  function draw(ctx,guide,{center,groundY,height,elapsed,reduced,formId,variant=0}) {
     if(!ready(formId))return false;
     const form=formFor(formId);
     const gesture=!reduced?guide.gesture:null;
@@ -800,7 +813,11 @@
     const frame=reduced?0:poseFrame(guide);
     const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
     const scale=height/standingHeight;
-    const cel=celSheets[formId];
+    const requested=costumeSheets[formId]?.[variant];
+    const valid=i=>i&&i.complete&&
+      i.naturalWidth===frameWidth*CEL_COLUMNS&&
+      i.naturalHeight===frameHeight*CEL_ROWS;
+    const cel=valid(requested)?requested:celSheets[formId];
     const row=gesture?celRow[formId][gesture.name]:0;
     // Idle and every action MUST come from the same registered image.
     // Switching between the Scale3x fallback and the PNG art used to
