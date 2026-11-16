@@ -79,8 +79,7 @@
   let previousInteriorObject=null;
   let interiorOrigin=null;
 
-  const patrolLimit=()=>inRoom()?room().roomWidth():worldEnd;
-  function guideStop(index,visit){
+   function guideStop(index,visit){
     const count=buildings.length;
     if(!count){
       // Even an empty world has a tiny plaza to explore.
@@ -226,7 +225,11 @@
     const offset=replacement?entrance(replacement)-entrance(oldAnchor):0;
     if(wasInterior&&interiorOrigin&&offset){
       interiorOrigin.playerX+=offset;
-      interiorOrigin.guideX=interiorOrigin.guideX.map(x=>x+offset);
+      // These are outdoor world-space residents, not interior occupants.
+      for(const [index,guide] of guides.entries()){
+        guide.state.x=clamp(guide.state.x+offset,20,worldEnd-20);
+        beginGuidePatrol(guide,index);
+      }
       interiorOrigin.camera+=offset;
     }else if(!wasInterior){
       if(!didInitialSpawn&&buildings.length){
@@ -299,8 +302,9 @@
     ctx.imageSmoothingEnabled=false;
     const roomScale=room()?.resize?.(W,H);
     if(inRoom()&&roomScale&&roomScale!==1){
+      // Interior coordinate scaling applies ONLY to the player.
+      // Guide patrol positions are stored in external world coordinates.
       player.x*=roomScale;
-      for(const {state} of guides)state.x*=roomScale;
     }
     const extent=inRoom()?room().roomWidth():worldEnd;
     camera=Math.max(0,Math.min(Math.max(0,extent-W),player.x-W*.49));
