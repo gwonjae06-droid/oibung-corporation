@@ -1,0 +1,52 @@
+{
+  "frameWidth": 188,
+  "frameHeight": 194,
+  "columns": 8,
+  "rows": 9,
+  "variants": {
+    "angel": [
+      {
+        "index": 0,
+        "name": "ORIGINAL",
+        "path": "assets/world-pixel/curator-nong-cels.png"
+      },
+      {
+        "index": 1,
+        "name": "MINT ARCHIVIST",
+        "path": "assets/world-pixel/curator-nong-variant-1.png"
+      },
+      {
+        "index": 2,
+        "name": "ROSE HOST",
+        "path": "assets/world-pixel/curator-nong-variant-2.png"
+      },
+      {
+        "index": 3,
+        "name": "STAR CURATOR",
+        "path": "assets/world-pixel/curator-nong-variant-3.png"
+      }
+    ],
+    "devil": [
+      {
+        "index": 0,
+        "name": "ORIGINAL",
+        "path": "assets/world-pixel/curator-bbang-cels.png"
+      },
+      {
+        "index": 1,
+        "name": "MIDNIGHT GUIDE",
+        "path": "assets/world-pixel/curator-bbang-variant-1.png"
+      },
+      {
+        "index": 2,
+        "name": "VIOLET TRICKSTER",
+        "path": "assets/world-pixel/curator-bbang-variant-2.png"
+      },
+      {
+        "index": 3,
+        "name": "EMBER HOST",
+        "path": "assets/world-pixel/curator-bbang-variant-3.png"
+      }
+    ]
+  }
+}
