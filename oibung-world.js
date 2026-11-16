@@ -559,7 +559,7 @@
         dt,player,limit,gap:curatorGap(),height:curatorHeight(guide.formId),
         reduced:reduceMotion.matches,formId:guide.formId,
         targetX:slots[index],hovering:true,hoverSide:side,
-        floatHeight:guide.formId==='angel'?.78:.69,
+        floatHeight:guide.formId==='angel'?0.78:0.69,
         floatBob:guide.formId==='angel'?4.8:5.5,
         allowHop:false,jumpDelay:0
       });
