@@ -24,9 +24,10 @@
 
   const LOGICAL_PIXEL_SIZE = 1;
   const MOVE_SPEED = 335;
-  const BUILDING_WIDTH = 1490;
-  const BUILDING_SPACING = 1580;
-  const DISTRICT_GAP = 760;
+  // Compact horizontal footprint; progress snakes UP through the town.
+  const FLOOR_WIDTH=1400,FLOOR_RISE=300,STAIR_SPAN=270;
+  const ROUTE_SPAN=FLOOR_WIDTH-160,BUILDINGS_PER_FLOOR=2;
+  const BUILDING_WIDTH=430;
   const GRAVITY = 720;
   const scenes = window.OIBUNG_PIXEL_SCENES;
   const curatorMotion = window.OIBUNG_CURATOR;
@@ -42,6 +43,33 @@
   const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const curatorGap = () => Math.round(108 * clamp(H / 690, .64, 1.28));
 
+  const ease=t=>t*t*(3-2*t);
+  // Continuous switchback corridor: right on level 1, left on level 2,
+  // right on level 3, etc. The final 270px of each leg is a real ascent.
+  function routeInfo(route){
+    const value=clamp(route,0,maxRoute);
+    const floor=Math.min(floorCount-1,Math.floor(value/ROUTE_SPAN));
+    const progress=value-floor*ROUTE_SPAN;
+    const right=floor%2===0;
+    const x=right?80+progress:FLOOR_WIDTH-80-progress;
+    const climb=floor<floorCount-1
+      ?ease(clamp((progress-(ROUTE_SPAN-STAIR_SPAN))/STAIR_SPAN,0,1))
+      :0;
+    return {floor,progress,x,elevation:(floor+climb)*FLOOR_RISE,
+      onStairs:climb>0&&climb<1};
+  }
+  function setPlayerRoute(route){
+    player.route=clamp(route,0,maxRoute);
+    const info=routeInfo(player.route);
+    player.x=info.x;
+    player.level=info.floor;
+    player.elevation=info.elevation;
+    player.onStairs=info.onStairs;
+  }
+  function onSameTerrace(guide){
+    return Math.abs((guide.elevation||0)-player.elevation)<85;
+  }
+
   function themeOf(game) {
     const match = (String(game?.title || '')+' '+String(game?.english || '')+' '+String(game?.genre || '')+' '+String(game?.id || '')).toLowerCase();
     if (/\bfur[.\s_-]*corp\b|퍼리|furry/.test(match)) return 'corp';
@@ -54,9 +82,11 @@
     return 'studio';
   }
   let games=[],buildings=[],districts=[],signButtons=[],nearest=-1;
-  let W=640,H=330,groundY=276,worldEnd=1550,camera=0;
+  let W=640,H=560,groundY=460,worldEnd=FLOOR_WIDTH,camera=0,cameraY=0;
+  let floorCount=1,maxRoute=ROUTE_SPAN-STAIR_SPAN;
   let lastFrame=0,elapsed=0,frameId=0,paused=false;
-  let player={x:165,y:0,vx:0,vy:0,direction:1,walk:0,onGround:true};
+  let player={x:80,y:0,vx:0,vy:0,direction:1,walk:0,onGround:true,
+    route:0,level:0,elevation:0,onStairs:false,stairsLock:0};
   // Independent residents: their routes are world-space positions, never
   // offsets from the player's position or camera.
   const guides=['angel','devil'].map((formId,index)=>({
@@ -207,47 +237,46 @@
     games=next;
     buildings=[];
     districts=[];
-    let x=450;
-    for (const [status,label] of districtLabels) {
+    let number=0;
+    for(const [status,label] of districtLabels){
       const entries=games.filter(game=>districtOf(game)===status);
-      if (!entries.length) continue;
-      districts.push({status,label,start:districts.length?x-DISTRICT_GAP*.8:0});
+      if(!entries.length)continue;
+      const firstFloor=Math.floor(number/BUILDINGS_PER_FLOOR);
+      districts.push({status,label,start:firstFloor*ROUTE_SPAN+
+        (number%BUILDINGS_PER_FLOOR===0?285:745)});
       for(const game of entries){
         const index=buildings.length;
-        const style=themeOf(game);
-        buildings.push({game,index,x,width:BUILDING_WIDTH,style,status});
-        x+=BUILDING_SPACING;
+        const floor=Math.floor(number/BUILDINGS_PER_FLOOR);
+        const order=number%BUILDINGS_PER_FLOOR;
+        const progress=order===0?285:745;
+        const route=floor*ROUTE_SPAN+progress;
+        const x=(floor%2===0?80+progress:FLOOR_WIDTH-80-progress)-BUILDING_WIDTH/2;
+        buildings.push({game,index,x,width:BUILDING_WIDTH,style:themeOf(game),
+          status,floor,route});
+        number++;
       }
-      x+=DISTRICT_GAP;
     }
-    worldEnd=buildings.length?entrance(buildings.at(-1))+900:1550;
+    floorCount=Math.max(1,Math.ceil(buildings.length/BUILDINGS_PER_FLOOR));
+    maxRoute=Math.max(0,(floorCount-1)*ROUTE_SPAN+
+      ROUTE_SPAN-STAIR_SPAN-18);
+    worldEnd=FLOOR_WIDTH;
     const replacement=oldAnchor&&buildings.find(b=>b.game.id===oldAnchor.game.id);
-    const offset=replacement?entrance(replacement)-entrance(oldAnchor):0;
-    if(wasInterior&&interiorOrigin&&offset){
-      interiorOrigin.playerX+=offset;
-      // These are outdoor world-space residents, not interior occupants.
-      for(const [index,guide] of guides.entries()){
-        guide.state.x=clamp(guide.state.x+offset,20,worldEnd-20);
-        beginGuidePatrol(guide,index);
-      }
-      interiorOrigin.camera+=offset;
+    if(wasInterior&&interiorOrigin&&replacement){
+      interiorOrigin.route=clamp(replacement.route+
+        (interiorOrigin.route-(oldAnchor?.route||0)),0,maxRoute);
+      for(const [index,guide] of guides.entries())beginGuidePatrol(guide,index);
     }else if(!wasInterior){
       if(!didInitialSpawn&&buildings.length){
-        player.x=entrance(buildings[0])-105;
+        setPlayerRoute(Math.max(0,buildings[0].route-105));
         resetGuides();
         didInitialSpawn=true;
-      }else if(offset){
-        player.x+=offset;
-        for(const guide of guides){
-          guide.state.x=clamp(guide.state.x+offset,20,worldEnd-20);
-          if(guide.brain.buildingIndex>=0)beginGuidePatrol(
-            guide,guides.indexOf(guide));
-          else guide.brain.targetX=clamp(
-            guide.brain.targetX+offset,20,worldEnd-20);
-        }
-      }
-      player.x=clamp(player.x,18,worldEnd-35);
+      }else if(replacement){
+        setPlayerRoute(replacement.route+(player.route-(oldAnchor?.route||0)));
+        for(const [index,guide] of guides.entries())
+          beginGuidePatrol(guide,index);
+      }else setPlayerRoute(player.route);
       camera=clamp(player.x-W*.49,0,Math.max(0,worldEnd-W));
+      cameraY=-player.elevation;
     }
 
     nearest=-1;
@@ -308,6 +337,7 @@
     }
     const extent=inRoom()?room().roomWidth():worldEnd;
     camera=Math.max(0,Math.min(Math.max(0,extent-W),player.x-W*.49));
+    if(!inRoom())cameraY=-player.elevation;
     if(!inRoom())updateSigns();
   }
   function updateSigns(){
