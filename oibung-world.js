@@ -138,7 +138,7 @@
   function resetGuides(){
     duetWait=7;
     for(const [index,guide] of guides.entries()){
-      const spot=guideStop(index,index);
+      const spot=guideStop(index,0);
       const x=clamp(spot.x+(index%2===0?-35:35),20,worldEnd-20);
       curatorMotion.reset(guide.state,x);
       guide.elevation=spot.elevation;
@@ -148,7 +148,7 @@
       guide.state.gestureWait=1.8+index*1.1;
       Object.assign(guide.brain,{mode:'present',targetX:spot.x,
         targetElevation:spot.elevation,
-        buildingIndex:spot.buildingIndex,visits:index+1,
+        buildingIndex:spot.buildingIndex,visits:1,
         stay:3.5+index*1.5,meetWait:3+index*3,greetWait:5,restCount:0});
     }
   }
@@ -737,8 +737,16 @@
       const axisNow=(keys.right?1:0)-(keys.left?1:0);
       let delta=player.vx*dt*(floorBefore%2===0?1:-1);
       if(player.stairsLock){
-        if(axisNow===player.stairsLock)delta=0;
-        else player.stairsLock=0;
+        if(axisNow===player.stairsLock || axisNow===0){
+          delta=0;
+          if(axisNow===0)player.stairsLock=0;
+        }else{
+          // Discard the previous direction's momentum at a landing.
+          // Otherwise the first tap toward the new floor walks BACK down.
+          player.vx=axisNow*MOVE_SPEED*.55;
+          delta=player.vx*dt*(floorBefore%2===0?1:-1);
+          player.stairsLock=0;
+        }
       }
       const next=clamp(player.route+delta,0,maxRoute);
       const crossed=Math.floor(next/ROUTE_SPAN)!==floorBefore;
