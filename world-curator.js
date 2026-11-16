@@ -805,35 +805,11 @@
     ctx.restore();
   }
 
-  // Matching guild trims identify the exhibit, while the original painted
-  // clothing, faces and wing silhouettes retain each resident's identity.
-  const buildingCostumes={
-    castle:[2,'#c7d8ff','#526880',['..#..','..#..','.###.','##+##','##+##','.###.','..#..']],
-    arena:[3,'#ffdc91','#a87836',['#####','#+++#','.###.','..#..','..#..','.###.','#####']],
-    duel:[0,'#ffcaec','#8a567e',['....#','...##','..##.','#++..','.##..','.#...','#....']],
-    tactics:[1,'#cbe8a9','#536d4d',['#####','#+#++','#+###','#....','#....','#....','#....']],
-    corp:[2,'#a5e5ff','#386784',['..#..','.###.','#+++#','#+++#','#+++#','.###.','.....']],
-    cat:[1,'#ffc9b9','#9b605d',['.#.#.','#.#.#','.....','.###.','#####','.###.','.....']],
-    tower:[2,'#ddd1ff','#7360a0',['..#..','..#..','#####','.###.','.###.','.#.#.','#...#']],
-    studio:[0,'#ffe2b2','#91624d',['###..','##+##','##+##','##+##','##+##','#####','..###']]
-  };
-  function drawGuildTrim(ctx,form,costume){
-    const [,light,dark,mark]=costume;
-    const devil=form===forms.devil;
-    const y=devil?66:77;
-    const x=devil?106:114;
-    ctx.fillStyle=dark;
-    ctx.fillRect(x-4,y-8,7,10);
-    ctx.fillRect(x-7,y,17,20);
-    ctx.fillStyle=light;
-    ctx.fillRect(x-6,y+1,15,1);
-    ctx.fillRect(x-6,y+18,15,1);
-    mark.forEach((row,dy)=>Array.from(row).forEach((ink,dx)=>{
-      if(ink==='.'){return;}
-      ctx.fillStyle=ink==='+'?'#fff7df':light;
-      ctx.fillRect(x-4+dx*2,y+3+dy*2,2,2);
-    }));
-  }
+  const exhibitColumns={castle:0,arena:1,duel:2,tactics:3,corp:4};
+  const exhibitCostumes={angel:new Image(),devil:new Image()};
+  exhibitCostumes.angel.decoding=exhibitCostumes.devil.decoding='async';
+  exhibitCostumes.angel.src='assets/world-pixel/exhibit-nong.png';
+  exhibitCostumes.devil.src='assets/world-pixel/exhibit-bbang.png';
 
   function draw(ctx,guide,{center,groundY,height,elapsed,reduced,formId,variant=0,theme}) {
     if(!ready(formId))return false;
@@ -843,8 +819,10 @@
     const frame=reduced?0:poseFrame(guide);
     const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
     const scale=height/standingHeight;
-    const costume=buildingCostumes[theme];
-    const requested=costumeSheets[formId]?.[costume?.[0]??variant];
+    const exhibit=exhibitCostumes[formId],column=exhibitColumns[theme];
+    const dressed=column!==undefined&&exhibit.complete&&
+      exhibit.naturalWidth===frameWidth*5&&exhibit.naturalHeight===frameHeight*2;
+    const requested=costumeSheets[formId]?.[variant];
     const valid=i=>i&&i.complete&&
       i.naturalWidth===frameWidth*CEL_COLUMNS&&
       i.naturalHeight===frameHeight*CEL_ROWS;
@@ -864,7 +842,12 @@
     ctx.scale(scale*(guide.facing<0?-1:1),scale);
     ctx.translate(-origin,-ground);
     drawWings(ctx,form,shape,reduced?0:guide.wingAngle);
-    if(useCel){
+    if(dressed){
+      const greet=gesture&&progress>=.19&&progress<.79;
+      ctx.drawImage(exhibit,column*frameWidth,greet?frameHeight:0,frameWidth,frameHeight,
+        0,0,frameWidth,frameHeight);
+      drawCrown(ctx,form,(form===forms.devil?devilShapes:winterShapes)[0]);
+    }else if(useCel){
       // Full illustrated, opaque pose: no sliding, folding, shearing, or
       // automated replacement of pixels around Nong's skirt/Bbang's dress.
       const column=gesture?Math.min(CEL_COLUMNS-1,Math.floor(progress*CEL_COLUMNS)):0;
@@ -876,7 +859,6 @@
       drawBody(ctx,form,frame);
       drawHead(ctx,form,frame,guide,elapsed,reduced,false);
     }
-    if(costume)drawGuildTrim(ctx,form,costume);
     ctx.restore();
     return true;
   }

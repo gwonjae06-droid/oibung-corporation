@@ -163,27 +163,29 @@
     const levels=Array.from({length:floorCount},(_,floor)=>floor)
       .filter(floor=>groundY-floor*rise-cameraY> -60&&groundY-floor*rise-cameraY<H+300);
     const colors=['#edddab','#96bcae','#aabbe8'];
+    const bankTop=groundY-(floorCount-1)*rise-240;
+    const bankHeight=Math.max(650,groundY+175-bankTop);
+    // One continuous cliff on each flank. Each side samples a different
+    // part of the painting and spans the whole elevation range.
+    for(const side of [1,-1]){
+      const edge=side===1?0:floorWidth;
+      const extra=Math.max(92,W-floorWidth);
+      ctx.save();
+      ctx.translate(edge-camera,bankTop);
+      ctx.scale(side,1);
+      if(bank){
+        const iw=bank.naturalWidth,ih=bank.naturalHeight;
+        const crop=side===1?0:Math.round(ih*.14);
+        const width=side===1?264:244;
+        ctx.drawImage(bank,4,Math.round(ih*.26),Math.round(iw*.18),Math.round(ih*.60),
+          -extra-3,0,extra+41,bankHeight);
+        ctx.drawImage(bank,0,crop,iw,ih-crop,
+          -Math.round(width*(side===1?.38:.47)),0,width,bankHeight);
+      }else drawStone(ctx,stone,-extra,0,extra+50,bankHeight);
+      ctx.restore();
+    }
     for(const floor of levels){
       const y=groundY-floor*rise+2;
-      // Each terrace meets the same continuous rock face at both ends,
-      // including the edges of displays wider than the playable lane.
-      for(const side of [1,-1]){
-        const edge=side===1?0:floorWidth;
-        ctx.save();
-        ctx.translate(edge-camera,y);
-        ctx.scale(side,1);
-        if(bank){
-          const h=rise+105,w=Math.round(h*bank.naturalWidth/bank.naturalHeight);
-          const extra=Math.max(84,W-floorWidth);
-          const top=-rise+18;
-          ctx.drawImage(bank,3,Math.round(bank.naturalHeight*.24),
-            Math.round(bank.naturalWidth*.19),Math.round(bank.naturalHeight*.61),
-            -extra-2,top,extra+50,h);
-          ctx.drawImage(bank,-Math.round(w*.43),top,w,h);
-        }else drawStone(ctx,stone,-Math.max(160,W-floorWidth),-rise+38,
-          Math.max(160,W-floorWidth)+86,rise+65);
-        ctx.restore();
-      }
       const left=Math.min(-camera,0),width=Math.max(W-left,floorWidth);
       const depth=floor===0?Math.max(90,H-y+cameraY):48;
       drawStone(ctx,stone,left,y,width,depth);
