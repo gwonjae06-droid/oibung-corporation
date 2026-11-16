@@ -86,56 +86,62 @@
   // facade paintings are reused: they are NOT replaced by box buildings.
   function drawTerraces(ctx,{W,H,groundY,camera,cameraY,buildings,
       floorCount,floorWidth,rise,stairSpan}) {
-    const sky=ctx.createLinearGradient(0,0,0,H);
-    sky.addColorStop(0,'#7b9db7');
-    sky.addColorStop(.55,'#b3c9cf');
-    sky.addColorStop(1,'#e7d7b9');
-    ctx.fillStyle=sky;
+    ctx.fillStyle='#a9badc';
     ctx.fillRect(0,0,W,H);
     const plaza=load('plaza'),stone=terraceAsset('world-terrace-stone'),
       staircase=terraceAsset('world-stair-flight');
+    // A single landscape spans all elevations. Parallax keeps the mountain
+    // silhouettes continuous when the camera climbs a flight of stairs.
+    if(plaza){
+      const cropH=Math.floor(plaza.naturalHeight*.74);
+      const height=H+170;
+      const width=Math.ceil(height*plaza.naturalWidth/cropH);
+      const offset=camera*.22;
+      const y=-115+Math.min(115,Math.max(0,-cameraY*.09));
+      for(let i=Math.floor(offset/width);i*width<offset+W;i++){
+        ctx.save();
+        ctx.translate(Math.round(i*width-offset+(i%2?width:0)),0);
+        if(i%2)ctx.scale(-1,1);
+        ctx.drawImage(plaza,0,0,plaza.naturalWidth,cropH,0,y,width,height);
+        ctx.restore();
+      }
+    }
     ctx.save();
-    ctx.translate(0,-Math.round(cameraY));
-    for(let floor=0;floor<floorCount;floor++){
-      const y=groundY-floor*rise;
-      if(y-cameraY< -370 || y-cameraY>H+340)continue;
-      // The already painted plaza provides detailed masonry and lighting
-      // around each terrace; only its lower environment region is sampled.
-      if(plaza){
-        const cropTop=Math.floor(plaza.naturalHeight*.41);
-        const cropH=plaza.naturalHeight-cropTop;
-        const tileWidth=650;
-        for(let x=-Math.ceil(650+camera%650);x<W+650;x+=tileWidth){
-          ctx.drawImage(plaza,0,cropTop,plaza.naturalWidth,cropH,
-            Math.round(x),y-215,tileWidth,248);
-        }
-      }
-      // Animated characters stand on the floor's paved pixel-art terrace.
-      const pathY=Math.round(y+4);
+    ctx.translate(0,-cameraY);
+    const levels=Array.from({length:floorCount},(_,floor)=>floor)
+      .filter(floor=>groundY-floor*rise-cameraY> -60&&groundY-floor*rise-cameraY<H+300);
+    const colors=['#edddab','#96bcae','#aabbe8'];
+    for(const floor of levels){
+      const y=groundY-floor*rise+3;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(-camera,y,floorWidth,floor===0?Math.max(78,H-y+cameraY):42);
+      ctx.clip();
       if(stone){
-        const tileW=stone.naturalWidth,tileH=stone.naturalHeight;
-        for(let x=0;x<floorWidth;x+=tileW){
-          const w=Math.min(tileW,floorWidth-x);
-          ctx.drawImage(stone,0,0,w,tileH,
-            Math.round(x-camera),pathY,w,tileH);
-        }
-      }else{
-        ctx.fillStyle='#7a7779';
-        ctx.fillRect(-camera,pathY,floorWidth,76);
+        for(let x=0;x<floorWidth;x+=stone.naturalWidth)
+          ctx.drawImage(stone,x-camera,y);
       }
-      // Preserving each building's original artwork, scale and pixel detail.
-      for(const b of buildings){
-        if(b.floor!==floor)continue;
-        const center=b.x-camera;
-        if(center < -400 || center > W+400)continue;
-        const image=load(outside(b.style));
-        if(!image)continue;
-        const facadeH=Math.round(Math.min(264,Math.max(182,H*.46)));
-        const facadeW=Math.round(facadeH*image.naturalWidth/image.naturalHeight);
-        ctx.imageSmoothingEnabled=true;
-        ctx.drawImage(image,Math.round(center-facadeW/2),
-          Math.round(y+4-facadeH),facadeW,facadeH);
-        ctx.imageSmoothingEnabled=false;
+      ctx.globalAlpha=.31;
+      ctx.fillStyle=colors[floor%colors.length];
+      ctx.fillRect(-camera,y,floorWidth,420);
+      ctx.restore();
+    }
+    for(const b of buildings){
+      if(!levels.includes(b.floor))continue;
+      const center=b.x+b.width/2-camera;
+      if(center < -340 || center > W+340)continue;
+      const image=load(outside(b.style));
+      if(!image)continue;
+      const y=groundY-b.floor*rise+4;
+      const facadeH=Math.round(Math.min(294,Math.max(190,H*.43)));
+      const facadeW=Math.round(facadeH*image.naturalWidth/image.naturalHeight);
+      ctx.imageSmoothingEnabled=true;
+      ctx.drawImage(image,Math.round(center-facadeW/2),Math.round(y-facadeH),facadeW,facadeH);
+      ctx.imageSmoothingEnabled=false;
+      const lantern=load('lantern');
+      if(lantern){
+        const h=58,w=h*lantern.naturalWidth/lantern.naturalHeight;
+        ctx.drawImage(lantern,center+Math.min(175,facadeW*.47),y-h,w,h);
       }
     }
     // Each ascent is a painted pixel-art stairway aligned to the actual
@@ -154,6 +160,18 @@
       }else if(staircase)ctx.drawImage(staircase,Math.round(x-camera),
           Math.round(bottom-rise),stairSpan,rise);
       ctx.restore();
+      const labelX=Math.round((ascendingRight?x-24:x+stairSpan+24)-camera);
+      const labelY=Math.round(bottom-11);
+      if(labelX>-80&&labelX<W+80){
+        ctx.font='700 12px system-ui';
+        ctx.textAlign=ascendingRight?'right':'left';
+        ctx.lineWidth=4;
+        ctx.strokeStyle='#26313a';
+        ctx.fillStyle='#fff3cd';
+        const label=ascendingRight?(floor+2)+'층 ↗':'↖ '+(floor+2)+'층';
+        ctx.strokeText(label,labelX,labelY);
+        ctx.fillText(label,labelX,labelY);
+      }
     }
     ctx.restore();
     ctx.imageSmoothingEnabled=false;

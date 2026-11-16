@@ -39,7 +39,21 @@
     'campus-frontier':'대학을 고르고 부대를 지휘해 거점을 차지하는 턴제 전략 게임.'
   };
   const state={active:false,game:null,style:'studio',origin:null,nearest:null,selected:null,media:null};
-  const curatedScenes={odenring:'assets/world-snow/preview-odenring.webp'};
+  const curatedScenes={
+    odenring:'assets/world-snow/preview-odenring.webp',
+    'oibung-arena':'assets/world-snow/preview-arena.jpg'
+  };
+  const guideLines={
+    castle:'농이에요. 벽에 걸린 보스전부터 보세요. 공격을 피한 뒤 반격할 틈을 찾는 게임이에요.',
+    arena:'빵이에요. 공은 알아서 움직여요. 벽을 튕기며 모은 기세가 차면 고유 스킬이 발동해요.',
+    tactics:'농이에요. 어느 거점을 먼저 점령할지 생각해 보세요. 거점에서 얻는 자원으로 다음 턴을 준비해요.',
+    duel:'빵이에요. 상대가 다음 턴에 뭘 쓸지 예상하고 기술을 골라 보세요.'
+  };
+  function host(){
+    const stop=stations.find(station=>station.id==='guide');
+    const formId=['arena','duel','corp'].includes(state.style)?'devil':'angel';
+    return stop?{x:stop.x+76,formId,name:formId==='devil'?'빵':'농'}:null;
+  }
   let mediaRevision=0;
   let width=1850;
   let stations=[];
@@ -187,7 +201,7 @@
     title.textContent=game.title;
     nav.hidden=kind==='intro';
     for(const [id,tab] of tabs)tab.setAttribute('aria-pressed',String(id===kind));
-    desc.textContent=kind==='intro'?(intro||welcome):kind==='guide'?welcome
+    desc.textContent=kind==='intro'?(intro||welcome):kind==='guide'?(guideLines[state.style]||((host()?.name||'농')+'이에요. '+welcome))
       :'등록된 스크린샷과 플레이 후기는 작품 기록에서 볼 수 있어요.';
     route.hidden=kind!=='guide';
     route.replaceChildren();
@@ -227,7 +241,8 @@
       const [ratio,height,label]=landmarks[i];
       const noLaunch=id==='portal'&&!canLaunch;
       return {id,x:Math.round(ratio*width),ratio,height,label,
-        role:noLaunch?'작품 상세':role,action:noLaunch?'작품 상세 보기':action,
+        role:noLaunch?'작품 상세':role,
+        action:id==='guide'?(['arena','duel','corp'].includes(state.style)?'빵에게 설명 듣기':'농에게 설명 듣기'):noLaunch?'작품 상세 보기':action,
         hint:noLaunch?'이 작품의 등록 정보와 설명을 볼 수 있어요.':hint};
     });
     for(const [i,stop] of stations.entries()){
@@ -313,7 +328,7 @@
     }
   },true);
   window.OIBUNG_INTERIORS={
-    enter,leave,interact,nearest,resize,draw:drawArt,drawForeground,showInfo,
+    enter,leave,interact,nearest,resize,host,draw:drawArt,drawForeground,showInfo,
     isActive:()=>state.active,isInfoOpen:()=>!sheet.hidden,
     blocksMovement:()=>!sheet.hidden&&state.selected!=='intro',
     currentGame:()=>state.game,theme:()=>state.style,

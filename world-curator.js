@@ -338,7 +338,7 @@
 
   function update(guide,{dt,player,limit,gap,height,reduced,targetX,allowHop=true,
     jumpDelay=.11,formId='angel',hovering=false,roaming=false,hoverSide=0,
-    floatHeight=.74,floatBob=5}) {
+    floatHeight=.74,floatBob=5,perform=false}) {
     guide.formId=formId;
     const groundedGuide=formId==='devil';
     const distance=player.x-guide.x;
@@ -405,7 +405,7 @@
       }
       // The world director owns idle presentations; avoid automatic
       // player-follow actions while moving between buildings.
-      updateGesture(guide,roaming?false:watching,dt,reduced);
+      updateGesture(guide,roaming?perform:watching,dt,reduced);
       return;
     }
     guide.hovering=false;
@@ -837,8 +837,8 @@
       // Full illustrated, opaque pose: no sliding, folding, shearing, or
       // automated replacement of pixels around Nong's skirt/Bbang's dress.
       const column=gesture?Math.min(CEL_COLUMNS-1,Math.floor(progress*CEL_COLUMNS)):0;
-      ctx.drawImage(cel,column*frameWidth,row*frameHeight,frameWidth,frameHeight,
-        0,0,frameWidth,frameHeight);
+      const poseX=column*frameWidth,poseY=row*frameHeight;
+      ctx.drawImage(cel,poseX,poseY,frameWidth,frameHeight,0,0,frameWidth,frameHeight);
       drawCrown(ctx,form,(form===forms.devil?devilShapes:winterShapes)[0]);
     }else{
       // Still show an intact original sprite during asset loading/offline.
