@@ -8,6 +8,22 @@
   devilArt.decoding='async';
   devilArt.src='assets/world-pixel/curator-devil-ponytail.png';
 
+  // Eight manually arranged/retouched original-art cels for each action.
+  // Loaded separately; missing art falls back to the original idle PNG,
+  // never to an automatically warped body or a corrupt empty sprite.
+  const celSheets={angel:new Image(),devil:new Image()};
+  celSheets.angel.decoding='async';
+  celSheets.angel.src='assets/world-pixel/curator-nong-cels.png?v=art-cels-v1';
+  celSheets.devil.decoding='async';
+  celSheets.devil.src='assets/world-pixel/curator-bbang-cels.png?v=art-cels-v1';
+  const CEL_COLUMNS=8,CEL_ROWS=9;
+  const celRow={
+    angel:{wink:0,hair:1,kiss:2,shy:3,cheer:4,pout:5,surprise:6,stretch:7,wave:8,
+      pairWave:8,pairShy:3,pairCheer:4},
+    devil:{beckon:0,hair:1,kiss:2,shy:3,cheer:4,pout:5,surprise:6,stretch:7,wave:8,
+      pairWave:8,pairShy:3,pairCheer:4}
+  };
+
   const frameWidth=188,frameHeight=194,ground=175,origin=91,standingHeight=161;
   // Distinct non-fading, joint-driven charm actions. No sprite opacity blends.
   // Every action selects actual original pixel-art poses from the 4x4 atlas.
@@ -562,96 +578,14 @@
     }
     ctx.restore();
   }
-  // A real, pixel-perfect in-between frame is baked for each gesture step.
-  // The source is always the unchanged, approved character portrait. There
-  // is no fade, opacity blending, silhouette flashing or whole-sprite zoom.
-  // Cached 188x194 frames replace the old per-pixel 376x388 deformation
-  // performed on EVERY animation tick (a major mobile frame-time spike).
-  const actionSource=new WeakMap();
-  const bodyFilm=new WeakMap();
-  const INBETWEEN_STEPS=28;
-  const BODY_FILM_LIMIT=42;
-
-  function actionPixels(form) {
-    if(actionSource.has(form))return actionSource.get(form);
-    const shape=(form===forms.devil?devilShapes:winterShapes)[0];
-    const layer=detailedFrame(form,0,shape);
-    const canvas=document.createElement('canvas');
-    canvas.width=frameWidth;canvas.height=frameHeight;
-    const ctx=canvas.getContext('2d',{willReadFrequently:true});
-    ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(layer,0,0,layer.width,layer.height,0,0,frameWidth,frameHeight);
-    const rgba=new Uint32Array(ctx.getImageData(0,0,frameWidth,frameHeight).data.buffer);
-    const isDevil=form===forms.devil;
-    const left=new Float32Array(frameWidth),right=new Float32Array(frameWidth);
-    function influence(x,pivot,radius){
-      const a=clamp(1-Math.abs(x-pivot)/radius,0,1);
-      return a*a*(3-2*a);
-    }
-    for(let x=0;x<frameWidth;x++){
-      left[x]=influence(x,isDevil?75:68,isDevil?14:17);
-      right[x]=influence(x,isDevil?111:117,isDevil?15:16);
-    }
-    const obj={rgba,left,right,neck:shape.output[2],from:Math.max(0,Math.floor(shape.output[2]-4))};
-    actionSource.set(form,obj);
-    return obj;
-  }
-
-  function actionBodyFrame(form,gesture,step) {
-    if(!bodyFilm.has(form))bodyFilm.set(form,new Map());
-    const cache=bodyFilm.get(form);
-    const key=gesture.name+':'+step;
-    if(cache.has(key)){
-      const saved=cache.get(key);
-      cache.delete(key);cache.set(key,saved);
-      return saved;
-    }
-    const source=actionPixels(form);
-    const t=step/INBETWEEN_STEPS;
-    const move=flirtPose(gesture,t);
-    const result=document.createElement('canvas');
-    result.width=frameWidth;result.height=frameHeight;
-    const ctx=result.getContext('2d');
-    const dst=ctx.createImageData(frameWidth,frameHeight);
-    const pixels=new Uint32Array(dst.data.buffer);
-    const {rgba,left,right,neck}=source;
-    // Joint-centred displacement with a soft spatial envelope. Each baked
-    // frame contains actual opaque image pixels in new positions.
-    for(let y=0;y<frameHeight;y++){
-      const arm=ease(clamp((y-neck-2)/31,0,1))*
-        (1-ease(clamp((y-neck-89)/27,0,1)));
-      const cloth=ease(clamp((y-neck-17)/54,0,1))*
-        (1-ease(clamp((y-(ground-23))/24,0,1)));
-      const hem=Math.sin(t*Math.PI*2)*.55*cloth;
-      const row=y*frameWidth;
-      for(let x=0;x<frameWidth;x++){
-        const la=left[x]*arm,ra=right[x]*arm;
-        const sx=clamp(Math.round(x-la*move.leftX-ra*move.rightX-hem),0,frameWidth-1);
-        const sy=clamp(Math.round(y-la*move.leftY-ra*move.rightY),0,frameHeight-1);
-        pixels[row+x]=rgba[sy*frameWidth+sx];
-      }
-    }
-    ctx.putImageData(dst,0,0);
-    cache.set(key,result);
-    if(cache.size>BODY_FILM_LIMIT)cache.delete(cache.keys().next().value);
-    return result;
-  }
-
-  function drawBody(ctx,form,frame,guide,elapsed,reduced,gesture,progress) {
+  // Never deform a garment, shift strips of pixels or interpolate texture.
+  // Walking uses the existing approved source atlas with no resampling per tick.
+  // All expressive actions use complete pre-painted PNG cels below.
+  function drawBody(ctx,form,frame) {
     const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
-    const from=Math.max(0,Math.floor(shape.output[2]-4));
-    if(reduced||!gesture){
-      // Original atlas frames provide 8 completely drawn walking poses.
-      // No dynamic pixel readback is needed during walking or idle.
-      const layer=detailedFrame(form,frame,shape);
-      ctx.drawImage(layer,0,from*3,layer.width,(frameHeight-from)*3,
-        0,from,frameWidth,frameHeight-from);
-      return;
-    }
-    const tick=Math.round(clamp(progress,0,1)*INBETWEEN_STEPS);
-    const drawn=actionBodyFrame(form,gesture,tick);
-    ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(drawn,0,from,frameWidth,frameHeight-from,
+    const from=clamp(Math.floor(shape.output[2]-4),0,frameHeight-1);
+    const layer=detailedFrame(form,frame,shape);
+    ctx.drawImage(layer,0,from*3,layer.width,(frameHeight-from)*3,
       0,from,frameWidth,frameHeight-from);
   }
 
@@ -753,38 +687,37 @@
     const form=formFor(formId);
     const gesture=!reduced?guide.gesture:null;
     const progress=gesture?clamp(guide.gestureTime/gesture.duration,0,1):0;
-    // Use the approved hand-drawn poses for actual walking and expressive
-    // gestures, while preserving the original portrait and outfit.
     const frame=reduced?0:poseFrame(guide);
     const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
-    const eyes=form===forms.devil?devilEyes:eyeAnchors;
     const scale=height/standingHeight;
-    // Scale through zero continuously while turning; never snap mirrored signs.
-    const turnScale=reduced?guide.facing:clamp(guide.turn,-1,1);
-    const cycle=guide.phase*Math.PI*2;
-    const time=elapsed+(form===forms.devil?.8:0);
-    const breathing=reduced?0:Math.sin(time*2.8)*.013;
-    const step=reduced?0:Math.sin(cycle*2)*guide.stride*.009;
-    const action=flirtPose(gesture,progress);
-    const lean=action.lean;
+    const cel=celSheets[formId];
+    const row=gesture?celRow[formId][gesture.name]:undefined;
+    const useCel=gesture&&row!==undefined&&cel.complete&&
+      cel.naturalWidth===frameWidth*CEL_COLUMNS&&cel.naturalHeight===frameHeight*CEL_ROWS;
     ctx.save();
     ctx.imageSmoothingEnabled=false;
     ctx.translate(center,groundY+guide.y);
-    ctx.scale(scale*turnScale,scale);
-    ctx.rotate(reduced?0:Math.sin(cycle)*guide.stride*.012+lean);
-    ctx.scale(1-(breathing+step)*.32,1+breathing+step);
-    const sway=reduced?0:Math.sin(time*1.9)*.012+
-      Math.sin(cycle)*guide.stride*.010;
-    ctx.transform(1,0,sway,1,0,0);
+    // Integer facing flip: do not squeeze the complete sprite through width 0.
+    ctx.scale(scale*(guide.facing<0?-1:1),scale);
     ctx.translate(-origin,-ground);
     drawWings(ctx,form,shape,reduced?0:guide.wingAngle);
-    drawBody(ctx,form,frame,guide,elapsed,reduced,gesture,progress);
-    const winking=gesture?.name==='wink'&&progress>.31&&progress<.57;
-    drawHead(ctx,form,frame,guide,elapsed,reduced,winking);
-    if(gesture)drawGestureEffect(ctx,gesture,progress,shape,eyes,frame);
+    if(useCel){
+      // Full illustrated, opaque pose: no sliding, folding, shearing, or
+      // automated replacement of pixels around Nong's skirt/Bbang's dress.
+      const column=Math.min(CEL_COLUMNS-1,Math.floor(progress*CEL_COLUMNS));
+      ctx.drawImage(cel,column*frameWidth,row*frameHeight,frameWidth,frameHeight,
+        0,0,frameWidth,frameHeight);
+      drawCrown(ctx,form,(form===forms.devil?devilShapes:winterShapes)[0]);
+    }else{
+      // Still show an intact original sprite during asset loading/offline.
+      drawBody(ctx,form,frame);
+      drawHead(ctx,form,frame,guide,elapsed,reduced,false);
+    }
     ctx.restore();
     return true;
   }
 
-  window.OIBUNG_CURATOR={ready,reset,update,draw,play,formFor};
+  window.OIBUNG_CURATOR={ready,reset,update,draw,play,formFor,
+    celsReady:id=>{const image=celSheets[id];return !!image&&image.complete&&
+      image.naturalWidth===frameWidth*CEL_COLUMNS&&image.naturalHeight===frameHeight*CEL_ROWS;}};
 })();
