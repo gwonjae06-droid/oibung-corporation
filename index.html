@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="gallery-game-page.css?v=two-modes-1">
   <link rel="stylesheet" href="gallery-display-modes.css?v=two-modes-1">
   <link rel="stylesheet" href="direct-gallery.css?v=direct-gallery-v1">
-  <link rel="stylesheet" href="oibung-world.css?v=world-pixel-v1">
+  <link rel="stylesheet" href="oibung-world.css?v=vertical-village-v1">
   <link rel="stylesheet" href="world-fullscreen.css?v=curator-duo-v1">
   <link rel="stylesheet" href="world-polish.css?v=world-polish-v1">
   <link rel="stylesheet" href="world-interiors.css?v=world-exhibit-v1">
@@ -33,10 +33,10 @@
   <script type="module" src="community.js?v=world-exhibit-v1"></script>
   <script src="exhibition.js?v=gallery-polish-1" defer></script>
   <script src="direct-gallery.js?v=direct-gallery-v1" defer></script>
-  <script src="world-pixel-scenes.js?v=world-exhibit-v1" defer></script>
+  <script src="world-pixel-scenes.js?v=vertical-village-v1" defer></script>
   <script src="world-interiors.js?v=world-exhibit-v1" defer></script>
-  <script src="world-curator.js?v=autonomous-guides-v2" defer></script>
-  <script src="oibung-world.js?v=autonomous-guides-v2" defer></script>
+  <script src="world-curator.js?v=vertical-village-v1" defer></script>
+  <script src="oibung-world.js?v=vertical-village-v1" defer></script>
   <script src="world-fullscreen.js?v=world-polish-v1" defer></script>
   <script src="motion.js?v=museum-daylight-1" defer></script>
 </head>
@@ -92,11 +92,11 @@
     <section class="library section-pad" id="games" role="tabpanel" aria-labelledby="tab-games">
       <div class="container">
         <div class="section-heading-row">
-          <div><h1 id="games-title">오이붕 월드 <span class="world-head-english">OIBUNG WORLD</span></h1><p>친구들이 만든 게임들이 하나의 세계가 됐어. 직접 걸어가서 건물을 구경해 봐!</p></div>
+          <div><h1 id="games-title">오이붕 월드 <span class="world-head-english">OIBUNG WORLD</span></h1><p>층마다 펼쳐지는 친구들의 게임 전시관. 계단을 올라가며 여덟 안내 비서를 만나 보세요.</p></div>
           <button class="button-primary" type="button" data-open-editor>게임 등록하기 <svg aria-hidden="true"><use href="#i-arrow"/></svg></button>
         </div>
-        <section class="oibung-world" id="oibung-world" aria-label="오이붕 월드 횡스크롤 게임">
-          <div class="world-stage" id="oibung-world-stage" tabindex="0" aria-label="오이붕 월드 횡스크롤 게임. 방향키 좌우 이동, E 건물 입장, 스페이스 점프">
+        <section class="oibung-world" id="oibung-world" aria-label="오이붕 월드 계단형 세로 마을">
+          <div class="world-stage" id="oibung-world-stage" tabindex="0" aria-label="오이붕 월드 계단형 세로 마을. 방향키 좌우 이동, E 건물 입장, 스페이스 점프">
             <canvas id="oibung-world-canvas" role="img" aria-label="도트 그래픽 오이붕 월드 마을. 게임마다 고유한 거대한 건물이 있습니다."></canvas>
             <button type="button" id="world-menu-toggle" class="world-hud-menu-toggle" aria-label="오이붕 월드 메뉴 열기" aria-expanded="false" aria-controls="world-overlay-menu">☰ <span>메뉴</span></button>
             <aside class="world-overlay-menu" id="world-overlay-menu" aria-label="오이붕 월드 메뉴" hidden>
@@ -116,7 +116,7 @@
                 <button type="button" class="world-toolbar-button" id="world-theme-toggle">◐ 밝기 변경</button>
               </div>
               <div class="world-directory" id="world-directory" hidden aria-label="게임 건물 빠른 선택"></div>
-              <p class="world-menu-hint">← → 이동 · E 건물 입장 · SPACE 점프</p>
+              <p class="world-menu-hint">← → 이동 · 층 끝에서 계단 오르기 · E 건물 입장 · SPACE 점프</p>
             </aside>
             <div class="world-signs" id="world-signs"></div>
             <div class="world-stage-stats">
@@ -124,7 +124,7 @@
               <span id="world-count">게임 월드를 여는 중…</span>
             </div>
             <div class="world-guide-bubble" id="world-guide-bubble" role="status" hidden></div>
-            <div class="world-stage-help">A · D / ← → 이동　·　E 입장　·　SPACE 점프</div>
+            <div class="world-stage-help">A · D / ← → 이동　·　층 끝 계단　·　E 입장</div>
           </div>
           <div class="world-controlbar">
             <div class="world-direction-pad" aria-label="이동 조작">
@@ -132,7 +132,7 @@
               <button type="button" data-world-move="right" aria-label="오른쪽으로 걷기" title="오른쪽으로 걷기">▶</button>
               <button type="button" data-world-jump aria-label="점프" title="점프">↥</button>
             </div>
-            <div class="world-nearby" id="world-nearby" aria-live="polite">건물로 이동하면 작품을 소개해 드릴게요.</div>
+            <div class="world-nearby" id="world-nearby" aria-live="polite">계단으로 층을 올라가며 다른 건물들을 탐험해 보세요.</div>
             <button type="button" id="world-enter" class="world-enter" disabled>입구에 가까이</button>
           </div>
           <div class="world-hint">
