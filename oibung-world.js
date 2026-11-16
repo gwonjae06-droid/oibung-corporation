@@ -89,17 +89,21 @@
     route:0,level:0,elevation:0,onStairs:false,stairsLock:0};
   // Independent residents: their routes are world-space positions, never
   // offsets from the player's position or camera.
-  const guides=['angel','devil'].map((formId,index)=>({
-    formId,state:curatorMotion.reset({},165),
-    brain:{mode:'patrol',targetX:165,buildingIndex:-1,
-      visits:0,stay:0,meetWait:3+index*2,greetWait:0,restCount:0}
-  }));
+  const guides=Array.from({length:8},(_,index)=>{
+    const formId=index<4?'angel':'devil',variant=index%4;
+    return {formId,variant,elevation:0,state:curatorMotion.reset({},165),
+      brain:{mode:'patrol',targetX:165,targetElevation:0,buildingIndex:-1,
+        visits:0,stay:0,meetWait:3+index*.7,greetWait:0,restCount:0}};
+  });
   let curatorForm='angel';
   try{
     if(localStorage.getItem('oibung-world-guide')==='devil')curatorForm='devil';
   }catch{}
   if(guideSelect)guideSelect.value=curatorForm;
-  const speakingGuide=()=>guides[curatorForm==='devil'?1:0];
+  const speakingGuide=()=>guides.filter(g=>g.formId===curatorForm)
+    .sort((a,b)=>Math.hypot(a.state.x-player.x,
+      (a.elevation||0)-player.elevation)-
+      Math.hypot(b.state.x-player.x,(b.elevation||0)-player.elevation))[0];
   let keys={left:false,right:false};
   let guideTextUntil=0;
   // Synchronized interactions happen only when both guides and the player are still.
@@ -112,22 +116,21 @@
    function guideStop(index,visit){
     const count=buildings.length;
     if(!count){
-      // Even an empty world has a tiny plaza to explore.
-      return {x:clamp(390+(visit%4-1.5)*210,45,worldEnd-45),buildingIndex:-1};
+      return {x:clamp(180+((index*113+visit*173)%980),45,worldEnd-45),
+        floor:0,elevation:0,buildingIndex:-1};
     }
-    const indexWithin=count===1?0:((visit+index*(count>1?1:0))%count);
+    const indexWithin=(visit+index)%count;
     const b=buildings[indexWithin];
-    // Slightly different stopping places at a real building entrance.
-    const meetup=visit>0&&visit%5===4;
-    const offset=meetup?(index===0?-35:35):
-      (index===0?-1:1)*(visit%2===0?103:168);
-    return {x:clamp(entrance(b)+offset,35,worldEnd-35),buildingIndex:indexWithin};
+    const variation=(index%4-1.5)*35+(visit%2?40:-40);
+    return {x:clamp(entrance(b)+variation,45,worldEnd-45),
+      floor:b.floor,elevation:b.floor*FLOOR_RISE,buildingIndex:indexWithin};
   }
   function beginGuidePatrol(guide,index){
     const brain=guide.brain;
     const stop=guideStop(index,brain.visits++);
     brain.mode='patrol';
     brain.targetX=stop.x;
+    brain.targetElevation=stop.elevation;
     brain.buildingIndex=stop.buildingIndex;
     brain.stay=0;
     brain.greetWait=Math.max(brain.greetWait,3);
@@ -136,13 +139,15 @@
     duetWait=7;
     for(const [index,guide] of guides.entries()){
       const spot=guideStop(index,index);
-      const x=clamp(spot.x+(index===0?-50:50),20,worldEnd-20);
+      const x=clamp(spot.x+(index%2===0?-35:35),20,worldEnd-20);
       curatorMotion.reset(guide.state,x);
+      guide.elevation=spot.elevation;
       guide.state.y=-curatorHeight(guide.formId)*.35;
-      guide.state.facing=index===0?1:-1;
+      guide.state.facing=index%2===0?1:-1;
       guide.state.turn=guide.state.facing;
       guide.state.gestureWait=1.8+index*1.1;
       Object.assign(guide.brain,{mode:'present',targetX:spot.x,
+        targetElevation:spot.elevation,
         buildingIndex:spot.buildingIndex,visits:index+1,
         stay:3.5+index*1.5,meetWait:3+index*3,greetWait:5,restCount:0});
     }
@@ -154,8 +159,11 @@
     for(const [index,guide] of guides.entries()){
       const brain=guide.brain;
       brain.greetWait=Math.max(0,brain.greetWait-dt);
-      const distance=Math.abs(guide.state.x-brain.targetX);
-      if(brain.mode==='patrol'&&distance<18&&Math.abs(guide.state.speed)<42){
+      guide.elevation+=(brain.targetElevation-guide.elevation)*
+        Math.min(1,dt*(guide.variant===3?1.2:1.6));
+      const distance=Math.hypot(guide.state.x-brain.targetX,
+        guide.elevation-brain.targetElevation);
+      if(brain.mode==='patrol'&&distance<22&&Math.abs(guide.state.speed)<42){
         brain.mode=brain.visits%3===0?'rest':'present';
         brain.stay=(brain.mode==='rest'?2.8:4.2)+
           ((brain.visits+index)%3)*.85;
@@ -163,7 +171,7 @@
         // effect. Avoid interrupting an action already in progress.
         if(!reduceMotion.matches&&!guide.state.gesture){
           const theme=buildings[brain.buildingIndex]?.style;
-          const action=index===0
+          const action=guide.formId==='angel'
             ?(theme==='castle'?'surprise':theme==='cat'?'shy':
               brain.mode==='rest'?'hair':'wave')
             :(theme==='arena'?'cheer':theme==='tower'?'surprise':
@@ -179,13 +187,13 @@
         dt,player,limit:worldEnd,gap:curatorGap(),
         height:curatorHeight(guide.formId),reduced:reduceMotion.matches,
         targetX:brain.targetX,formId:guide.formId,
-        hovering:true,roaming:true,hoverSide:index===0?-1:1,
-        floatHeight:relaxing?.27:.62,floatBob:index===0?3.6:4.8,
+        hovering:true,roaming:true,hoverSide:index%2===0?-1:1,
+        floatHeight:relaxing?.27:.62,floatBob:guide.formId==='angel'?3.6:4.8,
         allowHop:false,jumpDelay:0
       });
       if(visitorOutside&&relaxing&&brain.buildingIndex>=0&&brain.greetWait===0
         &&player.onGround&&Math.abs(player.vx)<35
-        &&Math.abs(player.x-guide.state.x)<105){
+        &&Math.abs(player.x-guide.state.x)<105&&onSameTerrace(guide)){
         const building=buildings[brain.buildingIndex];
         if(building){
           brain.greetWait=11;
@@ -194,17 +202,20 @@
           announce(building.game.title+' · '+
             (building.game.tagline||'이 작품을 구경해 보세요!'),4.8);
           if(!reduceMotion.matches&&!guide.state.gesture)
-            curatorMotion.play(guide.state,index===0?'wave':'beckon');
+            curatorMotion.play(guide.state,guide.formId==='angel'?'wave':'beckon');
         }
       }
     }
     // Their interaction happens because their independent patrols crossed,
     // not because the user stood still next to two bodyguards.
-    const [nong,bbang]=guides;
-    const together=Math.abs(nong.state.x-bbang.state.x)<110&&
-      guides.every(g=>g.brain.mode!=='patrol'&&
-        Math.abs(g.state.speed)<38&&!g.state.gesture);
-    if(together&&!reduceMotion.matches){
+    const nong=guides.find(g=>g.formId==='angel'&&g.brain.mode!=='patrol'&&
+      !g.state.gesture&&Math.abs(g.state.speed)<38);
+    const bbang=nong&&guides.find(g=>g.formId==='devil'&&
+      g.brain.mode!=='patrol'&&!g.state.gesture&&
+      Math.abs(g.state.speed)<38&&
+      Math.abs(nong.state.x-g.state.x)<105&&
+      Math.abs(nong.elevation-g.elevation)<75);
+    if(nong&&bbang&&!reduceMotion.matches){
       duetWait=Math.max(0,duetWait-dt);
       if(duetWait===0){
         const action=['pairWave','pairShy','pairCheer'][duetIndex++%3];
@@ -543,11 +554,11 @@
     const x=(e.clientX-bounds.left)/LOGICAL_PIXEL_SIZE+camera;
     const tapY=(e.clientY-bounds.top)/LOGICAL_PIXEL_SIZE;
     // Tap either character to play its next hand-drawn expression or pose.
-    if(!reduceMotion.matches){
-      const guide=guides.find(({formId,state})=>
+    if(!reduceMotion.matches&&!inRoom()){
+      const guide=guides.find(({formId,state,elevation})=>
         Math.abs(x-state.x)<curatorHeight(formId)*.45&&
-        tapY>groundY+state.y-curatorHeight(formId)*1.12&&
-        tapY<groundY+state.y+8);
+        tapY>groundY-elevation-cameraY+state.y-curatorHeight(formId)*1.12&&
+        tapY<groundY-elevation-cameraY+state.y+8);
       if(guide){
         curatorForm=guide.formId;
         if(guideSelect)guideSelect.value=curatorForm;
@@ -638,7 +649,7 @@
     const maxWidth=W<620?164:224;
     const facingOut=guide.state.x<player.x?-1:1;
     const preferredSide=facingOut<0?'left':'right';
-    const other=guides[guide===guides[0]?1:0];
+    const other=guides.find(g=>g!==guide&&g.formId!==guide.formId) || guides[0];
     const outwardDistance=(other.state.x-guide.state.x)*facingOut;
     const preferredSpace=preferredSide==='left'?leftSpace:rightSpace;
     const otherSpace=preferredSide==='left'?rightSpace:leftSpace;
@@ -785,8 +796,9 @@
         guideBubbleVisible:!guideBubble.hidden,pixelArtReady:scenes.ready(nearest<0?(buildings[0]?.style||'studio'):buildings[nearest].style),
         renderDensity:LOGICAL_PIXEL_SIZE,curatorArtLoaded:curatorMotion.ready(),curatorHdAtlasReady:curatorMotion.ready(),
         curatorY:curator.y,curatorMode:curator.mode,curatorAffection:curator.affection,curatorForm,
-        guides:guides.map(({formId,state,brain})=>({formId,x:state.x,y:state.y,
-          targetX:brain.targetX,buildingIndex:brain.buildingIndex,
+        guides:guides.map(({formId,variant,elevation,state,brain})=>({formId,variant,elevation,x:state.x,y:state.y,
+          targetX:brain.targetX,targetElevation:brain.targetElevation,
+          buildingIndex:brain.buildingIndex,
           mode:brain.mode,hovering:state.hovering===true,
           motion:state.gesture?.name||(state.hovering?'hover':Math.abs(state.speed)>24?'walk':'idle')}))};
     },
