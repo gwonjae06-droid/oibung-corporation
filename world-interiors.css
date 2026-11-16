@@ -197,3 +197,13 @@ html[data-gallery-mode="dark"] #games #world-guide-bubble{--guide-paper:#efe5dd}
  }
  #games .world-info-cover img{max-height:110px}
 }
+
+#games .world-exhibit-voices{display:grid;gap:6px;margin:.35rem 0 .7rem}
+#games .world-exhibit-voices:empty{display:none}
+#games .world-exhibit-voice{
+  display:grid;grid-template-columns:2em 1fr;gap:5px;margin:0;padding:6px 7px;
+  font:500 12px/1.45 system-ui,sans-serif;background:#ffffff0c;border-left:2px solid #a5bedb;
+}
+#games .world-exhibit-voice strong{color:#bcd6f3}
+#games .world-exhibit-voice[data-speaker="bbang"]{border-color:#d39e9c}
+#games .world-exhibit-voice[data-speaker="bbang"] strong{color:#f4bcb7}

@@ -8,6 +8,37 @@
   const ctx = canvas.getContext('2d', { alpha: false });
   const signs = document.getElementById('world-signs');
   const counter = document.getElementById('world-count');
+  const tourButton=document.createElement('button');
+  tourButton.type='button';
+  tourButton.className='world-tour-toggle';
+  tourButton.textContent='층별 관람';
+  tourButton.setAttribute('aria-expanded','false');
+  tourButton.setAttribute('aria-controls','world-tour');
+  const tour=document.createElement('section');
+  tour.id='world-tour';
+  tour.className='world-tour';
+  tour.setAttribute('aria-label','층별 전시 안내');
+  tour.hidden=true;
+  const stairHint=document.createElement('div');
+  stairHint.className='world-stair-hint';
+  stairHint.hidden=true;
+  stage.append(tourButton,tour,stairHint);
+  function setTour(open,focus=false){
+    tour.hidden=!open;
+    tourButton.setAttribute('aria-expanded',String(open));
+    if(open&&focus)tour.querySelector('button')?.focus({preventScroll:true});
+  }
+  tourButton.addEventListener('click',()=>setTour(tour.hidden,true));
+  tour.addEventListener('keydown',event=>{
+    if(event.key==='Escape'){
+      event.stopPropagation();
+      setTour(false);
+      tourButton.focus({preventScroll:true});
+    }
+  });
+  stage.addEventListener('pointerdown',event=>{
+    if(!tour.hidden&&!tour.contains(event.target)&&event.target!==tourButton)setTour(false);
+  });
   const nearbyLabel = document.getElementById('world-nearby');
   const guideBubble = document.getElementById('world-guide-bubble');
   const guideSelect = document.getElementById('world-guide-select');
@@ -142,8 +173,31 @@
     }
   }
 
+  function rebuildTour(){
+    tour.replaceChildren();
+    if(!buildings.length){tour.textContent='등록된 전시가 없습니다.';return;}
+    for(let level=0;level<floorCount;level++){
+      const row=document.createElement('section');
+      const label=document.createElement('h3');
+      label.textContent=(level+1)+'층';
+      row.append(label);
+      for(const building of buildings.filter(item=>item.floor===level)){
+        const button=document.createElement('button');
+        button.type='button';
+        button.textContent=building.game.title;
+        button.addEventListener('click',()=>{
+          setTour(false);
+          warp(building.index);
+          enter();
+        });
+        row.append(button);
+      }
+      tour.append(row);
+    }
+  }
+
   function canRun(){
-    return !document.hidden&&window.OIBUNG_CURRENT_VIEW!=='reviews'&&
+    return tour.hidden&&!document.hidden&&window.OIBUNG_CURRENT_VIEW!=='reviews'&&
       !world.classList.contains('world-menu-open')&&
       !document.getElementById('world-all-games')?.open&&
       !document.querySelector('dialog[open]')&&
@@ -180,7 +234,8 @@
         const index=buildings.length;
         const floor=Math.floor(number/BUILDINGS_PER_FLOOR);
         const order=number%BUILDINGS_PER_FLOOR;
-        const progress=order===0?280:665;
+        const soloSummit=number===games.length-1&&order===0&&floor>0;
+        const progress=soloSummit?425:order===0?280:665;
         const route=floor*ROUTE_SPAN+progress;
         const x=(floor%2===0?80+progress:FLOOR_WIDTH-80-progress)-BUILDING_WIDTH/2;
         buildings.push({game,index,x,width:BUILDING_WIDTH,style:themeOf(game),
@@ -191,6 +246,9 @@
     floorCount=Math.max(1,Math.ceil(buildings.length/BUILDINGS_PER_FLOOR));
     maxRoute=Math.max(0,(floorCount-1)*ROUTE_SPAN+
       ROUTE_SPAN-STAIR_SPAN-18);
+    const summit=buildings.at(-1);
+    if(summit?.floor>0&&buildings.at(-2)?.floor!==summit.floor)maxRoute=summit.route+205;
+    rebuildTour();
     worldEnd=FLOOR_WIDTH;
     const replacement=oldAnchor&&buildings.find(b=>b.game.id===oldAnchor.game.id);
     if(wasInterior&&interiorOrigin&&replacement){
@@ -327,7 +385,16 @@
   }
   function updateNearby(force=false){
     updateDistrict();
-    if(inRoom()){
+    const indoors=inRoom();
+    tourButton.hidden=indoors;
+    const ascending=player.level<floorCount-1&&
+      player.route-player.level*ROUTE_SPAN>=ROUTE_SPAN-STAIR_SPAN-170;
+    const summit=player.level===floorCount-1&&player.route>maxRoute-75&&floorCount>1;
+    stairHint.hidden=indoors||(!ascending&&!summit);
+    if(!stairHint.hidden)stairHint.textContent=ascending
+      ?(player.level%2===0?'→ ':'← ')+(player.level+2)+'층 계단'
+      :'전시 거리 끝 · 층별 관람에서 다른 작품 보기';
+    if(indoors){
       const object=room().nearest(player.x);
       const id=object?.id||null;
       if(id!==previousInteriorObject||force){
@@ -390,8 +457,10 @@
     const origin={playerX:player.x,route:player.route,camera,cameraY};
     if(!room().enter(b.game,b.style,origin))return false;
     interiorOrigin=origin;
-    curatorMotion.reset(interiorGuide,room().host()?.x||0);
-    interiorGuide.gestureWait=.5;
+    for(const host of room().hosts()){
+      const guide=curatorMotion.reset(interiorGuides[host.formId],host.x);
+      guide.gestureWait=host.formId==='angel'?.36:1.05;
+    }
     player.x=room().spawnX();
     camera=clamp(player.x-W*.49,0,Math.max(0,room().roomWidth()-W));
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
@@ -606,10 +675,12 @@
     curatorMotion.draw(ctx,curator,{center,groundY:guideGround,height,
       elapsed,reduced:reduceMotion.matches,formId,theme});
   }
-  const interiorGuide=curatorMotion.reset({},0);
-  function drawInteriorGuide(){
-    const host=room().host();
-    if(!host)return;
+  const interiorGuides={
+    angel:curatorMotion.reset({},0),
+    devil:curatorMotion.reset({},0)
+  };
+  function drawInteriorGuide(host){
+    const interiorGuide=interiorGuides[host.formId];
     const center=host.x-camera;
     if(center< -100||center>W+100)return;
     interiorGuide.facing=player.x<host.x?-1:1;
@@ -625,7 +696,7 @@
     if(inRoom())room().draw(ctx,view);
     else scenes.drawTerraces(ctx,{...view,cameraY,buildings,districts,
       floorCount,floorWidth:FLOOR_WIDTH,rise:FLOOR_RISE,elevation:player.elevation,
-      stairSpan:STAIR_SPAN});
+      stairSpan:STAIR_SPAN,summitEnd:routeInfo(maxRoute).x});
     const height=Math.round(clamp(H*.185,63,157));
     const playerGround=inRoom()?groundY:groundY-player.elevation-cameraY;
     footShadow(player.x,playerGround,Math.max(9,height*.12),player.onGround?.43:.2);
@@ -638,7 +709,7 @@
     for(const guide of locals)if(guide.state.x<player.x)drawCurator(guide);
     drawPlayer();
     for(const guide of locals)if(guide.state.x>=player.x)drawCurator(guide);
-    if(inRoom())drawInteriorGuide();
+    if(inRoom())for(const host of room().hosts())drawInteriorGuide(host);
     if(inRoom()){
       guideBubble.hidden=true;
       room().drawForeground(ctx,view);
@@ -688,8 +759,8 @@
     }
     player.walk=Math.abs(player.vx)>10?1:0;
     if(inRoom()){
-      const host=room().host();
-      if(host){
+      for(const host of room().hosts()){
+        const interiorGuide=interiorGuides[host.formId];
         interiorGuide.x=host.x;
         curatorMotion.update(interiorGuide,{dt,player,limit:room().roomWidth(),
           gap:120,height:curatorHeight(host.formId),reduced:reduceMotion.matches,

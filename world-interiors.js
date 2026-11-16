@@ -44,16 +44,22 @@
     'oibung-arena':'assets/world-snow/preview-arena.jpg'
   };
   const guideLines={
-    castle:'농이에요. 벽에 걸린 보스전부터 보세요. 공격을 피한 뒤 반격할 틈을 찾는 게임이에요.',
-    arena:'빵이에요. 공은 알아서 움직여요. 벽을 튕기며 모은 기세가 차면 고유 스킬이 발동해요.',
-    tactics:'농이에요. 어느 거점을 먼저 점령할지 생각해 보세요. 거점에서 얻는 자원으로 다음 턴을 준비해요.',
-    duel:'빵이에요. 상대가 다음 턴에 뭘 쓸지 예상하고 기술을 골라 보세요.'
+    castle:['석벽에 남은 전투 장면을 보세요. 저 보스가 오든링의 상대예요.','적의 공격을 끝까지 보고, 피한 뒤 생기는 반격 타이밍을 찾아보세요.'],
+    arena:['두 파이터가 벽을 튕기며 부딪히는 실제 대전 화면이에요.','공은 자동으로 움직여요. 기세가 차면 각 파이터의 고유 기술이 발동해요.'],
+    tactics:['중앙 작전 지도에서 대학별 부대와 거점의 위치를 살펴보세요.','거점을 확보해 얻는 자원으로 다음 턴을 준비해 보세요.'],
+    duel:['교차한 검 아래에서 결투 전시를 볼 수 있어요.','상대가 다음 턴에 뭘 쓸지 예상하고 기술을 골라 보세요.'],
+    corp:['Fur.corp 본사에 오신 걸 환영해요. 회사와 등장인물들의 이야기를 다룬 작품이에요.','Fur.corp는 로그인 후 플레이할 수 있어요. 등록된 계정으로 입장해 주세요.']
   };
-  function host(){
-    const stop=stations.find(station=>station.id==='guide');
-    const formId=['arena','duel','corp'].includes(state.style)?'devil':'angel';
-    return stop?{x:stop.x+76,formId,theme:state.style,name:formId==='devil'?'빵':'농'}:null;
+  function hosts(){
+    const intro=stations.find(station=>station.id==='intro');
+    const guide=stations.find(station=>station.id==='guide');
+    if(!intro||!guide)return [];
+    return [
+      {x:intro.x+145,formId:'angel',theme:state.style,name:'농'},
+      {x:guide.x+76,formId:'devil',theme:state.style,name:'빵'}
+    ];
   }
+  const host=()=>hosts()[1];
   let mediaRevision=0;
   let width=1850;
   let stations=[];
@@ -129,6 +135,8 @@
   const coverCaption=element('figcaption');
   cover.append(coverImage,coverCaption);
   const details=element('div','world-info-details');details.append(desc);
+  const voices=element('div','world-exhibit-voices');
+  details.append(voices);
   const route=element('ol','world-info-route');details.append(route);
   body.append(details,cover);
   const actions=element('div','world-info-actions');
@@ -199,10 +207,20 @@
     const intro=Object.hasOwn(introductions,game.id)?introductions[game.id]:game.tagline||game.description;
     kicker.textContent=kind==='intro'?[game.genre||roomName,status].filter(Boolean).join(' · '):currentStop.label+' · '+roomName;
     title.textContent=game.title;
-    nav.hidden=kind==='intro';
+    nav.hidden=false;
     for(const [id,tab] of tabs)tab.setAttribute('aria-pressed',String(id===kind));
-    desc.textContent=kind==='intro'?(intro||welcome):kind==='guide'?(guideLines[state.style]||((host()?.name||'농')+'이에요. '+welcome))
+    desc.textContent=kind==='intro'?(intro||welcome):kind==='guide'?welcome
       :'등록된 스크린샷과 플레이 후기는 작품 기록에서 볼 수 있어요.';
+    voices.replaceChildren();
+    const remarks=guideLines[state.style]||[welcome,'작품 기록에서 스크린샷과 후기를 볼 수 있어요.'];
+    if(kind!=='gallery'){
+      for(const [index,name] of ['농','빵'].entries()){
+        const note=element('p','world-exhibit-voice');
+        note.dataset.speaker=index?'bbang':'nong';
+        note.append(element('strong','',name),element('span','',remarks[index]));
+        voices.append(note);
+      }
+    }
     route.hidden=kind!=='guide';
     route.replaceChildren();
     if(kind==='guide'){
@@ -214,7 +232,7 @@
     actions.replaceChildren();
     const url=safeUrl(game.playUrl);
     if(url){
-      const launch=element('a','','게임 시작');launch.href=url;launch.target='_blank';launch.rel='noopener noreferrer';
+      const launch=element('a','',state.style==='corp'?'Fur.corp 열기':'게임 시작');launch.href=url;launch.target='_blank';launch.rel='noopener noreferrer';
       actions.append(launch);
     }
     const detailButton=button('',kind==='gallery'?'스크린샷·후기 열기':'자세히 보기');
@@ -242,7 +260,7 @@
       const noLaunch=id==='portal'&&!canLaunch;
       return {id,x:Math.round(ratio*width),ratio,height,label,
         role:noLaunch?'작품 상세':role,
-        action:id==='guide'?(['arena','duel','corp'].includes(state.style)?'빵에게 설명 듣기':'농에게 설명 듣기'):noLaunch?'작품 상세 보기':action,
+        action:id==='guide'?'빵에게 설명 듣기':noLaunch?'작품 상세 보기':action,
         hint:noLaunch?'이 작품의 등록 정보와 설명을 볼 수 있어요.':hint};
     });
     for(const [i,stop] of stations.entries()){
@@ -328,7 +346,7 @@
     }
   },true);
   window.OIBUNG_INTERIORS={
-    enter,leave,interact,nearest,resize,host,draw:drawArt,drawForeground,showInfo,
+    enter,leave,interact,nearest,resize,hosts,host,draw:drawArt,drawForeground,showInfo,
     isActive:()=>state.active,isInfoOpen:()=>!sheet.hidden,
     blocksMovement:()=>!sheet.hidden&&state.selected!=='intro',
     currentGame:()=>state.game,theme:()=>state.style,

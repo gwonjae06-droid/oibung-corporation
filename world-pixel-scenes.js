@@ -137,7 +137,7 @@
   // A narrow zig-zag village stacked upwards. Existing high-quality
   // facade paintings are reused: they are NOT replaced by box buildings.
   function drawTerraces(ctx,{W,H,groundY,camera,cameraY,buildings,
-      floorCount,floorWidth,rise,stairSpan,elevation}) {
+      floorCount,floorWidth,rise,stairSpan,elevation,summitEnd}) {
     ctx.fillStyle='#a9badc';
     ctx.fillRect(0,0,W,H);
     const plaza=load('plaza'),stone=terraceAsset('world-terrace-stone'),
@@ -184,9 +184,18 @@
       }else drawStone(ctx,stone,-extra,0,extra+50,bankHeight);
       ctx.restore();
     }
+    const topFloor=floorCount-1;
+    const summitPlaza=floorCount>1&&buildings.filter(b=>b.floor===topFloor).length===1;
     for(const floor of levels){
       const y=groundY-floor*rise+2;
-      const left=Math.min(-camera,0),width=Math.max(W-left,floorWidth);
+      let left=Math.min(-camera,0),width=Math.max(W-left,floorWidth);
+      const isSummit=summitPlaza&&floor===topFloor;
+      const rightward=floor%2===0;
+      if(isSummit){
+        const end=summitEnd+(rightward?66:-66)-camera;
+        if(rightward)width=end-left;
+        else {width+=left-end;left=end;}
+      }
       const depth=floor===0?Math.max(90,H-y+cameraY):48;
       drawStone(ctx,stone,left,y,width,depth);
       ctx.save();
@@ -196,6 +205,17 @@
       ctx.restore();
       ctx.fillStyle='#dfeaf1';
       ctx.fillRect(left,y,width,3);
+      if(isSummit){
+        const lookout=terraceAsset('world-summit-overlook');
+        if(lookout){
+          const artW=444,artH=Math.round(artW*lookout.naturalHeight/lookout.naturalWidth);
+          ctx.save();
+          ctx.translate(summitEnd-camera+(rightward?66:-66),y+10);
+          if(!rightward)ctx.scale(-1,1);
+          ctx.drawImage(lookout,-artW,-artH,artW,artH);
+          ctx.restore();
+        }
+      }
     }
     for(const b of buildings){
       if(!levels.includes(b.floor))continue;

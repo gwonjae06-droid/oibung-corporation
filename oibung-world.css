@@ -294,3 +294,30 @@ html[data-gallery-mode="dark"] #games .world-all-games>summary{background:#34473
  #game-dialog[data-world-theme] .world-interior-crest{width:35px;height:35px;flex-basis:35px;font-size:17px;border-width:2px}
  #game-dialog .world-interior-pixels{display:none}
 }
+
+#games .world-tour-toggle,#games .world-stair-hint{
+  position:absolute;left:14px;z-index:9;
+  border:1px solid #cdb88c;background:#253342;color:#fff0cf;
+  border-radius:3px;font:700 12px/1.35 system-ui,sans-serif;padding:7px 10px;
+}
+#games .world-tour-toggle{top:58px;cursor:pointer}
+#games .world-tour-toggle:focus-visible,#games .world-tour button:focus-visible{outline:2px solid #f6d890;outline-offset:2px}
+#games .world-tour{
+  position:absolute;z-index:11;top:96px;left:14px;width:min(282px,calc(100% - 28px));
+  max-height:calc(100% - 155px);overflow:auto;box-sizing:border-box;
+  display:grid;gap:9px;padding:11px;background:#223040;color:#fff0cf;
+  border:1px solid #cdb88c;box-shadow:0 6px 16px #1017286b;
+}
+#games .world-tour section{display:grid;gap:4px}
+#games .world-tour h3{font:800 12px/1.35 system-ui,sans-serif;color:#edce93;margin:0 0 3px}
+#games .world-tour button{
+  text-align:left;background:#364757;border:1px solid #5c6971;color:#fff7e7;
+  border-radius:2px;padding:8px 10px;cursor:pointer;font:650 13px/1.35 system-ui,sans-serif;
+}
+#games .world-tour button:hover{background:#465b6c}
+#games .world-stair-hint{top:58px;left:auto;right:14px;pointer-events:none;z-index:5}
+#games .world-tour[hidden],#games .world-tour-toggle[hidden],#games .world-stair-hint[hidden]{display:none!important}
+@media(max-width:520px){
+  #games .world-tour-toggle,#games .world-stair-hint{top:49px}
+  #games .world-tour{top:86px}
+}

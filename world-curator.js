@@ -811,6 +811,31 @@
   exhibitCostumes.angel.src='assets/world-pixel/exhibit-nong.png';
   exhibitCostumes.devil.src='assets/world-pixel/exhibit-bbang.png';
 
+  // The authored cels stay opaque. Each segment shares a continuous x
+  // offset with its neighbour, while the hips and both soles remain pinned.
+  function drawExhibit(ctx,image,column,elapsed,reduced,devil,progress,gesture){
+    const smooth=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
+    const action=!reduced&&gesture
+      ?smooth(progress/.25)*smooth((1-progress)/.29):0;
+    const pose=action>.45?1:0;
+    const clock=elapsed+(devil?1.1:0)+column*.31;
+    const breath=reduced?0:Math.sin(clock*2.35);
+    const emphasis=devil?Math.sin(action*Math.PI*.5)*3.6:
+      Math.sin(progress*Math.PI*6)*action*1.45;
+    const rows=[0,devil?47:54,92,123,frameHeight];
+    const offsets=[breath*.85+emphasis,breath*.72+emphasis*.72,
+      breath*.42+emphasis*.28,0,0];
+    for(let index=0;index<rows.length-1;index++){
+      const from=rows[index],height=rows[index+1]-from;
+      const slope=(offsets[index+1]-offsets[index])/height;
+      ctx.save();
+      ctx.transform(1,0,slope,1,offsets[index]-slope*from,0);
+      ctx.drawImage(image,column*frameWidth,pose*frameHeight+from,
+        frameWidth,height,0,from,frameWidth,height);
+      ctx.restore();
+    }
+  }
+
   function draw(ctx,guide,{center,groundY,height,elapsed,reduced,formId,variant=0,theme}) {
     if(!ready(formId))return false;
     const form=formFor(formId);
@@ -841,11 +866,10 @@
     // Integer facing flip: do not squeeze the complete sprite through width 0.
     ctx.scale(scale*(guide.facing<0?-1:1),scale);
     ctx.translate(-origin,-ground);
-    drawWings(ctx,form,shape,reduced?0:guide.wingAngle);
+    const wingSwing=reduced?0:dressed?Math.sin(elapsed*(form===forms.devil?3.2:4.1))*.095:guide.wingAngle;
+    drawWings(ctx,form,shape,wingSwing);
     if(dressed){
-      const greet=gesture&&progress>=.19&&progress<.79;
-      ctx.drawImage(exhibit,column*frameWidth,greet?frameHeight:0,frameWidth,frameHeight,
-        0,0,frameWidth,frameHeight);
+      drawExhibit(ctx,exhibit,column,elapsed,reduced,form===forms.devil,progress,gesture);
       drawCrown(ctx,form,(form===forms.devil?devilShapes:winterShapes)[0]);
     }else if(useCel){
       // Full illustrated, opaque pose: no sliding, folding, shearing, or
