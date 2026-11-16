@@ -68,46 +68,31 @@
   let guideTextUntil=0;
   // Synchronized interactions happen only when both guides and the player are still.
   let duetWait=8.5,duetIndex=0;
-  // Preserve an organic walking order; reconsider who leads only on a real
-  // change of travel direction, never on every animation frame.
-  let leadGuide=0,lastTrailDirection=1;
+  // Nong always keeps the left-hand place; Bbang keeps the right-hand place.
   let didInitialSpawn=false;
   let previousInteriorObject=null;
   let interiorOrigin=null;
 
   function guideSlots(limit){
-    // A relaxed little walking group, not symmetrical guards. Both characters
-    // normally follow BEHIND the direction of travel, one a step behind the
-    // other. At rest they close in rather than maintaining rigid escort gaps.
-    const travelling=Math.abs(player.vx)>35;
-    const direction=player.direction<0?-1:1;
-    const indoor=inRoom();
-    const size=clamp(H/510,.8,1.2);
-    const factor=size*(indoor?.82:1);
-    const near=Math.max(38,Math.round((travelling?69:53)*factor));
-    const separation=Math.max(35,Math.round((travelling?60:49)*factor));
-    const slots=[
-      player.x-direction*near,
-      player.x-direction*(near+separation)
+    // Shoulder-close guardian spirits, not marching followers. Keep their
+    // LEFT / RIGHT identities even when the player reverses direction.
+    const distance=Math.round(clamp(H*.16,54,86)*(inRoom()?.92:1));
+    const min=4,max=Math.max(min+20,limit-4);
+    return [
+      clamp(player.x-distance,min,max),
+      clamp(player.x+distance,min,max)
     ];
-    // Shift the complete pair at the level boundaries instead of clamping
-    // both to the same coordinate (stacked sprites / instant role reversal).
-    const minEdge=20,maxEdge=Math.max(minEdge+80,limit-20);
-    const left=Math.min(...slots),right=Math.max(...slots);
-    let shift=left<minEdge?minEdge-left:0;
-    if(right+shift>maxEdge)shift+=maxEdge-right-shift;
-    return slots.map(x=>clamp(x+shift,minEdge,maxEdge));
   }
   function resetGuides(positions=guideSlots(inRoom()?room().roomWidth():worldEnd)){
     duetWait=8.5;
-    leadGuide=0;
-    lastTrailDirection=player.direction<0?-1:1;
     for(const [index,guide] of guides.entries()){
-      const facing=player.direction<0?-1:1;
+      const side=index===0?-1:1;
       curatorMotion.reset(guide.state,positions[index]);
-      guide.state.facing=facing;
-      guide.state.turn=facing;
-      guide.state.side=-facing;
+      guide.state.side=side;
+      guide.state.hoverSide=side;
+      guide.state.y=-curatorHeight(guide.formId)*.76;
+      guide.state.facing=-side; // Both look toward the visitor.
+      guide.state.turn=-side;
       guide.state.gestureWait+=index*.58;
     }
   }
@@ -531,7 +516,9 @@
       if(!guideBubble.hidden)positionDialogue(center,top,width,height,guide);
     }
     if(!visible)return;
-    footShadow(curator.x,groundY,Math.max(9,height*.115),.44+curator.y*.004);
+    // A light shadow on the ground reinforces that the guide is airborne.
+    footShadow(curator.x,groundY,Math.max(7,height*.105),
+      clamp(.21+curator.y*.0012,.10,.21));
     curatorMotion.draw(ctx,curator,{center,groundY,height,elapsed,reduced:reduceMotion.matches,formId});
   }
   function draw(){
@@ -566,22 +553,16 @@
     }
     player.walk=Math.abs(player.vx)>10?1:0;
     const slots=guideSlots(limit);
-    // On an intentional U-turn, the character already nearer the new lead
-    // position may naturally take the front of the group. No teleport or
-    // artificial position swapping is performed.
-    const direction=player.direction<0?-1:1;
-    if(Math.abs(player.vx)>70&&direction!==lastTrailDirection){
-      lastTrailDirection=direction;
-      const other=1-leadGuide;
-      if(Math.abs(guides[other].state.x-slots[0])+12<
-         Math.abs(guides[leadGuide].state.x-slots[0]))leadGuide=other;
-    }
-    const speaker=speakingGuide();
     for(const [index,guide] of guides.entries()){
-      const target=index===leadGuide?slots[0]:slots[1];
-      curatorMotion.update(guide.state,{dt,player,limit,gap:curatorGap(),height:curatorHeight(guide.formId),
-        reduced:reduceMotion.matches,targetX:target,allowHop:guide===speaker,
-        jumpDelay:.11+index*.07,formId:guide.formId});
+      const side=index===0?-1:1;
+      curatorMotion.update(guide.state,{
+        dt,player,limit,gap:curatorGap(),height:curatorHeight(guide.formId),
+        reduced:reduceMotion.matches,formId:guide.formId,
+        targetX:slots[index],hovering:true,hoverSide:side,
+        floatHeight:guide.formId==='angel'?.78:.69,
+        floatBob:guide.formId==='angel'?4.8:5.5,
+        allowHop:false,jumpDelay:0
+      });
     }
     const canDuet=!reduceMotion.matches&&player.onGround&&Math.abs(player.vx)<32&&
       guides.every(({state})=>state.mode==='follow'&&!state.flight&&
@@ -635,8 +616,9 @@
         renderDensity:LOGICAL_PIXEL_SIZE,curatorArtLoaded:curatorMotion.ready(),curatorHdAtlasReady:curatorMotion.ready(),
         curatorY:curator.y,curatorMode:curator.mode,curatorAffection:curator.affection,curatorForm,
         guides:guides.map(({formId,state},index)=>({formId,x:state.x,y:state.y,
-          targetX:guideSlots(inRoom()?room().roomWidth():worldEnd)[index===leadGuide?0:1],
-          motion:state.gesture?.name||(Math.abs(state.speed)>24?'walk':'idle')}))};
+          targetX:guideSlots(inRoom()?room().roomWidth():worldEnd)[index],
+          hovering:state.hovering===true,
+          motion:state.gesture?.name||(state.hovering?'hover':Math.abs(state.speed)>24?'walk':'idle')}))};
     },
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
     enter,leaveInterior,approachInterior,refresh:rebuild,jump,movement
