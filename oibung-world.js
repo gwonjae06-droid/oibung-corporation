@@ -89,7 +89,9 @@
     const indexWithin=count===1?0:((visit+index*(count>1?1:0))%count);
     const b=buildings[indexWithin];
     // Slightly different stopping places at a real building entrance.
-    const offset=(index===0?-1:1)*(visit%2===0?103:168);
+    const meetup=visit>0&&visit%5===4;
+    const offset=meetup?(index===0?-35:35):
+      (index===0?-1:1)*(visit%2===0?103:168);
     return {x:clamp(entrance(b)+offset,35,worldEnd-35),buildingIndex:indexWithin};
   }
   function beginGuidePatrol(guide,index){
@@ -117,7 +119,9 @@
     }
   }
   function updateGuides(dt){
-    if(inRoom())return; // The two residents remain OUTSIDE, not player pets.
+    // Continue their lightweight outdoor itinerary even while the visitor is
+    // exploring an interior. Their art is rendered only when outdoors.
+    const visitorOutside=!inRoom();
     for(const [index,guide] of guides.entries()){
       const brain=guide.brain;
       brain.greetWait=Math.max(0,brain.greetWait-dt);
@@ -128,8 +132,15 @@
           ((brain.visits+index)%3)*.85;
         // Greeting is an existing, painted pixel animation—not a scaling
         // effect. Avoid interrupting an action already in progress.
-        if(!reduceMotion.matches&&!guide.state.gesture)
-          curatorMotion.play(guide.state,index===0?'wave':'beckon');
+        if(!reduceMotion.matches&&!guide.state.gesture){
+          const theme=buildings[brain.buildingIndex]?.style;
+          const action=index===0
+            ?(theme==='castle'?'surprise':theme==='cat'?'shy':
+              brain.mode==='rest'?'hair':'wave')
+            :(theme==='arena'?'cheer':theme==='tower'?'surprise':
+              brain.mode==='rest'?'stretch':'beckon');
+          curatorMotion.play(guide.state,action);
+        }
       }else if(brain.mode!=='patrol'){
         brain.stay-=dt;
         if(brain.stay<=0&&!guide.state.gesture)beginGuidePatrol(guide,index);
@@ -143,7 +154,7 @@
         floatHeight:relaxing?.27:.62,floatBob:index===0?3.6:4.8,
         allowHop:false,jumpDelay:0
       });
-      if(relaxing&&brain.buildingIndex>=0&&brain.greetWait===0
+      if(visitorOutside&&relaxing&&brain.buildingIndex>=0&&brain.greetWait===0
         &&player.onGround&&Math.abs(player.vx)<35
         &&Math.abs(player.x-guide.state.x)<105){
         const building=buildings[brain.buildingIndex];
@@ -367,12 +378,13 @@
         nearbyLabel.textContent=g.title+' · '+(g.tagline||g.genre||'친구가 만든 작품');
         interactButton.disabled=false;
         interactButton.textContent='건물 들어가기';
-        if(n!==-1)announce((g.title)+'! '+(g.tagline||'제가 이 작품을 소개해 드릴게요.'),6);
+        // Building information belongs in the nearby label. A character
+        // speech bubble appears only when an actual guide is nearby.
       }else{
         nearbyLabel.textContent=games.length?'←  → 이동해서 마음에 드는 건물을 찾으세요.':'첫 게임이 등록되면 건물이 생깁니다.';
         interactButton.disabled=true;
         interactButton.textContent='입구에 가까이';
-        if(force)announce('여긴 오이붕 월드! 친구들이 만든 게임의 거리를 함께 걸어요.',6);
+        // No disembodied companion dialogue when the visitor is alone.
       }
     }
     if(!games.length)interactButton.disabled=true;
@@ -446,7 +458,9 @@
     curatorForm=guideSelect.value==='devil'?'devil':'angel';
     try{localStorage.setItem('oibung-world-guide',curatorForm);}catch{}
     const form=curatorMotion.formFor(curatorForm);
-    announce(form.name+(curatorForm==='angel'?'이에요. 같이 둘러봐요!':'이야. 어디부터 가 볼까?'));
+    // Selecting a voice never moves or summons the autonomous resident.
+    // The visitor can meet and tap them while exploring their own route.
+    nearbyLabel.textContent=form.name+' 비서는 월드의 건물을 순찰하고 있어요.';
     document.getElementById('world-menu-close')?.click();
     render();
   });
@@ -490,7 +504,7 @@
         const building=buildings[guide.brain.buildingIndex];
         announce(building?building.game.title+' · '+
           (building.game.tagline||'이곳을 안내해 드릴게요.'):
-          (guide.formId==='angel'?'월드를 구경하고 있었어요!':'나랑 같이 둘러볼래?'),4.5);
+          (guide.formId==='angel'?'어떤 작품을 보러 오셨나요?':'이 근처 작품을 구경해 볼래?'),4.5);
         const catalog=guide.formId==='devil'
           ?['beckon','hair','kiss','shy','cheer','pout','surprise','stretch','wave']
           :['wink','hair','kiss','shy','cheer','pout','surprise','stretch','wave'];
