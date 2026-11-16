@@ -179,7 +179,7 @@
           ctx.drawImage(bank,3,Math.round(bank.naturalHeight*.24),
             Math.round(bank.naturalWidth*.19),Math.round(bank.naturalHeight*.61),
             -extra-2,top,extra+50,h);
-          ctx.drawImage(bank,-Math.round(w*.49),top,w,h);
+          ctx.drawImage(bank,-Math.round(w*.43),top,w,h);
         }else drawStone(ctx,stone,-Math.max(160,W-floorWidth),-rise+38,
           Math.max(160,W-floorWidth)+86,rise+65);
         ctx.restore();

@@ -198,7 +198,7 @@
         (interiorOrigin.route-(oldAnchor?.route||0)),0,maxRoute);
     }else if(!wasInterior){
       if(!didInitialSpawn&&buildings.length){
-        setPlayerRoute(Math.max(0,buildings[0].route-105));
+        setPlayerRoute(Math.max(0,buildings[0].route-176));
         didInitialSpawn=true;
       }else if(replacement){
         setPlayerRoute(replacement.route+(player.route-(oldAnchor?.route||0)));
