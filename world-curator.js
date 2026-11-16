@@ -805,8 +805,11 @@
     const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
     const scale=height/standingHeight;
     const cel=celSheets[formId];
-    const row=gesture?celRow[formId][gesture.name]:undefined;
-    const useCel=gesture&&row!==undefined&&cel.complete&&
+    const row=gesture?celRow[formId][gesture.name]:0;
+    // Idle and every action MUST come from the same registered image.
+    // Switching between the Scale3x fallback and the PNG art used to
+    // change facial size and clothing edges on the first gesture frame.
+    const useCel=row!==undefined&&cel.complete&&
       cel.naturalWidth===frameWidth*CEL_COLUMNS&&cel.naturalHeight===frameHeight*CEL_ROWS;
     ctx.save();
     ctx.imageSmoothingEnabled=false;
@@ -820,7 +823,7 @@
     if(useCel){
       // Full illustrated, opaque pose: no sliding, folding, shearing, or
       // automated replacement of pixels around Nong's skirt/Bbang's dress.
-      const column=Math.min(CEL_COLUMNS-1,Math.floor(progress*CEL_COLUMNS));
+      const column=gesture?Math.min(CEL_COLUMNS-1,Math.floor(progress*CEL_COLUMNS)):0;
       ctx.drawImage(cel,column*frameWidth,row*frameHeight,frameWidth,frameHeight,
         0,0,frameWidth,frameHeight);
       drawCrown(ctx,form,(form===forms.devil?devilShapes:winterShapes)[0]);
