@@ -660,39 +660,52 @@
     guideBubble.style.setProperty('--guide-tail-x',Math.round(center-x)+'px');
   }
   function drawCurator(guide){
-    const {state:curator,formId}=guide;
+    const {state:curator,formId,variant}=guide;
     const height=curatorHeight(formId);
     const center=curator.x-camera;
     const width=Math.round(height*.96);
-    const top=groundY+curator.y-height;
-    const visible=curatorMotion.ready(formId)&&center>=-width&&center<=W+width;
+    const guideGround=groundY-(guide.elevation||0)-cameraY;
+    const top=guideGround+curator.y-height;
+    const visible=curatorMotion.ready(formId)&&center>=-width&&
+      center<=W+width&&top<H+height&&top>-height*1.2;
     if(guide===speakingGuide()&&!inRoom()){
       guideBubble.hidden=!visible||!guideBubble.textContent||elapsed>guideTextUntil||center<0||center>W;
       if(!guideBubble.hidden)positionDialogue(center,top,width,height,guide);
     }
     if(!visible)return;
     // A light shadow on the ground reinforces that the guide is airborne.
-    footShadow(curator.x,groundY,Math.max(7,height*.105),
+    footShadow(curator.x,guideGround,Math.max(7,height*.105),
       clamp(.21+curator.y*.0012,.10,.21));
-    curatorMotion.draw(ctx,curator,{center,groundY,height,elapsed,reduced:reduceMotion.matches,formId});
+    curatorMotion.draw(ctx,curator,{center,groundY:guideGround,height,
+      elapsed,reduced:reduceMotion.matches,formId,variant});
   }
   function draw(){
     ctx.imageSmoothingEnabled=false;
     const view={W,H,groundY,camera,elapsed,reducedMotion:reduceMotion.matches};
     if(inRoom())room().draw(ctx,view);
-    else scenes.drawOutdoor(ctx,{...view,buildings,districts});
+    else scenes.drawTerraces(ctx,{...view,cameraY,buildings,districts,
+      floorCount,floorWidth:FLOOR_WIDTH,rise:FLOOR_RISE,
+      stairSpan:STAIR_SPAN});
     const height=Math.round(clamp(H*.185,63,157));
-    footShadow(player.x,groundY,Math.max(9,height*.12),player.onGround?.43:.2);
+    const playerGround=inRoom()?groundY:groundY-player.elevation-cameraY;
+    footShadow(player.x,playerGround,Math.max(9,height*.12),player.onGround?.43:.2);
     const drawPlayer=()=>scenes.drawPlayer(ctx,{
-      x:player.x,groundY,camera,direction:player.direction,
+      x:player.x,groundY:playerGround,camera,direction:player.direction,
       moving:player.walk>.1&&!reduceMotion.matches,airborne:!player.onGround,
       elapsed,yOffset:player.y,height
     });
-    if(!inRoom())for(const guide of guides)
-      if(guide.state.x<player.x)drawCurator(guide);
+    // Only the closest residents are detailed. Others still patrol in the
+    // world model, but are not crowding the same stair landing.
+    const visibleGuides=inRoom()?[]:guides.filter(g=>
+      Math.abs((g.elevation||0)-player.elevation)<H+150&&
+      Math.abs(g.state.x-player.x)<Math.max(W,520));
+    const locals=visibleGuides.length<=4?visibleGuides:
+      visibleGuides.slice().sort((a,b)=>
+        Math.hypot(a.state.x-player.x,(a.elevation||0)-player.elevation)-
+        Math.hypot(b.state.x-player.x,(b.elevation||0)-player.elevation)).slice(0,4);
+    for(const guide of locals)if(guide.state.x<player.x)drawCurator(guide);
     drawPlayer();
-    if(!inRoom())for(const guide of guides)
-      if(guide.state.x>=player.x)drawCurator(guide);
+    for(const guide of locals)if(guide.state.x>=player.x)drawCurator(guide);
     if(inRoom()){
       guideBubble.hidden=true;
       room().drawForeground(ctx,view);
