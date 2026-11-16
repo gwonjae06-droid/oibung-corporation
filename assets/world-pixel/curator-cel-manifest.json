@@ -1,0 +1,44 @@
+{
+  "angel": {
+    "file": "assets/world-pixel/curator-nong-cels.png",
+    "source": "assets/world-pixel/curator-winter-frames.png",
+    "width": 1504,
+    "height": 1746,
+    "columns": 8,
+    "frameWidth": 188,
+    "frameHeight": 194,
+    "rows": {
+      "wink": 0,
+      "hair": 1,
+      "kiss": 2,
+      "shy": 3,
+      "cheer": 4,
+      "pout": 5,
+      "surprise": 6,
+      "stretch": 7,
+      "wave": 8
+    },
+    "method": "approved hand-illustrated source poses with individually drawn pixel retouches; no warping"
+  },
+  "devil": {
+    "file": "assets/world-pixel/curator-bbang-cels.png",
+    "source": "assets/world-pixel/curator-devil-ponytail.png",
+    "width": 1504,
+    "height": 1746,
+    "columns": 8,
+    "frameWidth": 188,
+    "frameHeight": 194,
+    "rows": {
+      "beckon": 0,
+      "hair": 1,
+      "kiss": 2,
+      "shy": 3,
+      "cheer": 4,
+      "pout": 5,
+      "surprise": 6,
+      "stretch": 7,
+      "wave": 8
+    },
+    "method": "approved hand-illustrated source poses with individually drawn pixel retouches; no warping"
+  }
+}
