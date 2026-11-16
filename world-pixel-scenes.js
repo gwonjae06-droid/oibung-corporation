@@ -70,6 +70,95 @@
     ctx.imageSmoothingEnabled = false;
   }
 
+  const terraceImages = new Map();
+  function terraceAsset(name){
+    if(!terraceImages.has(name)){
+      const image=new Image();
+      image.decoding='async';
+      image.src='assets/world-pixel/'+name+'.png?v=terraced-town-v1';
+      terraceImages.set(name,image);
+    }
+    const image=terraceImages.get(name);
+    return image.complete&&image.naturalWidth?image:null;
+  }
+
+  // A narrow zig-zag village stacked upwards. Existing high-quality
+  // facade paintings are reused: they are NOT replaced by box buildings.
+  function drawTerraces(ctx,{W,H,groundY,camera,cameraY,buildings,
+      floorCount,floorWidth,rise,stairSpan}) {
+    const sky=ctx.createLinearGradient(0,0,0,H);
+    sky.addColorStop(0,'#7b9db7');
+    sky.addColorStop(.55,'#b3c9cf');
+    sky.addColorStop(1,'#e7d7b9');
+    ctx.fillStyle=sky;
+    ctx.fillRect(0,0,W,H);
+    const plaza=load('plaza'),stone=terraceAsset('world-terrace-stone'),
+      staircase=terraceAsset('world-stair-flight');
+    ctx.save();
+    ctx.translate(0,-Math.round(cameraY));
+    for(let floor=0;floor<floorCount;floor++){
+      const y=groundY-floor*rise;
+      if(y-cameraY< -370 || y-cameraY>H+340)continue;
+      // The already painted plaza provides detailed masonry and lighting
+      // around each terrace; only its lower environment region is sampled.
+      if(plaza){
+        const cropTop=Math.floor(plaza.naturalHeight*.41);
+        const cropH=plaza.naturalHeight-cropTop;
+        const tileWidth=650;
+        for(let x=-Math.ceil(650+camera%650);x<W+650;x+=tileWidth){
+          ctx.drawImage(plaza,0,cropTop,plaza.naturalWidth,cropH,
+            Math.round(x),y-215,tileWidth,248);
+        }
+      }
+      // Animated characters stand on the floor's paved pixel-art terrace.
+      const pathY=Math.round(y+4);
+      if(stone){
+        const tileW=stone.naturalWidth,tileH=stone.naturalHeight;
+        for(let x=0;x<floorWidth;x+=tileW){
+          const w=Math.min(tileW,floorWidth-x);
+          ctx.drawImage(stone,0,0,w,tileH,
+            Math.round(x-camera),pathY,w,tileH);
+        }
+      }else{
+        ctx.fillStyle='#7a7779';
+        ctx.fillRect(-camera,pathY,floorWidth,76);
+      }
+      // Preserving each building's original artwork, scale and pixel detail.
+      for(const b of buildings){
+        if(b.floor!==floor)continue;
+        const center=b.x-camera;
+        if(center < -400 || center > W+400)continue;
+        const image=load(outside(b.style));
+        if(!image)continue;
+        const facadeH=Math.round(Math.min(264,Math.max(182,H*.46)));
+        const facadeW=Math.round(facadeH*image.naturalWidth/image.naturalHeight);
+        ctx.imageSmoothingEnabled=true;
+        ctx.drawImage(image,Math.round(center-facadeW/2),
+          Math.round(y+4-facadeH),facadeW,facadeH);
+        ctx.imageSmoothingEnabled=false;
+      }
+    }
+    // Each ascent is a painted pixel-art stairway aligned to the actual
+    // continuous movement path. Mirror the same sheet on alternate floors.
+    for(let floor=0;floor<floorCount-1;floor++){
+      const bottom=groundY-floor*rise;
+      if(bottom-cameraY< -110||bottom-cameraY>H+rise+125)continue;
+      const ascendingRight=floor%2===0;
+      const x=ascendingRight?floorWidth-80-stairSpan:80;
+      ctx.save();
+      if(!ascendingRight){
+        ctx.translate(Math.round(x-camera+stairSpan),0);
+        ctx.scale(-1,1);
+        if(staircase)ctx.drawImage(staircase,0,Math.round(bottom-rise),
+          stairSpan,rise);
+      }else if(staircase)ctx.drawImage(staircase,Math.round(x-camera),
+          Math.round(bottom-rise),stairSpan,rise);
+      ctx.restore();
+    }
+    ctx.restore();
+    ctx.imageSmoothingEnabled=false;
+  }
+
   function drawIndoor(ctx, {W, H, groundY, camera}, style, roomWidth) {
     const image = load(inside(style));
     ctx.fillStyle = '#376067';
@@ -96,7 +185,7 @@
   load('plaza');
   for (let i = 0; i <= 6; i++) load('player-' + i);
   window.OIBUNG_PIXEL_SCENES = {
-    drawOutdoor, drawIndoor, drawPlayer,
+    drawOutdoor, drawTerraces, drawIndoor, drawPlayer,
     preload: style => { load(outside(style)); load(inside(style)); },
     roomArt: style => artPath(inside(style)),
     ready: style => !!(load('plaza') && load('player-0') && load(outside(style)))
