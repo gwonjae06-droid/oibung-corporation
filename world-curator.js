@@ -48,7 +48,7 @@
     {name:'pairCheer',duration:2.35}
   ];
   function poseFrame(guide) {
-    if(guide.gesture){
+    if(guide.gesture||guide.hovering){
       // The sixteen approved poses can have different necklines and hair.
       // Swapping 0 -> 13 -> 0 causes a visible full-body pop. Instead use
       // the *same* approved source pixels and draw 24 intermediate frames
@@ -328,7 +328,7 @@
   }
 
   function update(guide,{dt,player,limit,gap,height,reduced,targetX,allowHop=true,
-    jumpDelay=.11,formId='angel',hovering=false,hoverSide=0,
+    jumpDelay=.11,formId='angel',hovering=false,roaming=false,hoverSide=0,
     floatHeight=.74,floatBob=5}) {
     guide.formId=formId;
     const groundedGuide=formId==='devil';
@@ -352,18 +352,26 @@
       const side=hoverSide<0?-1:1;
       const target=clamp(targetX===undefined?player.x+side*gap:targetX,
         4,limit-4);
-      // Include the visitor's velocity as feed-forward; the companions
-      // stay close without teleporting when running or changing direction.
-      const desiredSpeed=clamp((target-guide.x)*10+player.vx*.76,-520,520);
-      guide.speed=approach(guide.speed,desiredSpeed,11.5,dt);
+      // Autonomous residents use only THEIR OWN world-space itinerary.
+      // Do not inject the visitor's velocity or track the camera.
+      const desiredSpeed=roaming
+        ?clamp((target-guide.x)*4.5,-220,220)
+        :clamp((target-guide.x)*10+player.vx*.76,-520,520);
+      guide.speed=approach(guide.speed,desiredSpeed,roaming?5.8:11.5,dt);
       guide.x=clamp(guide.x+guide.speed*dt,4,limit-4);
       const phase=side>0?1.15:0;
       const bob=reduced?0:Math.sin(guide.timer*(groundedGuide?4.8:4.25)+phase)*floatBob;
       // Rise a little with the player's jump but do not copy their arc.
-      const followJump=player.onGround?0:Math.min(0,player.y*.30);
+      const followJump=roaming||player.onGround?0:Math.min(0,player.y*.30);
       const altitude=-height*floatHeight+bob+followJump;
       guide.y=approach(guide.y,altitude,8.5,dt);
-      guide.facing=-side; // Nong faces right, Bbang faces left.
+      // Turn toward the NEXT BUILDING while traveling. At a stop, turn
+      // outward to introduce it rather than looking for the player.
+      guide.facing=roaming
+        ?(Math.abs(target-guide.x)>14
+          ?(target>guide.x?1:-1)
+          :(formId==='angel'?1:-1))
+        :-side;
       guide.turn=approach(guide.turn,guide.facing,20,dt);
       guide.stride=approach(guide.stride,0,17,dt);
       guide.phase=(guide.phase+dt*.65)%1;
@@ -386,7 +394,9 @@
         guide.gestureTime=0;
         guide.gestureWait=2;
       }
-      updateGesture(guide,watching,dt,reduced);
+      // The world director owns idle presentations; avoid automatic
+      // player-follow actions while moving between buildings.
+      updateGesture(guide,roaming?false:watching,dt,reduced);
       return;
     }
     guide.hovering=false;
@@ -800,7 +810,9 @@
       cel.naturalWidth===frameWidth*CEL_COLUMNS&&cel.naturalHeight===frameHeight*CEL_ROWS;
     ctx.save();
     ctx.imageSmoothingEnabled=false;
-    ctx.translate(center,groundY+guide.y);
+    // Always register complete pixel cels at integer screen coordinates.
+    // The draw scale is constant for all gestures; only the location moves.
+    ctx.translate(Math.round(center),Math.round(groundY+guide.y));
     // Integer facing flip: do not squeeze the complete sprite through width 0.
     ctx.scale(scale*(guide.facing<0?-1:1),scale);
     ctx.translate(-origin,-ground);
