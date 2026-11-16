@@ -44,6 +44,47 @@ def heart(d,x,y,dark,light):
  d.rectangle((x+1,y+2,x+3,y+2),fill=light)
  d.rectangle((x+2,y+3,x+3,y+3),fill=light)
 
+# Match the standing proportions and garment palette already used by the
+# world renderer. This is a one-time artwork alignment for a FULL cel,
+# never an animated dress/skirt distortion.
+HEADS=((14,74,81,98,175),(15,75,84,98,175),(15,75,84,98,175),
+ (16,75,85,98,175),(17,77,84,98,175),(16,75,83,98,175),
+ (17,75,83,98,175),(16,75,82,98,175),(37,94,86,106,175),
+ (16,79,88,112,175),(39,95,90,104,164),(30,88,87,105,175),
+ (14,74,81,98,175),(15,80,83,98,175),(28,88,86,110,175),
+ (14,74,81,98,175))
+def remap(y,source,dest):
+ j=1
+ while j<len(source)-1 and y>source[j]:
+  j+=1
+ a=source[j-1]
+ return dest[j-1]+((y-a)/(source[j]-a))*(dest[j]-dest[j-1])
+def nong_standing_cel(frame,pose):
+ from math import floor
+ top,neck,width,pivot,sole=HEADS[pose]
+ hip=neck+(sole-neck)*.57
+ saved=neck-top-46
+ source=(0,top,neck,hip,sole,H)
+ dest=(0,top,neck-saved,hip-saved*.67,sole,H)
+ image=Image.new("RGBA",(W,H))
+ for y in range(H):
+  original_y=min(H-1,max(0,floor(remap(y+.5,dest,source))))
+  v=max(0,min(1,(original_y-neck+4)/22))
+  v=v*v*(3-2*v)
+  factor=64/width+(1-64/width)*v
+  left=round(pivot*(1-factor))
+  nw=max(1,round(W*factor))
+  row=frame.crop((0,original_y,W,original_y+1))
+  image.paste(row.resize((nw,1),Image.Resampling.NEAREST),(left,y))
+ px=image.load()
+ for y in range(round(dest[2]+7),H):
+  for x in range(W):
+   r,g,b,a=px[x,y]
+   if not a or r-g<15 or r-b<10 or g>111: continue
+   px[x,y]=(min(255,round(r*.65+46)),min(255,round(g*.85+49)),
+            min(255,round(b*.86+83)),a)
+ return image
+
 def paint(frame,form,name,step,pose):
  # All newly plotted dots stay in the face or transparent air.
  # Never paint an arm by displacing body pixels or lift the skirt.
@@ -51,7 +92,7 @@ def paint(frame,form,name,step,pose):
   return frame
  d=ImageDraw.Draw(frame)
  if form=="angel":
-  x,y=(101,54) if pose in (0,12) else (102,59)
+  x,y=(100,45) if pose in (0,12) else (101,45)
   if name=="wink" and pose==12:
    d.rectangle((x-8,y+1,x-3,y+2),fill="#f3c7b6")
    d.line((x-8,y+2,x-5,y+3,x-3,y+2),fill="#683d45")
@@ -84,6 +125,7 @@ def build(form,original,name):
  for row,(action,sequence) in enumerate(actions.items()):
   for col,pose in enumerate(sequence):
    original_cel=atlas.crop(((pose%4)*W,(pose//4)*H,(pose%4+1)*W,(pose//4+1)*H))
+   original_cel=nong_standing_cel(original_cel,pose) if form=="angel" else original_cel
    cel=paint(original_cel.copy(),form,action,col,pose)
    assert cel.crop((0,105,W,H)).tobytes()==original_cel.crop((0,105,W,H)).tobytes(),(form,action,col)
    sheet.paste(cel,(W*col,H*row))
