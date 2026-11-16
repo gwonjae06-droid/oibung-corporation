@@ -799,7 +799,7 @@
         nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,
         buildingWidths:buildings.map(b=>b.width),district:districts.findLast(d=>d.start<=player.route)?.status||null,
         districts:districts.map(d=>({...d})),buildingPositions:buildings.map(b=>({id:b.game.id,x:entrance(b),floor:b.floor,route:b.route,district:b.status})),
-        floor:player.level+1,floorCount,route:player.route,elevation:player.elevation,
+        floor:player.level+1,floorCount,worldWidth:FLOOR_WIDTH,route:player.route,elevation:player.elevation,
         stairs:player.onStairs,cameraY,
         guideBubbleVisible:!guideBubble.hidden,pixelArtReady:scenes.ready(nearest<0?(buildings[0]?.style||'studio'):buildings[nearest].style),
         renderDensity:LOGICAL_PIXEL_SIZE,curatorArtLoaded:curatorMotion.ready(),curatorHdAtlasReady:curatorMotion.ready(),
