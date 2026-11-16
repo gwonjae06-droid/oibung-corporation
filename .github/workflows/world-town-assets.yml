@@ -1,0 +1,60 @@
+name: Build vertical town pixel assets and curator costumes
+on:
+  push:
+    branches: [main]
+    paths:
+      - tools/build_world_town_assets.py
+      - .github/workflows/world-town-assets.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: town-assets-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build approved-source pixel costumes and stone art
+        run: |
+          python -m pip install Pillow numpy
+          python tools/build_world_town_assets.py
+      - name: Verify dimensions and no resized character silhouettes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          root=Path('assets/world-pixel')
+          for name in ('nong','bbang'):
+              base=Image.open(root/f'curator-{name}-cels.png').convert('RGBA')
+              for v in (1,2,3):
+                  im=Image.open(root/f'curator-{name}-variant-{v}.png').convert('RGBA')
+                  assert im.size==base.size==(1504,1746)
+                  assert im.getchannel('A').tobytes()==base.getchannel('A').tobytes()
+          assert Image.open(root/'world-stair-flight.png').size==(270,300)
+          assert Image.open(root/'world-terrace-stone.png').size==(512,94)
+          print('8 character sheets: shared registration. Stair artwork verified.')
+          PY
+          node --check oibung-world.js
+          node --check world-curator.js
+          node --check world-pixel-scenes.js
+      - name: Commit generated PNG assets to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/world-pixel/curator-nong-variant-*.png assets/world-pixel/curator-bbang-variant-*.png
+          git add assets/world-pixel/world-terrace-stone.png assets/world-pixel/world-stair-flight.png
+          git add assets/world-pixel/world-curator-variants.json
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: eight registered curator styles and painted multi-floor stairway [skip ci]"
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
+          fi
