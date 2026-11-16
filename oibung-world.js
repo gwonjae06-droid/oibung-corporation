@@ -118,7 +118,7 @@
     }
     const indexWithin=(visit+index)%count;
     const b=buildings[indexWithin];
-    const variation=(index%4-1.5)*35+(visit%2?40:-40);
+    const variation=(index<4?-1:1)*(70+(index%4)*19)+(visit%2?12:-12);
     const route=b.route+variation;
     return {route,...routeInfo(route),buildingIndex:indexWithin};
   }
@@ -677,7 +677,7 @@
     const width=Math.round(height*.96);
     const guideGround=groundY-(guide.elevation||0)-cameraY;
     const top=guideGround+curator.y-height;
-    const visible=curatorMotion.ready(formId)&&center>=-width&&
+    const visible=guide.elevation<=player.elevation+170&&curatorMotion.ready(formId)&&center>=-width&&
       center<=W+width&&top<H+height&&top>-height*1.2;
     if(guide===speakingGuide()&&!inRoom()){
       guideBubble.hidden=!visible||!guideBubble.textContent||elapsed>guideTextUntil||center<0||center>W;
@@ -708,7 +708,7 @@
     const view={W,H,groundY,camera,elapsed,reducedMotion:reduceMotion.matches};
     if(inRoom())room().draw(ctx,view);
     else scenes.drawTerraces(ctx,{...view,cameraY,buildings,districts,
-      floorCount,floorWidth:FLOOR_WIDTH,rise:FLOOR_RISE,
+      floorCount,floorWidth:FLOOR_WIDTH,rise:FLOOR_RISE,elevation:player.elevation,
       stairSpan:STAIR_SPAN});
     const height=Math.round(clamp(H*.185,63,157));
     const playerGround=inRoom()?groundY:groundY-player.elevation-cameraY;

@@ -85,7 +85,7 @@
   // A narrow zig-zag village stacked upwards. Existing high-quality
   // facade paintings are reused: they are NOT replaced by box buildings.
   function drawTerraces(ctx,{W,H,groundY,camera,cameraY,buildings,
-      floorCount,floorWidth,rise,stairSpan}) {
+      floorCount,floorWidth,rise,stairSpan,elevation}) {
     ctx.fillStyle='#a9badc';
     ctx.fillRect(0,0,W,H);
     const plaza=load('plaza'),stone=terraceAsset('world-terrace-stone'),
@@ -135,6 +135,9 @@
       const y=groundY-b.floor*rise+4;
       const facadeH=Math.round(Math.min(294,Math.max(190,H*.43)));
       const facadeW=Math.round(facadeH*image.naturalWidth/image.naturalHeight);
+      const distanceAbove=b.floor*rise-elevation;
+      ctx.save();
+      ctx.globalAlpha=1-Math.min(.66,Math.max(0,(distanceAbove-35)/430));
       ctx.imageSmoothingEnabled=true;
       ctx.drawImage(image,Math.round(center-facadeW/2),Math.round(y-facadeH),facadeW,facadeH);
       ctx.imageSmoothingEnabled=false;
@@ -143,6 +146,7 @@
         const h=58,w=h*lantern.naturalWidth/lantern.naturalHeight;
         ctx.drawImage(lantern,center+Math.min(175,facadeW*.47),y-h,w,h);
       }
+      ctx.restore();
     }
     // Each ascent is a painted pixel-art stairway aligned to the actual
     // continuous movement path. Mirror the same sheet on alternate floors.
