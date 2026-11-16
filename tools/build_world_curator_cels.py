@@ -16,11 +16,11 @@ POSES={
   "hair":(0,12,13,13,13,12,0,0),
   "kiss":(0,13,13,13,13,13,0,0),
   "shy":(0,13,13,13,13,13,0,0),
-  "cheer":(0,9,9,14,14,9,0,0),
+  "cheer":(0,12,13,13,13,12,0,0),
   "pout":(0,12,13,13,13,12,0,0),
-  "surprise":(0,12,14,14,14,12,0,0),
-  "stretch":(0,12,9,9,9,12,0,0),
-  "wave":(0,9,9,9,9,9,0,0)
+  "surprise":(0,12,13,13,13,12,0,0),
+  "stretch":(0,12,13,13,13,12,0,0),
+  "wave":(0,12,13,13,13,12,0,0)
  },
  "devil":{
   "beckon":(0,0,14,14,14,14,0,0),
@@ -117,15 +117,47 @@ def paint(frame,form,name,step,pose):
   if name=="hair": cross(d,56,13+(step%2),"#ffd8b2")
  return frame
 
+# Register the original inked cells by their shoes. Pixel positions are
+# changed by INTEGRAL TRANSLATION ONLY, never by stretching individual
+# rows of a skirt/dress or zooming one frame relative to another.
+# Transparent decorative hearts above the character are excluded.
+def foot_anchor(frame):
+ pix=frame.getchannel("A")
+ region=pix.crop((44,125,145,min(H,190)))
+ bounds=region.getbbox()
+ assert bounds is not None, "Missing body/feet in approved artwork"
+ left,top,right,bottom=bounds
+ bottom+=125
+ # Use the final opaque shoe pixels to measure horizontal grounding.
+ row=region.crop((0,max(0,bottom-125-5),101,bottom-125))
+ r=row.getbbox()
+ cx=(r[0]+r[2])/2+44 if r else (left+right)/2+44
+ return round(cx),bottom
+def register_cel(frame,reference):
+ foot_x,foot_y=foot_anchor(frame)
+ dx=reference[0]-foot_x
+ dy=reference[1]-foot_y
+ assert abs(dx)<=22 and abs(dy)<=24, (dx,dy)
+ registered=Image.new("RGBA",(W,H),(0,0,0,0))
+ registered.paste(frame,(dx,dy))
+ assert foot_anchor(registered)[1]==reference[1], (foot_anchor(registered),reference)
+ return registered,(dx,dy)
+
 def build(form,original,name):
  atlas=Image.open(OUT/original).convert("RGBA")
  assert atlas.size==(W*4,H*4), (form,atlas.size)
  actions=POSES[form]
+ reference=atlas.crop((0,0,W,H))
+ if form=="angel": reference=nong_standing_cel(reference,0)
+ fixed=foot_anchor(reference)
+ offsets={}
  sheet=Image.new("RGBA",(W*COLS,H*len(actions)),(0,0,0,0))
  for row,(action,sequence) in enumerate(actions.items()):
   for col,pose in enumerate(sequence):
    original_cel=atlas.crop(((pose%4)*W,(pose//4)*H,(pose%4+1)*W,(pose//4+1)*H))
    original_cel=nong_standing_cel(original_cel,pose) if form=="angel" else original_cel
+   original_cel,shift=register_cel(original_cel,fixed)
+   offsets[f"{action}:{col}"]=list(shift)
    cel=paint(original_cel.copy(),form,action,col,pose)
    assert cel.crop((0,105,W,H)).tobytes()==original_cel.crop((0,105,W,H)).tobytes(),(form,action,col)
    sheet.paste(cel,(W*col,H*row))
@@ -138,7 +170,9 @@ def build(form,original,name):
  print(form,len(actions)*COLS,"painted/collated poses",output,output.stat().st_size)
  return {"file":str(output),"source":str(OUT/original),"width":sheet.width,"height":sheet.height,
          "columns":COLS,"frameWidth":W,"frameHeight":H,"rows":dict((key,i) for i,key in enumerate(actions)),
-         "method":"approved hand-illustrated source poses with individually drawn pixel retouches; no warping"}
+         "registration":{"anchor":"feet","footX":fixed[0],"footY":fixed[1],
+                         "offsets":offsets,"scale":1},
+         "method":"approved hand-illustrated poses, integer-pixel grounding and plotted expression dots; no per-frame scaling"}
 
 def main():
  OUT.mkdir(parents=True,exist_ok=True)
