@@ -75,11 +75,63 @@
     if(!terraceImages.has(name)){
       const image=new Image();
       image.decoding='async';
-      image.src='assets/world-pixel/'+name+'.png?v=terraced-town-v1';
+      image.src='assets/world-pixel/'+name+'.png?v=mountain-terraces-v1';
       terraceImages.set(name,image);
     }
     const image=terraceImages.get(name);
     return image.complete&&image.naturalWidth?image:null;
+  }
+
+  function drawStone(ctx,stone,x,y,width,height){
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x,y,width,height);
+    ctx.clip();
+    ctx.fillStyle='#71686a';
+    ctx.fillRect(x,y,width,height);
+    if(stone){
+      for(let dy=0;dy<height;dy+=stone.naturalHeight){
+        for(let dx=0;dx<width;dx+=stone.naturalWidth)
+          ctx.drawImage(stone,x+dx,y+dy);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawStair(ctx,stone,span,rise){
+    const count=26,stepX=span/count,stepY=rise/count;
+    // Stone stair flight with an open space beneath the stone stringer.
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(0,3);
+    for(let i=0;i<count;i++){
+      ctx.lineTo((i+1)*stepX,3-i*stepY);
+      ctx.lineTo((i+1)*stepX,3-(i+1)*stepY);
+    }
+    ctx.lineTo(span,-rise+53);
+    ctx.lineTo(0,53);
+    ctx.closePath();
+    ctx.clip();
+    drawStone(ctx,stone,0,-rise,span,rise+54);
+    ctx.restore();
+    for(let i=0;i<count;i++){
+      const x=Math.round(i*stepX),y=Math.round(-i*stepY+3);
+      ctx.fillStyle='#d6e3e5';
+      ctx.fillRect(x,y,Math.ceil(stepX),3);
+      ctx.fillStyle='#97a8b4';
+      ctx.fillRect(x,y+3,Math.ceil(stepX),2);
+    }
+    const post=(x,y)=>{
+      ctx.fillStyle='#49373d';ctx.fillRect(x-2,y-36,6,38);
+      ctx.fillStyle='#a48061';ctx.fillRect(x-1,y-34,2,34);
+      ctx.fillStyle='#e5e9ec';ctx.fillRect(x-3,y-37,8,3);
+    };
+    for(let n=0;n<count;n+=4)post(Math.round(n*stepX),Math.round(-n*stepY));
+    post(span,-rise);
+    ctx.beginPath();
+    ctx.moveTo(0,-35);ctx.lineTo(span,-rise-35);
+    ctx.strokeStyle='#49373d';ctx.lineWidth=6;ctx.stroke();
+    ctx.strokeStyle='#c2a186';ctx.lineWidth=2;ctx.stroke();
   }
 
   // A narrow zig-zag village stacked upwards. Existing high-quality
@@ -89,7 +141,7 @@
     ctx.fillStyle='#a9badc';
     ctx.fillRect(0,0,W,H);
     const plaza=load('plaza'),stone=terraceAsset('world-terrace-stone'),
-      staircase=terraceAsset('world-stair-flight');
+      bank=terraceAsset('world-snow-bank');
     // A single landscape spans all elevations. Parallax keeps the mountain
     // silhouettes continuous when the camera climbs a flight of stairs.
     if(plaza){
@@ -112,19 +164,36 @@
       .filter(floor=>groundY-floor*rise-cameraY> -60&&groundY-floor*rise-cameraY<H+300);
     const colors=['#edddab','#96bcae','#aabbe8'];
     for(const floor of levels){
-      const y=groundY-floor*rise+3;
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(-camera,y,floorWidth,floor===0?Math.max(78,H-y+cameraY):42);
-      ctx.clip();
-      if(stone){
-        for(let x=0;x<floorWidth;x+=stone.naturalWidth)
-          ctx.drawImage(stone,x-camera,y);
+      const y=groundY-floor*rise+2;
+      // Each terrace meets the same continuous rock face at both ends,
+      // including the edges of displays wider than the playable lane.
+      for(const side of [1,-1]){
+        const edge=side===1?0:floorWidth;
+        ctx.save();
+        ctx.translate(edge-camera,y);
+        ctx.scale(side,1);
+        if(bank){
+          const h=rise+105,w=Math.round(h*bank.naturalWidth/bank.naturalHeight);
+          const extra=Math.max(84,W-floorWidth);
+          const top=-rise+18;
+          ctx.drawImage(bank,3,Math.round(bank.naturalHeight*.24),
+            Math.round(bank.naturalWidth*.19),Math.round(bank.naturalHeight*.61),
+            -extra-2,top,extra+50,h);
+          ctx.drawImage(bank,-Math.round(w*.49),top,w,h);
+        }else drawStone(ctx,stone,-Math.max(160,W-floorWidth),-rise+38,
+          Math.max(160,W-floorWidth)+86,rise+65);
+        ctx.restore();
       }
-      ctx.globalAlpha=.31;
+      const left=Math.min(-camera,0),width=Math.max(W-left,floorWidth);
+      const depth=floor===0?Math.max(90,H-y+cameraY):48;
+      drawStone(ctx,stone,left,y,width,depth);
+      ctx.save();
+      ctx.globalAlpha=.24;
       ctx.fillStyle=colors[floor%colors.length];
-      ctx.fillRect(-camera,y,floorWidth,420);
+      ctx.fillRect(left,y,width,depth);
       ctx.restore();
+      ctx.fillStyle='#dfeaf1';
+      ctx.fillRect(left,y,width,3);
     }
     for(const b of buildings){
       if(!levels.includes(b.floor))continue;
@@ -148,21 +217,16 @@
       }
       ctx.restore();
     }
-    // Each ascent is a painted pixel-art stairway aligned to the actual
-    // continuous movement path. Mirror the same sheet on alternate floors.
+    // Mirror the same grade on alternate floors to match the route.
     for(let floor=0;floor<floorCount-1;floor++){
       const bottom=groundY-floor*rise;
       if(bottom-cameraY< -110||bottom-cameraY>H+rise+125)continue;
       const ascendingRight=floor%2===0;
       const x=ascendingRight?floorWidth-80-stairSpan:80;
       ctx.save();
-      if(!ascendingRight){
-        ctx.translate(Math.round(x-camera+stairSpan),0);
-        ctx.scale(-1,1);
-        if(staircase)ctx.drawImage(staircase,0,Math.round(bottom-rise),
-          stairSpan,rise);
-      }else if(staircase)ctx.drawImage(staircase,Math.round(x-camera),
-          Math.round(bottom-rise),stairSpan,rise);
+      ctx.translate(Math.round(x-camera+(ascendingRight?0:stairSpan)),Math.round(bottom));
+      if(!ascendingRight)ctx.scale(-1,1);
+      drawStair(ctx,stone,stairSpan,rise);
       ctx.restore();
       const labelX=Math.round((ascendingRight?x-24:x+stairSpan+24)-camera);
       const labelY=Math.round(bottom-11);

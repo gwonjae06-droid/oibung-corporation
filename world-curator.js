@@ -805,7 +805,37 @@
     ctx.restore();
   }
 
-  function draw(ctx,guide,{center,groundY,height,elapsed,reduced,formId,variant=0}) {
+  // Matching guild trims identify the exhibit, while the original painted
+  // clothing, faces and wing silhouettes retain each resident's identity.
+  const buildingCostumes={
+    castle:[2,'#c7d8ff','#526880',['..#..','..#..','.###.','##+##','##+##','.###.','..#..']],
+    arena:[3,'#ffdc91','#a87836',['#####','#+++#','.###.','..#..','..#..','.###.','#####']],
+    duel:[0,'#ffcaec','#8a567e',['....#','...##','..##.','#++..','.##..','.#...','#....']],
+    tactics:[1,'#cbe8a9','#536d4d',['#####','#+#++','#+###','#....','#....','#....','#....']],
+    corp:[2,'#a5e5ff','#386784',['..#..','.###.','#+++#','#+++#','#+++#','.###.','.....']],
+    cat:[1,'#ffc9b9','#9b605d',['.#.#.','#.#.#','.....','.###.','#####','.###.','.....']],
+    tower:[2,'#ddd1ff','#7360a0',['..#..','..#..','#####','.###.','.###.','.#.#.','#...#']],
+    studio:[0,'#ffe2b2','#91624d',['###..','##+##','##+##','##+##','##+##','#####','..###']]
+  };
+  function drawGuildTrim(ctx,form,costume){
+    const [,light,dark,mark]=costume;
+    const devil=form===forms.devil;
+    const y=devil?66:77;
+    const x=devil?106:114;
+    ctx.fillStyle=dark;
+    ctx.fillRect(x-4,y-8,7,10);
+    ctx.fillRect(x-7,y,17,20);
+    ctx.fillStyle=light;
+    ctx.fillRect(x-6,y+1,15,1);
+    ctx.fillRect(x-6,y+18,15,1);
+    mark.forEach((row,dy)=>Array.from(row).forEach((ink,dx)=>{
+      if(ink==='.'){return;}
+      ctx.fillStyle=ink==='+'?'#fff7df':light;
+      ctx.fillRect(x-4+dx*2,y+3+dy*2,2,2);
+    }));
+  }
+
+  function draw(ctx,guide,{center,groundY,height,elapsed,reduced,formId,variant=0,theme}) {
     if(!ready(formId))return false;
     const form=formFor(formId);
     const gesture=!reduced?guide.gesture:null;
@@ -813,7 +843,8 @@
     const frame=reduced?0:poseFrame(guide);
     const shape=(form===forms.devil?devilShapes:winterShapes)[frame];
     const scale=height/standingHeight;
-    const requested=costumeSheets[formId]?.[variant];
+    const costume=buildingCostumes[theme];
+    const requested=costumeSheets[formId]?.[costume?.[0]??variant];
     const valid=i=>i&&i.complete&&
       i.naturalWidth===frameWidth*CEL_COLUMNS&&
       i.naturalHeight===frameHeight*CEL_ROWS;
@@ -845,6 +876,7 @@
       drawBody(ctx,form,frame);
       drawHead(ctx,form,frame,guide,elapsed,reduced,false);
     }
+    if(costume)drawGuildTrim(ctx,form,costume);
     ctx.restore();
     return true;
   }

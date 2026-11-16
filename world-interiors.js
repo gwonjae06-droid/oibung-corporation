@@ -52,7 +52,7 @@
   function host(){
     const stop=stations.find(station=>station.id==='guide');
     const formId=['arena','duel','corp'].includes(state.style)?'devil':'angel';
-    return stop?{x:stop.x+76,formId,name:formId==='devil'?'빵':'농'}:null;
+    return stop?{x:stop.x+76,formId,theme:state.style,name:formId==='devil'?'빵':'농'}:null;
   }
   let mediaRevision=0;
   let width=1850;
