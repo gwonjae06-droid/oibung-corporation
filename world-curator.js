@@ -225,7 +225,7 @@
       landed:0,playerGrounded:true,gesture:null,gestureTime:0,gestureWait:2.8,nextGesture:0,
       headAngle:0,headAngleVelocity:0,headBob:0,headBobVelocity:0,
       look:0,lookVelocity:0,wingAngle:0,wingAngleVelocity:0,
-      crouch:0,crouchVelocity:0});
+      crouch:0,crouchVelocity:0,hovering:false,hoverSide:0});
     return guide;
   }
   function spring(guide,key,target,stiffness,damping,dt) {
@@ -327,7 +327,9 @@
     }
   }
 
-  function update(guide,{dt,player,limit,gap,height,reduced,targetX,allowHop=true,jumpDelay=.11,formId='angel'}) {
+  function update(guide,{dt,player,limit,gap,height,reduced,targetX,allowHop=true,
+    jumpDelay=.11,formId='angel',hovering=false,hoverSide=0,
+    floatHeight=.74,floatBob=5}) {
     guide.formId=formId;
     const groundedGuide=formId==='devil';
     const distance=player.x-guide.x;
@@ -338,6 +340,56 @@
     guide.landed=Math.max(0,guide.landed-dt);
     guide.still=watching?guide.still+dt:0;
     guide.timer+=dt;
+    if(hovering){
+      // Flying companions hover at shoulder/head height. They never run or
+      // execute ground hops, but still play the original fixed pixel cels.
+      guide.hovering=true;
+      guide.hoverSide=hoverSide;
+      guide.mode='follow';
+      guide.flight=null;
+      guide.followJump=0;
+      guide.playerGrounded=player.onGround;
+      const side=hoverSide<0?-1:1;
+      const target=clamp(targetX===undefined?player.x+side*gap:targetX,
+        4,limit-4);
+      // Include the visitor's velocity as feed-forward; the companions
+      // stay close without teleporting when running or changing direction.
+      const desiredSpeed=clamp((target-guide.x)*10+player.vx*.76,-520,520);
+      guide.speed=approach(guide.speed,desiredSpeed,11.5,dt);
+      guide.x=clamp(guide.x+guide.speed*dt,4,limit-4);
+      const phase=side>0?1.15:0;
+      const bob=reduced?0:Math.sin(guide.timer*(groundedGuide?4.8:4.25)+phase)*floatBob;
+      // Rise a little with the player's jump but do not copy their arc.
+      const followJump=player.onGround?0:Math.min(0,player.y*.30);
+      const altitude=-height*floatHeight+bob+followJump;
+      guide.y=approach(guide.y,altitude,8.5,dt);
+      guide.facing=-side; // Nong faces right, Bbang faces left.
+      guide.turn=approach(guide.turn,guide.facing,20,dt);
+      guide.stride=approach(guide.stride,0,17,dt);
+      guide.phase=(guide.phase+dt*.65)%1;
+      guide.still=watching?guide.still+dt:0;
+      guide.affection=approach(guide.affection,watching&&guide.still>.4?1:0,10,dt);
+      const motionDt=Math.min(dt,1/30);
+      const wing=reduced?.12:
+        .17+Math.sin(guide.timer*(groundedGuide?9.5:8.2)+phase)*.43;
+      spring(guide,'wingAngle',wing,150,19,motionDt);
+      spring(guide,'headAngle',reduced?0:Math.sin(guide.timer*1.9+phase)*.02,
+        90,18,motionDt);
+      spring(guide,'headBob',reduced?0:Math.sin(guide.timer*3+phase)*.7,
+        80,17,motionDt);
+      spring(guide,'look',0,75,17,motionDt);
+      spring(guide,'crouch',0,95,19,motionDt);
+      // Allow short reactions while floating; never hold position to finish
+      // a long pose when the player has moved far ahead.
+      if(guide.gesture&&Math.abs(guide.x-target)>125){
+        guide.gesture=null;
+        guide.gestureTime=0;
+        guide.gestureWait=2;
+      }
+      updateGesture(guide,watching,dt,reduced);
+      return;
+    }
+    guide.hovering=false;
     if(player.onGround!==guide.playerGrounded){
       if(!groundedGuide&&!player.onGround&&!reduced&&guide.mode!=='hop'&&(close||targetX!==undefined))guide.followJump=jumpDelay;
       guide.playerGrounded=player.onGround;
@@ -559,20 +611,61 @@
     ctx.stroke();
   }
   function drawWings(ctx,form,shape,flap) {
-    const [x,y]=featurePoint(shape,form===forms.devil?shape.pivot-16:76,shape.neck+(form===forms.devil?24:28));
-    ctx.save();
-    ctx.translate(x,y);
-    ctx.rotate(flap);
-    if(form===forms.angel){
-      pixelShape(ctx,form,[[7,8],[-6,-11],[-21,-21],[-54,-29],[-48,-17],[-53,-12],[-43,-4],[-46,1],[-34,8],[-34,14],[-16,19],[-7,20],[4,15]],form.wing);
-      pixelShape(ctx,form,[[2,10],[-8,0],[-29,-10],[-42,-14],[-33,-4],[-38,0],[-24,10],[-17,15],[-7,15]],form.shade);
-    }else{
-      pixelShape(ctx,form,[[8,10],[-8,-10],[-53,-27],[-43,-11],[-46,3],[-30,-2],[-27,13],[-15,8],[1,18]],form.wing);
-      ctx.strokeStyle=form.shade;ctx.beginPath();ctx.moveTo(-46,-20);ctx.lineTo(-22,1);ctx.lineTo(2,13);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(2,46);ctx.quadraticCurveTo(-27,69,-38,53);ctx.strokeStyle=form.edge;ctx.lineWidth=3;ctx.stroke();
-      pixelShape(ctx,form,[[-43,49],[-31,50],[-38,59]],form.wing);
+    // Draw an actual bilateral wing pair, anchored behind the shoulders.
+    // Both halves flap in mirrored local coordinates; the source sprite
+    // itself is never stretched, sheared or otherwise distorted.
+    const devil=form===forms.devil;
+    const wingY=shape.neck+(devil?23:27);
+    const leftX=devil?shape.pivot-17:76;
+    const rightX=devil?shape.pivot+18:120;
+    const wings=[
+      {x:leftX,side:1},
+      {x:rightX,side:-1}
+    ];
+    for(const wing of wings){
+      const [x,y]=featurePoint(shape,wing.x,wingY);
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.scale(wing.side,1);
+      ctx.rotate(flap);
+      if(!devil){
+        pixelShape(ctx,form,
+          [[7,8],[-6,-11],[-21,-21],[-54,-29],[-48,-17],
+           [-53,-12],[-43,-4],[-46,1],[-34,8],[-34,14],
+           [-16,19],[-7,20],[4,15]],form.wing);
+        pixelShape(ctx,form,
+          [[2,10],[-8,0],[-29,-10],[-42,-14],[-33,-4],
+           [-38,0],[-24,10],[-17,15],[-7,15]],form.shade);
+        ctx.strokeStyle='#fff9ec';
+        ctx.lineWidth=1.3;
+        ctx.beginPath();
+        ctx.moveTo(-44,-20);ctx.lineTo(-26,-6);
+        ctx.moveTo(-43,-3);ctx.lineTo(-20,10);
+        ctx.stroke();
+      }else{
+        pixelShape(ctx,form,
+          [[8,10],[-8,-10],[-53,-27],[-43,-11],[-46,3],
+           [-30,-2],[-27,13],[-15,8],[1,18]],form.wing);
+        ctx.strokeStyle=form.shade;
+        ctx.lineWidth=2;
+        ctx.beginPath();
+        ctx.moveTo(-46,-20);ctx.lineTo(-22,1);ctx.lineTo(2,13);
+        ctx.moveTo(-22,1);ctx.lineTo(-27,11);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
-    ctx.restore();
+    if(devil){
+      const [x,y]=featurePoint(shape,leftX,wingY);
+      ctx.save();
+      ctx.translate(x,y);
+      ctx.beginPath();
+      ctx.moveTo(2,42);
+      ctx.quadraticCurveTo(-27,67,-38,53);
+      ctx.strokeStyle=form.edge;ctx.lineWidth=3;ctx.stroke();
+      pixelShape(ctx,form,[[-43,49],[-31,50],[-38,59]],form.wing);
+      ctx.restore();
+    }
   }
   function drawCrown(ctx,form,shape) {
     const [x,y]=featurePoint(shape,form===forms.devil?shape.pivot:100,shape.source[1]+4);
