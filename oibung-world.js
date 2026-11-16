@@ -68,21 +68,42 @@
   let guideTextUntil=0;
   // Synchronized interactions happen only when both guides and the player are still.
   let duetWait=8.5,duetIndex=0;
+  // Preserve an organic walking order; reconsider who leads only on a real
+  // change of travel direction, never on every animation frame.
+  let leadGuide=0,lastTrailDirection=1;
   let didInitialSpawn=false;
   let previousInteriorObject=null;
   let interiorOrigin=null;
 
   function guideSlots(limit){
-    const gap=Math.min(curatorGap(),Math.max(58,Math.round(W*.25)));
-    let first=player.x-gap,second=player.x+gap;
-    if(first<20){first=player.x+gap;second=first+gap;}
-    else if(second>limit-20){second=player.x-gap;first=second-gap;}
-    return [clamp(first,20,limit-20),clamp(second,20,limit-20)];
+    // A relaxed little walking group, not symmetrical guards. Both characters
+    // normally follow BEHIND the direction of travel, one a step behind the
+    // other. At rest they close in rather than maintaining rigid escort gaps.
+    const travelling=Math.abs(player.vx)>35;
+    const direction=player.direction<0?-1:1;
+    const indoor=inRoom();
+    const size=clamp(H/510,.8,1.2);
+    const factor=size*(indoor?.82:1);
+    const near=Math.max(38,Math.round((travelling?69:53)*factor));
+    const separation=Math.max(35,Math.round((travelling?60:49)*factor));
+    const slots=[
+      player.x-direction*near,
+      player.x-direction*(near+separation)
+    ];
+    // Shift the complete pair at the level boundaries instead of clamping
+    // both to the same coordinate (stacked sprites / instant role reversal).
+    const minEdge=20,maxEdge=Math.max(minEdge+80,limit-20);
+    const left=Math.min(...slots),right=Math.max(...slots);
+    let shift=left<minEdge?minEdge-left:0;
+    if(right+shift>maxEdge)shift+=maxEdge-right-shift;
+    return slots.map(x=>clamp(x+shift,minEdge,maxEdge));
   }
   function resetGuides(positions=guideSlots(inRoom()?room().roomWidth():worldEnd)){
     duetWait=8.5;
+    leadGuide=0;
+    lastTrailDirection=player.direction<0?-1:1;
     for(const [index,guide] of guides.entries()){
-      const facing=player.x>=positions[index]?1:-1;
+      const facing=player.direction<0?-1:1;
       curatorMotion.reset(guide.state,positions[index]);
       guide.state.facing=facing;
       guide.state.turn=facing;
@@ -545,10 +566,21 @@
     }
     player.walk=Math.abs(player.vx)>10?1:0;
     const slots=guideSlots(limit);
+    // On an intentional U-turn, the character already nearer the new lead
+    // position may naturally take the front of the group. No teleport or
+    // artificial position swapping is performed.
+    const direction=player.direction<0?-1:1;
+    if(Math.abs(player.vx)>70&&direction!==lastTrailDirection){
+      lastTrailDirection=direction;
+      const other=1-leadGuide;
+      if(Math.abs(guides[other].state.x-slots[0])+12<
+         Math.abs(guides[leadGuide].state.x-slots[0]))leadGuide=other;
+    }
     const speaker=speakingGuide();
     for(const [index,guide] of guides.entries()){
+      const target=index===leadGuide?slots[0]:slots[1];
       curatorMotion.update(guide.state,{dt,player,limit,gap:curatorGap(),height:curatorHeight(guide.formId),
-        reduced:reduceMotion.matches,targetX:slots[index],allowHop:guide===speaker,
+        reduced:reduceMotion.matches,targetX:target,allowHop:guide===speaker,
         jumpDelay:.11+index*.07,formId:guide.formId});
     }
     const canDuet=!reduceMotion.matches&&player.onGround&&Math.abs(player.vx)<32&&
@@ -602,7 +634,8 @@
         guideBubbleVisible:!guideBubble.hidden,pixelArtReady:scenes.ready(nearest<0?(buildings[0]?.style||'studio'):buildings[nearest].style),
         renderDensity:LOGICAL_PIXEL_SIZE,curatorArtLoaded:curatorMotion.ready(),curatorHdAtlasReady:curatorMotion.ready(),
         curatorY:curator.y,curatorMode:curator.mode,curatorAffection:curator.affection,curatorForm,
-        guides:guides.map(({formId,state})=>({formId,x:state.x,y:state.y,
+        guides:guides.map(({formId,state},index)=>({formId,x:state.x,y:state.y,
+          targetX:guideSlots(inRoom()?room().roomWidth():worldEnd)[index===leadGuide?0:1],
           motion:state.gesture?.name||(Math.abs(state.speed)>24?'walk':'idle')}))};
     },
     travelTo:id=>{const index=buildings.findIndex(b=>String(b.game.id)===String(id));if(index>=0)warp(index);return index>=0;},
