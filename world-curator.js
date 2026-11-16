@@ -13,9 +13,9 @@
   // never to an automatically warped body or a corrupt empty sprite.
   const celSheets={angel:new Image(),devil:new Image()};
   celSheets.angel.decoding='async';
-  celSheets.angel.src='assets/world-pixel/curator-nong-cels.png?v=art-cels-v1';
+  celSheets.angel.src='assets/world-pixel/curator-nong-cels.png?v=registered-cels-v2';
   celSheets.devil.decoding='async';
-  celSheets.devil.src='assets/world-pixel/curator-bbang-cels.png?v=art-cels-v1';
+  celSheets.devil.src='assets/world-pixel/curator-bbang-cels.png?v=registered-cels-v2';
   const CEL_COLUMNS=8,CEL_ROWS=9;
   const celRow={
     angel:{wink:0,hair:1,kiss:2,shy:3,cheer:4,pout:5,surprise:6,stretch:7,wave:8,
@@ -25,9 +25,9 @@
   };
 
   const frameWidth=188,frameHeight=194,ground=175,origin=91,standingHeight=161;
-  // Distinct non-fading, joint-driven charm actions. No sprite opacity blends.
-  // Every action selects actual original pixel-art poses from the 4x4 atlas.
-  // The sprite's face, clothes, palette and proportions are never replaced.
+  // Non-fading pixel-cel charm actions. Every cell is a complete registered
+  // 188×194 image (never a runtime joint warp, zoom, or silhouette fade).
+  // The original face, outfit and proportions remain unchanged.
   const gestures=[
     {name:'wink',duration:1.45},{name:'hair',duration:1.9},
     {name:'kiss',duration:2.05},{name:'shy',duration:1.9},
@@ -48,13 +48,9 @@
     {name:'pairCheer',duration:2.35}
   ];
   function poseFrame(guide) {
-    if(guide.gesture||guide.hovering){
-      // The sixteen approved poses can have different necklines and hair.
-      // Swapping 0 -> 13 -> 0 causes a visible full-body pop. Instead use
-      // the *same* approved source pixels and draw 24 intermediate frames
-      // of the actual moving arms/cloth in drawBody.
-      return 0;
-    }
+    // Never switch to a walk atlas frame while hovering or gesturing.
+    // All autonomous guide animations use complete registered PNG cels.
+    if(guide.gesture||guide.hovering)return 0;
     // Movement is a genuine eight-pose walk cycle, not idle art shaken by CSS.
     if(!guide.flight&&guide.stride>.22&&Math.abs(guide.speed)>24)
       return 1+Math.min(6,Math.floor(guide.phase*7));
