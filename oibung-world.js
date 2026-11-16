@@ -232,8 +232,13 @@
     const oldBuildings=buildings;
     const wasInterior=inRoom();
     const oldExterior=wasInterior?interiorOrigin?.playerX:player.x;
-    const oldAnchor=oldBuildings.reduce((closest,b)=>
-      !closest||Math.abs(entrance(b)-oldExterior)<Math.abs(entrance(closest)-oldExterior)?b:closest,null);
+    const oldAnchor=oldBuildings.reduce((closest,b)=>{
+      const d=Math.abs(entrance(b)-oldExterior)+
+        Math.abs((b.floor||0)-(player.level||0))*FLOOR_WIDTH;
+      const best=closest?Math.abs(entrance(closest)-oldExterior)+
+        Math.abs((closest.floor||0)-(player.level||0))*FLOOR_WIDTH:Infinity;
+      return d<best?b:closest;
+    },null);
     games=next;
     buildings=[];
     districts=[];
@@ -347,13 +352,14 @@
       const sx=(b.x+b.width*.5-camera)*LOGICAL_PIXEL_SIZE;
       // A small plaque above the doorway is easier to read and leaves
       // the grand roof and towers unobscured.
-      const sy=groundY-Math.max(48,Math.min(100,H*.12));
-      const visible=sx>-70&&sx<stage.clientWidth+70&&
-        Math.abs(player.x-entrance(b))<Math.max(420,W*.68);
+      const sy=groundY-b.floor*FLOOR_RISE-cameraY-
+        Math.max(48,Math.min(100,H*.12));
+      const visible=sx>-70&&sx<W+70&&sy>28&&sy<H-55&&
+        Math.abs(player.elevation-b.floor*FLOOR_RISE)<105;
       button.hidden=!visible;
       if(visible){
         button.style.left=Math.round(sx)+'px';
-        button.style.top=Math.round(Math.max(75,sy))+'px';
+        button.style.top=Math.round(Math.max(28,sy))+'px';
       }
     }
   }
@@ -361,8 +367,10 @@
     const b=buildings[i];if(!b)return;
     if(inRoom()){room().leave();interiorOrigin=null;signs.hidden=false;previousInteriorObject=null;}
     // Let the player stand beside the monumental door, not on top of it.
-    player.x=b.x+b.width*.5-105;
+    setPlayerRoute(b.route-105);
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
+    player.stairsLock=0;
+    cameraY=-player.elevation;
     // Jumping to a building does not teleport the independent guide residents.
     const target=Math.max(0,Math.min(worldEnd-W,player.x-W*.5));
     camera=target;
@@ -372,8 +380,11 @@
     let result=-1,dist=135;
     for(let i=0;i<buildings.length;i++){
       const b=buildings[i];
-      const d=Math.abs(player.x-(b.x+b.width*.5));
-      if(d<=dist){dist=d;result=i;}
+      const d=Math.abs(player.x-entrance(b));
+      if(b.floor===player.level&&!player.onStairs&&
+          Math.abs(player.elevation-b.floor*FLOOR_RISE)<55&&d<=dist){
+        dist=d;result=i;
+      }
     }
     return result;
   }
@@ -382,8 +393,10 @@
     guideBubble.textContent=text;
   }
   function updateDistrict(){
-    const district=inRoom()?null:districts.findLast(d=>d.start<=player.x);
-    const label=inRoom()?'실내 전시':district?district.label+' 구역':'중앙 광장';
+    const district=inRoom()?null:
+      districts.findLast(d=>d.start<=player.route);
+    const label=inRoom()?'실내 전시':
+      (player.level+1)+'층 · '+(district?district.label:'중앙 광장');
     if(counter.textContent!==label)counter.textContent=label;
     if(district&&counter.dataset.district!==district.status)counter.dataset.district=district.status;
     if(!district&&counter.dataset.district)delete counter.dataset.district;
@@ -415,7 +428,10 @@
         // Building information belongs in the nearby label. A character
         // speech bubble appears only when an actual guide is nearby.
       }else{
-        nearbyLabel.textContent=games.length?'←  → 이동해서 마음에 드는 건물을 찾으세요.':'첫 게임이 등록되면 건물이 생깁니다.';
+        nearbyLabel.textContent=games.length
+          ?(player.onStairs?'계단을 따라 올라가 다음 층을 탐험하세요.':
+             '← → 이동해 건물을 찾고, 층 끝의 계단을 올라가세요.')
+          :'첫 게임이 등록되면 건물이 생깁니다.';
         interactButton.disabled=true;
         interactButton.textContent='입구에 가까이';
         // No disembodied companion dialogue when the visitor is alone.
@@ -427,9 +443,10 @@
     if(!inRoom())return false;
     const origin=room().leave();
     interiorOrigin=null;
-    player.x=clamp(origin?.playerX??player.x,18,worldEnd-35);
+    setPlayerRoute(origin?.route??player.route);
     // Guide patrols resume at their original outdoor positions.
     camera=clamp(origin?.camera??0,0,Math.max(0,worldEnd-W));
+    cameraY=-player.elevation;
     player.vx=0;player.vy=0;player.y=0;player.onGround=true;
     previousInteriorObject=null;
     signs.hidden=false;keys.left=false;keys.right=false;
@@ -446,7 +463,7 @@
     if(nearest<0)return false;
     const b=buildings[nearest];
     if(!b||!room())return false;
-    const origin={playerX:player.x,camera};
+    const origin={playerX:player.x,route:player.route,camera,cameraY};
     if(!room().enter(b.game,b.style,origin))return false;
     interiorOrigin=origin;
     player.x=room().spawnX();
@@ -689,7 +706,23 @@
     if(!axis&&Math.abs(player.vx)<.15)player.vx=0;
     if(player.vx)player.direction=player.vx>=0?1:-1;
     const limit=inRoom()?room().roomWidth():worldEnd;
-    player.x=Math.max(18,Math.min(limit-35,player.x+player.vx*dt));
+    if(inRoom()){
+      player.x=clamp(player.x+player.vx*dt,18,limit-35);
+    }else{
+      const floorBefore=player.level;
+      const axisNow=(keys.right?1:0)-(keys.left?1:0);
+      let delta=player.vx*dt*(floorBefore%2===0?1:-1);
+      if(player.stairsLock){
+        if(axisNow===player.stairsLock)delta=0;
+        else player.stairsLock=0;
+      }
+      const next=clamp(player.route+delta,0,maxRoute);
+      const crossed=Math.floor(next/ROUTE_SPAN)!==floorBefore;
+      setPlayerRoute(next);
+      // When reaching a landing, old directional input does not instantly
+      // send the player BACK down the stairs. Turn around to continue up.
+      if(crossed&&axisNow)player.stairsLock=axisNow;
+    }
     if(!player.onGround){
       player.y+=player.vy*dt;player.vy+=GRAVITY*dt;
       if(player.y>=0){player.y=0;player.vy=0;player.onGround=true;}
@@ -699,6 +732,10 @@
     const maxCam=Math.max(0,limit-W);
     const follow=Math.max(0,Math.min(maxCam,player.x-W*.49));
     camera+=(follow-camera)*Math.min(1,dt*5.6);
+    if(!inRoom()){
+      const targetY=-player.elevation+player.y*.13;
+      cameraY+=(targetY-cameraY)*Math.min(1,dt*5.5);
+    }
     updateNearby();
     if(!inRoom())updateSigns();
   }
@@ -728,8 +765,10 @@
       const curator=speakingGuide().state;
       return {inside:inRoom(),interior:room()?.state(),playerX:player.x,curatorX:curator.x,camera,
         nearest,count:buildings.length,buildingIds:buildings.map(b=>b.game.id),theme:nearest<0?null:buildings[nearest].style,
-        buildingWidths:buildings.map(b=>b.width),district:districts.findLast(d=>d.start<=player.x)?.status||null,
-        districts:districts.map(d=>({...d})),buildingPositions:buildings.map(b=>({id:b.game.id,x:entrance(b),district:b.status})),
+        buildingWidths:buildings.map(b=>b.width),district:districts.findLast(d=>d.start<=player.route)?.status||null,
+        districts:districts.map(d=>({...d})),buildingPositions:buildings.map(b=>({id:b.game.id,x:entrance(b),floor:b.floor,route:b.route,district:b.status})),
+        floor:player.level+1,floorCount,route:player.route,elevation:player.elevation,
+        stairs:player.onStairs,cameraY,
         guideBubbleVisible:!guideBubble.hidden,pixelArtReady:scenes.ready(nearest<0?(buildings[0]?.style||'studio'):buildings[nearest].style),
         renderDensity:LOGICAL_PIXEL_SIZE,curatorArtLoaded:curatorMotion.ready(),curatorHdAtlasReady:curatorMotion.ready(),
         curatorY:curator.y,curatorMode:curator.mode,curatorAffection:curator.affection,curatorForm,
