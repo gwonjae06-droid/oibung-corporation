@@ -63,7 +63,7 @@ html{scroll-padding-top:80px}
 .world-directory-number{color:#a27650;font:700 13px monospace}
 #games .world-stage{
   position:relative;isolation:isolate;
-  display:block;width:100%;height:clamp(300px,47vw,605px);
+  display:block;width:min(100%,980px);height:clamp(520px,74vh,850px);margin:0 auto;
   border:0;overflow:hidden;outline:none;
   background:#6c89a0;touch-action:pan-y;
   cursor:crosshair
@@ -187,7 +187,7 @@ html[data-gallery-mode="dark"] #games .world-all-games>summary{background:#34473
  #games .world-topbar{padding:13px 15px}
  #games .world-toolbar{gap:6px}
  #games .world-select-label{display:none}
- #games .world-stage{height:clamp(325px,55vw,485px)}
+ #games .world-stage{height:clamp(480px,70vh,720px)}
  #games #world-jump-select{max-width:155px}
  .world-stage-help{display:none}
  .world-nearby{font-size:12px}
@@ -202,7 +202,7 @@ html[data-gallery-mode="dark"] #games .world-all-games>summary{background:#34473
  #games .world-toolbar-button{flex:0 0 auto;font-size:11px;padding:7px 9px;min-height:40px}
  #games .world-review-button{display:none}
  #games .world-topbar{padding:12px}
- #games .world-stage{height:342px}
+ #games .world-stage{height:clamp(510px,76svh,690px)}
  .world-stage-stats{top:7px;left:7px;gap:6px;padding:4px 6px;font-size:10px}
  .world-stage-logo{font-size:10px}
  .world-building-sign{font-size:11px;max-width:120px;padding:4px 5px}
@@ -221,7 +221,7 @@ html[data-gallery-mode="dark"] #games .world-all-games>summary{background:#34473
  #games .world-topbar{padding:7px 12px;gap:4px}
  #games .world-heading p{display:none}
  #games .world-heading h2{font-size:16px!important;margin:0!important}
- #games .world-stage{height:max(245px,66vh)}
+ #games .world-stage{height:max(245px,76vh)}
  .world-controlbar{padding:6px 12px}
  .world-direction-pad button,.world-enter{min-height:43px;min-width:48px}
  .world-guide-bubble{font-size:10px}
