@@ -739,7 +739,12 @@
       if(player.stairsLock){
         if(axisNow===player.stairsLock || axisNow===0){
           delta=0;
-          if(axisNow===0)player.stairsLock=0;
+          if(axisNow===0){
+            // Land and release: cancel residual horizontal momentum, so
+            // releasing RIGHT on floor two cannot walk BACK DOWN by inertia.
+            player.vx=0;
+            player.stairsLock=0;
+          }
         }else{
           // Discard the previous direction's momentum at a landing.
           // Otherwise the first tap toward the new floor walks BACK down.
