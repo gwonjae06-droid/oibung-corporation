@@ -69,6 +69,10 @@ def outfit_variant(source,form,variant):
                 else:
                     d.line((hx-3,hy+2,hx+3,hy-3),fill=pin,width=2)
                     d.rectangle((hx-1,hy-1,hx+1,hy+1),fill=trim)
+    # Accessories may be plotted near transparent hair edges. Preserve
+    # the exact original 72-frame alpha silhouette: never invent opaque
+    # pixels or alter pose boundaries as a costume variant is selected.
+    out.putalpha(source.getchannel("A"))
     return out,label
 
 def build_costumes():
