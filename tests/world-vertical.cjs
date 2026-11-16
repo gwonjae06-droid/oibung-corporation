@@ -39,7 +39,9 @@ const fs=require('node:fs/promises');
    assert.deepEqual(dims.map(x=>x.slice(1)),[[1504,1746],[1504,1746],[512,94],[270,300]]);
    const box=await stage.boundingBox();
    assert.ok(box.height>=490,'tall village viewport');
-   assert.ok(box.width<=980,'shorter visible horizontal village');
+   // Fullscreen view intentionally spans the physical monitor. The world
+   // route itself stays just 1400px wide, then stacks vertically.
+   assert.ok(start.worldWidth<=1400,'compact horizontal world footprint');
    await page.screenshot({path:'artifacts/vertical-'+name+'-start.png',animations:'disabled'});
    // Jump to the second exhibit on the ground terrace, then walk UP
    // the physical stone flight. The direction reverses at the landing.
