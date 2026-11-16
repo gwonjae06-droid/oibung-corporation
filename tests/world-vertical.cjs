@@ -74,8 +74,14 @@ const fs=require('node:fs/promises');
    assert.equal(warped.nearest,start.buildingPositions.length-1);
    assert.equal(await page.locator('#world-enter').isEnabled(),true);
    await page.locator('#world-enter').click();
-   assert.equal(await page.locator('#game-dialog').evaluate(d=>d.open),true);
-   await page.locator('#close-detail').click();
+   const interior=await page.evaluate(()=>window.OIBUNG_WORLD.getState());
+   assert.equal(interior.inside,true,'door should enter its playable interior');
+   assert.equal(interior.interior.gameId,top.id);
+   assert.ok(await page.evaluate(()=>window.OIBUNG_WORLD.leaveInterior()),
+     'exiting the interior should work');
+   const returned=await page.evaluate(()=>window.OIBUNG_WORLD.getState());
+   assert.equal(returned.inside,false);
+   assert.equal(returned.floor,top.floor+1,'return to the originating terrace');
    const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-innerWidth);
    assert.ok(overflow<=7,'no document horizontal overflow');
    assert.deepEqual(errors,[],'JavaScript should not throw in '+name);
