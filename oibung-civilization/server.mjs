@@ -38,6 +38,7 @@ const client=readFileSync(new URL('./shared.js',import.meta.url),'utf8');
 http.createServer(async(req,res)=>{
  const path=req.url.split('?')[0];function respond(code,body,mime='application/json'){res.writeHead(code,{'content-type':mime+'; charset=utf-8','cache-control':'no-store'});res.end(mime==='application/json'?JSON.stringify(body):body)}
  try{
+ if(req.method==='GET'&&path==='/health')return respond(200,{service:'oibung-civilization',tick:state.tick});
  if(req.method==='GET'&&path==='/')return respond(200,page,'text/html');
  if(req.method==='GET'&&path==='/shared.js')return respond(200,client,'text/javascript');
  if(req.method!=='POST'||req.headers['content-type']?.split(';')[0]!=='application/json')return respond(404,{});
@@ -45,11 +46,13 @@ http.createServer(async(req,res)=>{
  const b=JSON.parse(raw||'{}');
  if(path==='/kakao/'+process.env.KAKAO_SECRET&&process.env.KAKAO_SECRET){
  const uid=b.userRequest?.user?.id,phrase=String(b.userRequest?.utterance||'').trim();if(typeof uid!=='string')return respond(400,{});
- const code=codes.get(phrase);
- if(code&&code.until>Date.now()){data.links[uid]=code.token;codes.delete(phrase);save()}
+ const key=phrase.replace(/^연결\s*/, '').replace(/[-\s]/g,'').toLowerCase();
+ const code=codes.get(key);
+ if(code&&code.until>Date.now()){for(const [old,t] of Object.entries(data.links))if(t===code.token)delete data.links[old];data.links[uid]=code.token;codes.delete(key);save()}
  const player=data.people[data.links[uid]];
  let msg='웹에서 연결 코드를 발급해 입력해 주세요.';
  if(player){const p=state.p[player.apostle];msg=phrase.startsWith('/계시 ')?command(player,'oracle',phrase.slice(4)):phrase==='/역사'?state.log.slice(0,3).join('\n'):p?p.name+' · 식량 '+p.food+' · 별 기록 '+p.stars:'사도를 선택해 주세요.';save()}
+ if(code&&code.until>Date.now())msg='성좌 연결 완료! /사도 또는 /역사를 입력해 보세요.';
  return respond(200,{version:'2.0',template:{outputs:[{simpleText:{text:msg}}]}})
  }
  if(!['/world','/command','/link'].includes(path))return respond(404,{});
@@ -57,8 +60,8 @@ http.createServer(async(req,res)=>{
  if(!player){if(path!=='/world')return respond(401,{});token=randomUUID();player=data.people[token]={apostle:-1,power:45};res.setHeader('Set-Cookie','star='+token+'; Path=/; HttpOnly; SameSite=Strict');save()}
  let message='';
  if(path==='/command'){if(!b.id||typeof b.id!=='string')return respond(400,{});player.recent??=[];const prev=player.recent.find(v=>v.id===b.id);if(prev)message=prev.message;else{message=command(player,b.type,String(b.value??''));world.record(message);player.recent.unshift({id:b.id,message});player.recent.length=Math.min(32,player.recent.length);save()}}
- if(path==='/link'){if(!process.env.KAKAO_SECRET)message='채널 스킬 서버 설정이 필요합니다.';else{message=randomBytes(8).toString('hex');codes.set(message,{token,until:Date.now()+300000})}}
- respond(200,{state:snapshot(player),message})
+ if(path==='/link'){if(!process.env.KAKAO_SECRET)message='채널 스킬 서버 설정이 필요합니다.';else{for(const [key,c] of codes)if(c.token===token||c.until<=Date.now())codes.delete(key);message=randomBytes(8).toString('hex');codes.set(message,{token,until:Date.now()+300000})}}
+ respond(200,{state:snapshot(player),message,connection:{enabled:Boolean(process.env.KAKAO_SECRET),linked:Object.values(data.links).includes(token),channel:/^https:\/\/pf\.kakao\.com\/[A-Za-z0-9_-]+(?:\/chat)?\/?$/.test(process.env.KAKAO_CHANNEL_URL||'')?process.env.KAKAO_CHANNEL_URL.replace(/(?:\/chat)?\/?$/,'/chat'):null},code:path==='/link'&&codes.has(message)?message:null})
  }catch{respond(400,{error:'요청 처리 실패'})}
 }).listen(Number(process.env.PORT||8080));
 process.on('SIGTERM',()=>{save();process.exit()});
