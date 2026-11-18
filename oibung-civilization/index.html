@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>오이붕 문명</title><style>*{box-sizing:border-box}body{background:#101b25;color:#f2eee2;font:16px system-ui;margin:auto;max-width:1080px;padding:4vw}header,section{display:flex;align-items:center;justify-content:space-between;gap:14px}small,label{color:#aec9bc}h1{font: bold clamp(30px,5vw,58px) Georgia,serif;margin:8px 0}canvas{width:100%;image-rendering:pixelated;display:block;background:#243c50;cursor:pointer;border-radius:8px}article{background:#1c2b34;padding:20px;border-radius:10px;margin-top:14px}button,input,select{font:inherit;padding:10px;border:0;border-radius:6px;margin:4px 2px}button{background:#dfbd75;cursor:pointer}input{width:min(95%,360px)}li{margin:.6em 0}section{flex-wrap:wrap}</style><header><div><small>OIBUNG CIVILIZATION</small><h1>우주 끝의 구슬</h1></div><span id="clock"></span></header><canvas id="map" width="720" height="384" aria-label="주민을 선택할 수 있는 마을 지도"></canvas><article><small>공동 건설</small><p id="construction"></p></article><article><section><div><label>마을 주민</label> <select id="pick"></select></div><button id="choose">사도로 선택</button></section><canvas id="portrait" width="64" height="64" style="width:76px;float:left;margin-right:12px"></canvas><p id="bio"></p><div id="oracle"><input id="msg" placeholder="식량을 모아라 / 이웃을 도와라 / 별을 관찰해"><button id="send">계시 전달</button></div><p id="reply" role="status"></p></article><article><h2>문명과 성좌</h2><p id="worldInfo"></p><button onclick="invoke('신탁')">신탁 10</button><button onclick="invoke('축복')">축복 15</button><button onclick="invoke('기적')">기적 40</button><button onclick="invoke('강림')">강림 100</button><button id="contract" onclick="pact()">외신과 계약</button><details><summary>탐사 지도와 역사</summary><p id="atlas"></p><ol id="historyList"></ol></details></article><article><small>CHRONICLE</small><h2>마을 연대기</h2><ul id="log"></ul></article><script>
+<!doctype html><html lang="ko"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>오이붕 문명</title><style>*{box-sizing:border-box}body{background:#101b25;color:#f2eee2;font:16px system-ui;margin:auto;max-width:1080px;padding:4vw}header,section{display:flex;align-items:center;justify-content:space-between;gap:14px}small,label{color:#aec9bc}h1{font: bold clamp(30px,5vw,58px) Georgia,serif;margin:8px 0}canvas{width:100%;image-rendering:pixelated;display:block;background:#243c50;cursor:pointer;border-radius:8px}article{background:#1c2b34;padding:20px;border-radius:10px;margin-top:14px}button,input,select{font:inherit;padding:10px;border:0;border-radius:6px;margin:4px 2px}button{background:#dfbd75;cursor:pointer}input{width:min(95%,360px)}li{margin:.6em 0}section{flex-wrap:wrap}</style><header><div><small>OIBUNG CIVILIZATION</small><h1>우주 끝의 구슬</h1></div><span id="clock"></span></header><canvas id="map" width="720" height="384" aria-label="주민을 선택할 수 있는 마을 지도"></canvas><article><small>공동 건설</small><p id="construction"></p></article><article><section><div><label>마을 주민</label> <select id="pick"></select></div><button id="choose">사도로 선택</button></section><canvas id="portrait" width="64" height="64" style="width:76px;float:left;margin-right:12px"></canvas><p id="bio"></p><div id="oracle"><input id="msg" placeholder="식량을 모아라 / 이웃을 도와라 / 별을 관찰해"><button id="send">계시 전달</button></div><p id="reply" role="status"></p></article><article><h2>문명과 성좌</h2><p id="worldInfo"></p><button onclick="invoke('신탁')">신탁 10</button><button onclick="invoke('축복')">축복 15</button><button onclick="invoke('기적')">기적 40</button><button onclick="invoke('강림')">강림 100</button><button id="contract" onclick="pact()">외신과 계약</button><details><summary>탐사 지도와 역사</summary><p id="atlas"></p><ol id="historyList"></ol></details></article><article><h2>마을 의회와 개척지</h2><p id="society"></p><p id="journal"></p><ul id="colonies"></ul><p id="lineage"></p></article><article><small>CHRONICLE</small><h2>마을 연대기</h2><ul id="log"></ul></article><script>
 const names='농 빵 비서 최규원 박성원 배서준 이권재 별이 단비 솔 달래 보리'.split(' '),traits=['호기심 많은','다정한','신중한'],places=[[48,112],[165,132],[308,96],[233,105]],acts=['채집','나눔','별 관찰','식사'];let s;try{s=JSON.parse(localStorage.marble1)}catch{}s??={tick:0,apostle:-1,log:[],p:names.map((name,i)=>({name,x:38+i*23,y:108+i%3*8,food:2,hunger:i%4,act:i%4,stars:0,debt:{}}))};s.wood ??= 0;
 s.houses ??= 0;
 s.progress ??= 0;
@@ -142,7 +142,64 @@ function paintFields(){
  }});
 }
 
+
+civ.charter??='공동 분배';
+civ.faith??='';civ.colonies??=[];civ.trades??=0;civ.heritage??=[];
+for(const resident of s.p){resident.faith??=0;resident.lore??=[];resident.trust??=2;resident.coins??=2}
+function villageCouncil(){
+ const voters=s.p.filter(p=>p.food>=3&&p.coins>=2);
+ const law=voters.length>s.p.length/2?'자유 교역':'공동 분배';
+ if(law!==civ.charter){civ.charter=law;record('마을 회의가 '+law+' 조례 채택 · 교역 찬성 '+voters.length+'표')}
+ const sellers=s.p.filter(p=>p.food>=3).sort((a,b)=>b.food-a.food);
+ for(const buyer of s.p.filter(p=>p.food<=1&&p.coins>0)){
+ const seller=sellers.find(p=>p.food>=3);if(!seller)break;
+ seller.food--;buyer.food++;buyer.coins--;seller.coins++;civ.trades++;
+ buyer.memory=seller.name+'에게 동전 하나로 식량을 샀다.'
+ }
+}
+function teach(a,b){
+ const lesson=a.lore.find(l=>!b.lore.includes(l));
+ if(lesson){b.lore.push(lesson);b.memory=a.name+'에게 '+lesson+' 원리를 배웠다.'}
+ if(a.faith>=2&&b.faith<a.faith&&b.friends[a.name]>=2)b.faith++;
+}
+function registerFaith(){
+ const believers=s.p.filter(p=>p.faith>=2);
+ if(!civ.faith&&believers.length>=3){civ.faith='첫별의 회중';record(believers.map(p=>p.name).join('·')+' 주민들이 '+civ.faith+' 창립')}
+ if(civ.faith&&believers.length>=3&&civ.stock>=3){const needy=s.p.filter(p=>p.food<=1).slice(0,3);
+ for(const p of needy){civ.stock--;p.food++;p.memory=civ.faith+'의 공동 식사를 기억한다.'}}
+}
+function frontier(){
+ for(const c of civ.colonies){
+ const yieldCount=Math.max(0,Math.floor(c.population*(c.greenhouse?1.5:c.fertility)));
+ c.food+=yieldCount;
+ const need=Math.ceil(c.population*.75);
+ if(c.food<need){if(civ.stock>=3){civ.stock-=3;c.food+=3}else if(c.population>1)c.population--}
+ c.food=Math.max(0,c.food-need);
+ if(c.food>=8&&c.population<30){c.food-=4;c.population++}
+ c.ore+=Math.ceil(c.population/(1+c.gravity));
+ if(!c.greenhouse&&c.ore>=8){c.ore-=8;c.greenhouse=true;record(c.name+' 정착민이 현지 광물로 온실 완공')}
+ if(c.food>=10){c.food-=3;civ.stock+=3}
+ }
+ const candidates=civ.systems.slice(0,8);
+ const dest=candidates.find(sys=>!civ.colonies.some(c=>c.name===sys.star));
+ if(dest&&civ.stock>=5&&s.wood>=2){civ.stock-=5;s.wood-=2;
+ const colony={name:dest.star,gravity:dest.gravity,food:5,ore:0,population:2,greenhouse:false,fertility:1.55-dest.gravity*.38,marble:1};
+ civ.colonies.push(colony);record(dest.star+'에 첫 정착 기지 건설 · 공동 창고 보급품 5개 사용')}
+ if(civ.treaty&&!civ.colonies.some(c=>c.marble===2)){
+ const origin=civ.colonies.find(c=>c.population>=5&&c.food>=3&&c.ore>=4);
+ if(origin){origin.population-=2;origin.food-=3;origin.ore-=4;civ.colonies.push({name:'거울바다',marble:2,population:2,food:3,ore:0,gravity:.6,fertility:1.1,greenhouse:false});record(origin.name+' 주민 두 명이 구슬 경계를 넘어 거울바다에 정착했다.')}
+ }
+}
+function societyUI(){
+ const p=s.p[sel()];society.textContent=civ.charter+' · 성사된 거래 '+civ.trades+'건 · '+(civ.faith||'조직된 신앙 없음');
+ journal.textContent=p.name+' · 동전 '+p.coins+' · 성좌 신뢰 '+p.trust+' · 전승 지식 '+(p.lore.join(', ')||'없음');
+ colonies.replaceChildren(...civ.colonies.map(c=>Object.assign(document.createElement('li'),{textContent:'구슬 '+c.marble+' · '+c.name+' · '+c.population+'명 · 식량 '+c.food+' · 광물 '+c.ore+(c.greenhouse?' · 온실 가동':' · 개척 중')})));
+ lineage.textContent=civ.heritage.slice(-4).map(r=>r.name+' → '+r.heir+' ('+r.lesson+')').join(' / ')
+}
 function advanceWorld(){
+ if(s.tick%96===0)villageCouncil();
+ if(s.tick%144===0)registerFaith();
+ if(s.tick%192===0)frontier();
  if(s.tick%24===0)civ.power=Math.min(100,civ.power+1);
  if(civ.lawUntil&&s.tick>=civ.lawUntil){civ.gravity=1;civ.lawUntil=0;record('중력 이상이 끝나 이동 속도가 회복됐다.')}
  if(s.tick%144===0){
@@ -162,7 +219,7 @@ function advanceWorld(){
  for(const p of s.p){
  const choice=s.p.filter(q=>q!==p).sort((a,b)=>(p.friends[b.name]||0)+(p.debt[b.name]||0)-(p.friends[a.name]||0)-(p.debt[a.name]||0))[0];
  if((p.friends[choice.name]||p.debt[choice.name]))votes.set(choice.name,(votes.get(choice.name)||0)+1);
- if(p.food>2){p.food--;civ.stock++}
+ if(p.food>(civ.charter==='공동 분배'?2:4)){p.food--;civ.stock++}
  }
  const winner=[...votes].sort((a,b)=>b[1]-a[1])[0];
  if(winner&&winner[0]!==civ.leader){civ.leader=winner[0];record(winner[0]+' 주민 대표 선출 · '+winner[1]+'표')}
@@ -170,7 +227,7 @@ function advanceWorld(){
  }
  if(s.tick%48===0){
  const discoveries=[['천문력',civ.observations>=8],['정밀 공구',civ.craft>=8],['항법',civ.knowledge.includes('천문력')&&civ.observations>=24],['추진 기관',civ.knowledge.includes('정밀 공구')&&s.houses>=2&&civ.craft>=18]];
- for(const [name,ok] of discoveries)if(ok&&!civ.knowledge.includes(name)){civ.knowledge.push(name);record('마을 연구 기록에 '+name+' 원리가 등록됐다.')}
+ for(const [name,ok] of discoveries)if(ok&&!civ.knowledge.includes(name)){civ.knowledge.push(name);const scholar=[...s.p].sort((a,b)=>b.stars-a.stars)[0];scholar.lore.push(name);record('마을 연구 기록에 '+name+' 원리가 등록됐다.')}
  if(civ.knowledge.length>=4&&s.wood>=4&&civ.stock>=2){s.wood-=4;civ.stock-=2;civ.fleet++;record('목재 4와 보급 식량 2로 탐사선 완성')}
  if(civ.fleet&&civ.stock>=1){civ.fleet--;civ.stock--;civ.voyages++;
  const n=civ.voyages,star=['청람','유리','노을','서리'][(n-1)%4]+' '+n;
@@ -184,6 +241,8 @@ function advanceWorld(){
  if(s.tick-p.born>=3600+i*96){
  const old=p.name;record(old+' 생애 종료 · 별 기록 '+p.stars+'건을 후대에 전승');
  if(s.apostle===i){s.apostle=-1;record('사도의 별자리가 비었다. 새 사도를 선택할 수 있다.')}
+ const lesson=p.lore[0];p.lore=lesson?[lesson]:[];p.trust=2;p.faith=Math.floor(p.faith/2);
+ civ.heritage.push({name:old,heir:names[i]+' '+(p.generation+1)+'세',lesson:lesson||'생활 기록'});if(civ.heritage.length>100)civ.heritage.shift();
  p.generation++;p.name=names[i]+' '+p.generation+'세';p.born=s.tick;p.stars=Math.floor(p.stars/2);p.friends={};p.debt={};p.hunger=0;p.fatigue=0;p.memory=old+'의 기록을 물려받았다.';pick.options[i].text=p.name
  }
 }
@@ -192,6 +251,8 @@ function invoke(type){
  const cost={신탁:10,축복:15,기적:40,강림:100}[type];
  if(civ.power<cost){reply.textContent='성력이 부족해.';return}
  civ.power-=cost;
+ for(const witness of s.p){if(Math.hypot(witness.x-p.x,witness.y-p.y)<38)witness.faith=Math.min(8,witness.faith+1)}
+ p.trust=Math.min(8,p.trust+1);
  if(type==='신탁'){p.act=2;p.dwelling=0}
  if(type==='축복'){p.fatigue=0;p.hunger=Math.max(0,p.hunger-2)}
  if(type==='기적')s.berries=Math.min(30,s.berries+10);
@@ -204,12 +265,14 @@ function pact(){
  civ.stock-=3;civ.treaty=true;civ.gravity=1;civ.lawUntil=0;record('추방자에게 보급품을 제공해 다른 구슬로 가는 항로를 얻었다.');save();ui()
 }
 
-const ctx=map.getContext('2d'),rect=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w,h)},note=t=>{s.log.unshift(t);s.log.length=Math.min(15,s.log.length)},save=()=>{try{localStorage.marble1=JSON.stringify(s)}catch{}},sel=()=>+pick.value;names.forEach((n,i)=>pick.add(new Option(s.p[i].name,i)));pick.value=Math.max(0,s.apostle);function ui(){worldInfo.textContent='대표 '+(civ.leader||'공석')+' · 공동 식량 '+civ.stock+' · 상조회 '+(civ.groups||[]).length+'개 · 성력 '+civ.power+' · 연구 '+(civ.knowledge.join(', ')||'관측 중');contract.hidden=!civ.contact||civ.treaty;atlas.textContent=civ.systems.slice(-16).map(v=>v.star+' ('+v.gravity.toFixed(1)+'g)').join(' · ')||'미탐사';historyList.replaceChildren(...civ.archives.slice(0,30).map(v=>Object.assign(document.createElement('li'),{textContent:(1+Math.floor(v.tick/48))+'일 · '+v.message})));construction.textContent='누적 수확 '+s.land.harvest+' · 숲 '+s.land.trees+' · 물고기 '+s.land.fish+' · 열매 '+s.berries+'개 · 공동 목재 '+s.wood+'개 · 새집 '+s.houses+'/3채'+(s.houses<3?' · 다음 집 '+s.progress+'/6':' · 건설 완료');let p=s.p[sel()];let pc=portrait.getContext('2d');pc.clearRect(0,0,64,64);sprite(pc,sel(),32,58,2,0,false,-1);bio.textContent=profiles[sel()][0]+' · '+profiles[sel()][1]+' · '+traits[sel()%3]+' '+p.name+' · '+acts[p.act]+' 중 · 식량 '+p.food+' · 별 기록 '+p.stars+' · '+p.memory;choose.textContent=s.apostle===sel()?'나의 사도':'사도로 선택';oracle.hidden=s.apostle!==sel();clock.textContent=seasons[season()]+' '+(1+Math.floor(s.tick/48))+'일 · '+hour()+'시 · '+weather();log.replaceChildren(...s.log.map(t=>Object.assign(document.createElement('li'),{textContent:t})));}pick.onchange=()=>{reply.textContent='';ui()};choose.onclick=()=>{s.apostle=sel();note(names[sel()]+'에게 별빛이 닿았다.');save();ui()};send.onclick=()=>{let p=s.p[sel()],v=msg.value,a=/별|우주|관찰/.test(v)?2:/이웃|도와|나눠|나눔/.test(v)?1:/채집|모아|식량/.test(v)?0:-1;if(a<0){reply.textContent='채집, 이웃 돕기, 별 관찰 중 하나를 제안해 줘.';return}let why=p.hunger>=6?'지금은 배가 너무 고파요.':a===1&&p.food<2?'나눌 식량을 먼저 구할게요.':'';p.dwelling=0;p.act=why?(p.food&&p.hunger>=6?3:0):a;reply.textContent=p.name+' · '+(why||acts[a]+'을 시작할게요.');note(reply.textContent);save();ui()};let lastMove=0;
+const ctx=map.getContext('2d'),rect=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w,h)},note=t=>{s.log.unshift(t);s.log.length=Math.min(15,s.log.length)},save=()=>{try{localStorage.marble1=JSON.stringify(s)}catch{}},sel=()=>+pick.value;names.forEach((n,i)=>pick.add(new Option(s.p[i].name,i)));pick.value=Math.max(0,s.apostle);function ui(){societyUI();worldInfo.textContent='대표 '+(civ.leader||'공석')+' · 공동 식량 '+civ.stock+' · 상조회 '+(civ.groups||[]).length+'개 · 성력 '+civ.power+' · 연구 '+(civ.knowledge.join(', ')||'관측 중');contract.hidden=!civ.contact||civ.treaty;atlas.textContent=civ.systems.slice(-16).map(v=>v.star+' ('+v.gravity.toFixed(1)+'g)').join(' · ')||'미탐사';historyList.replaceChildren(...civ.archives.slice(0,30).map(v=>Object.assign(document.createElement('li'),{textContent:(1+Math.floor(v.tick/48))+'일 · '+v.message})));construction.textContent='누적 수확 '+s.land.harvest+' · 숲 '+s.land.trees+' · 물고기 '+s.land.fish+' · 열매 '+s.berries+'개 · 공동 목재 '+s.wood+'개 · 새집 '+s.houses+'/3채'+(s.houses<3?' · 다음 집 '+s.progress+'/6':' · 건설 완료');let p=s.p[sel()];let pc=portrait.getContext('2d');pc.clearRect(0,0,64,64);sprite(pc,sel(),32,58,2,0,false,-1);bio.textContent=profiles[sel()][0]+' · '+profiles[sel()][1]+' · '+traits[sel()%3]+' '+p.name+' · '+acts[p.act]+' 중 · 식량 '+p.food+' · 별 기록 '+p.stars+' · '+p.memory;choose.textContent=s.apostle===sel()?'나의 사도':'사도로 선택';oracle.hidden=s.apostle!==sel();clock.textContent=seasons[season()]+' '+(1+Math.floor(s.tick/48))+'일 · '+hour()+'시 · '+weather();log.replaceChildren(...s.log.map(t=>Object.assign(document.createElement('li'),{textContent:t})));}pick.onchange=()=>{reply.textContent='';ui()};choose.onclick=()=>{s.apostle=sel();s.p[sel()].trust=Math.max(0,s.p[sel()].trust);note(s.p[sel()].name+'에게 별빛이 닿았다.');save();ui()};send.onclick=()=>{let p=s.p[sel()],v=msg.value,a=/별|우주|관찰/.test(v)?2:/이웃|도와|나눠|나눔/.test(v)?1:/채집|모아|식량/.test(v)?0:-1;if(a<0){reply.textContent='채집, 이웃 돕기, 별 관찰 중 하나를 제안해 줘.';return}let why=p.hunger>=6?'지금은 배가 너무 고파요.':a===1&&p.food<2?'나눌 식량을 먼저 구할게요.':'';if(why)p.trust=Math.max(-3,p.trust-1);
+ if(p.trust<=-3){s.apostle=-1;reply.textContent=p.name+'이 반복된 강요로 성좌를 떠났다.';record(reply.textContent);save();ui();return}
+ p.dwelling=0;p.act=why?(p.food&&p.hunger>=6?3:0):a;reply.textContent=p.name+' · '+(why||acts[a]+'을 시작할게요.');note(reply.textContent);save();ui()};let lastMove=0;
 const tracks=new Map();
 function step(){lastMove=performance.now();s.p.forEach((p,i)=>tracks.set(i,[p.x,p.y]));s.tick++;advanceWorld();landscapeTick();s.p.forEach((p,i)=>{let [x,y]=target(p,i);walk(p,x,y);if(p.x!==x||p.y!==y)return;if((p.dwelling??0)<3){p.dwelling=(p.dwelling??0)+1;return}p.dwelling=0;
  finishWork(p);farm(p,i);let a=p.act;
  if(a===0&&s.berries){s.berries--;p.food++}if(a===8&&s.land.fish){s.land.fish--;p.food++}
- if(a===7){const q=s.p.find(q=>q!==p&&Math.hypot(q.x-p.x,q.y-p.y)<24);if(q){for(const [u,v] of [[p,q],[q,p]]){u.friends[v.name]=(u.friends[v.name]??0)+1;u.memory=v.name+'와 마을길에서 이야기했다.'}note(p.name+'와 '+q.name+'의 대화 · 친분 '+p.friends[q.name])}}if(a===3&&p.food){p.food--;p.hunger=0}else p.hunger++;if(a===2){p.stars++;civ.observations++}if(a===4||a===5)civ.craft++;if(a===1&&p.food){let others=s.p.filter(q=>q!==p),q=others.sort((u,v)=>(p.debt[v.name]||0)-(p.debt[u.name]||0)||u.food-v.food)[0];q.food++;p.food--;q.debt[p.name]=(q.debt[p.name]||0)+1;note(p.name+' → '+q.name+'에게 식량을 나눴다. '+q.name+'이 은혜를 기억한다.')}p.act=nextGoal(p,i)});save();ui()}
+ if(a===7){const q=s.p.find(q=>q!==p&&Math.hypot(q.x-p.x,q.y-p.y)<24);if(q){teach(p,q);teach(q,p);for(const [u,v] of [[p,q],[q,p]]){u.friends[v.name]=(u.friends[v.name]??0)+1;u.memory=v.name+'와 마을길에서 이야기했다.'}note(p.name+'와 '+q.name+'의 대화 · 친분 '+p.friends[q.name])}}if(a===3&&p.food){p.food--;p.hunger=0}else p.hunger++;if(a===2){p.stars++;civ.observations++}if(a===4||a===5)civ.craft++;if(a===1&&p.food){let others=s.p.filter(q=>q!==p),q=others.sort((u,v)=>(p.debt[v.name]||0)-(p.debt[u.name]||0)||u.food-v.food)[0];q.food++;p.food--;q.debt[p.name]=(q.debt[p.name]||0)+1;note(p.name+' → '+q.name+'에게 식량을 나눴다. '+q.name+'이 은혜를 기억한다.')}p.act=nextGoal(p,i)});save();ui()}
 const project=(x,y)=>[180+(x-180)*.82-(y-122)*.61,105+(x-180)*.18+(y-122)*.79];
 function face(points,color){ctx.fillStyle=color;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill()}
 function surface(points,color,z=0){face(points.map(([x,y])=>{const [u,v]=project(x,y);return [u,v-z]}),color)}
