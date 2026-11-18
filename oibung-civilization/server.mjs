@@ -51,10 +51,10 @@ function command(player,type,value){
  if(!p)return '사도를 먼저 선택해 주세요.';
  if(type==='pact'){const c=state.civil;if(!c.contact||c.treaty||c.stock<3)return '계약 조건이 부족합니다.';c.stock-=3;c.treaty=true;c.gravity=1;c.lawUntil=0;return '외신과 계약했다.'}
  if(type==='oracle'){
- const act=/별|우주|관찰/.test(value)?2:/이웃|도와|나눔/.test(value)?1:/식량|채집|모아/.test(value)?0:-1;
+ const proposal=MarbleSociety.propose(value);const act=proposal?({'천문 기록':2,'구호 활동':0,'공방 연구':4}[proposal]):/별|우주|관찰/.test(value)?2:/이웃|도와|나눔/.test(value)?1:/식량|채집|모아/.test(value)?0:-1;
  if(act<0)return '별 관찰, 채집, 이웃 돕기를 제안해 주세요.';
  if(p.hunger>=6||(act===1&&p.food<2)){if(--p.trust<=-3)player.apostle=-1;return p.name+'이 생존을 우선해 계시를 거절했다.'}
- p.act=act;p.dwelling=0;return p.name+'이 계시를 받아들였다.'
+ if(proposal){MarbleSociety.assign(p,proposal,state.tick);world.record(p.name+' · '+proposal+' 계시 수락',{actor:p.name,kind:'계시'});p.plan.cause=state.civil.eventSerial}p.act=act;p.dwelling=0;return p.name+'이 계시를 받아들였다.'
  }
  const cost=new Map([['신탁',10],['축복',15],['기적',40],['강림',100]]).get(type);
  if(!cost||player.power<cost)return '권능이나 성력을 확인해 주세요.';
@@ -65,8 +65,22 @@ function command(player,type,value){
  if(type==='강림'){state.civil.gravity=1;state.civil.lawUntil=0;for(const q of state.p)q.fatigue=0}
  return type+' 발현 · '+p.name
 }
+
+function chatCommand(player,phrase){
+ const [verb,...words]=phrase.trim().split(/\s+/),arg=words.join(' '),p=state.p[player.apostle],c=state.civil;
+ switch(verb){
+ case '/세계':return '마을 '+(1+Math.floor(state.tick/48))+'일 · 주민 '+state.p.length+'명 · 개척지 '+c.colonies.length+'개 · 대표 '+(c.leader||'공석');
+ case '/성좌':return '성력 '+player.power+' · 사도 '+(p?.name||'미선택');
+ case '/주민':{const resident=state.p.find(v=>v.name===arg);return resident?resident.name+' · '+resident.memory+' · 목표 '+(resident.plan?.title||'일상'):'주민 이름을 확인해 주세요.'}
+ case '/역사':return state.log.slice(0,3).join('\n')||'기록이 아직 없습니다.';
+ case '/계시':case '/신탁':case '/축복':case '/기적':case '/강림':{
+ const result=command(player,verb==='/계시'?'oracle':verb.slice(1),arg);world.record(result);return result}
+ default:return p?p.name+' · 식량 '+p.food+' · 별 기록 '+p.stars:'웹에서 사도를 선택해 주세요.'
+ }}
+
 setInterval(()=>{world.step();for(const player of Object.values(data.people)){if(player.apostle>=0&&state.p[player.apostle].name!==player.name)player.apostle=-1;if(state.tick%24===0)player.power=Math.min(100,player.power+1)}if(state.tick%12===0)save()},600);
 const page=readFileSync(new URL('./index.html',import.meta.url),'utf8').replace('<script>','<script>globalThis.SERVER_WORLD=true;</script><script>').replace('</html>','<script src="/shared.js"></script></html>');
+const rules=readFileSync(new URL('./society.js',import.meta.url),'utf8');
 const client=readFileSync(new URL('./shared.js',import.meta.url),'utf8');
 http.createServer(async(req,res)=>{
  const path=req.url.split('?')[0];function respond(code,body,mime='application/json'){res.writeHead(code,{'content-type':mime+'; charset=utf-8','cache-control':'no-store'});res.end(mime==='application/json'?JSON.stringify(body):body)}
@@ -74,6 +88,7 @@ http.createServer(async(req,res)=>{
  if(req.method==='GET'&&['/connect/kakao','/connect/kakao/callback'].includes(path))return await kakaoLogin(req,res,path);
  if(req.method==='GET'&&path==='/health')return respond(200,{service:'oibung-civilization',tick:state.tick});
  if(req.method==='GET'&&path==='/')return respond(200,page,'text/html');
+ if(req.method==='GET'&&path==='/society.js')return respond(200,rules,'text/javascript');
  if(req.method==='GET'&&path==='/shared.js')return respond(200,client,'text/javascript');
  if(req.method!=='POST'||req.headers['content-type']?.split(';')[0]!=='application/json')return respond(404,{});
  let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>16000)return respond(413,{})}
@@ -86,7 +101,7 @@ http.createServer(async(req,res)=>{
  const appId=String(b.userRequest.user.properties?.appUserId||'');
  const player=data.people[data.kakaoAccounts[appId]||data.links[uid]];
  let msg='게임에서 카카오톡 연결을 눌러 주세요. 계정 연결 후에도 이 메시지가 보이면 채널의 사용자 식별 동의를 확인해 주세요.';
- if(player){const p=state.p[player.apostle];msg=phrase.startsWith('/계시 ')?command(player,'oracle',phrase.slice(4)):phrase==='/역사'?state.log.slice(0,3).join('\n'):p?p.name+' · 식량 '+p.food+' · 별 기록 '+p.stars:'사도를 선택해 주세요.';save()}
+ if(player){msg=chatCommand(player,phrase);save()}
  if(code&&code.until>Date.now())msg='성좌 연결 완료! /사도 또는 /역사를 입력해 보세요.';
  return respond(200,{version:'2.0',template:{outputs:[{simpleText:{text:msg}}]}})
  }
