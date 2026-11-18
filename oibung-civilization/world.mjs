@@ -1,3 +1,4 @@
+import './society.js';
 export function createWorld(initial){
 const note=message=>{s.log.unshift(message);s.log.length=Math.min(15,s.log.length)};
 const names='농 빵 비서 최규원 박성원 배서준 이권재 별이 단비 솔 달래 보리'.split(' '),traits=['호기심 많은','다정한','신중한'],places=[[48,112],[165,132],[308,96],[233,105]],acts=['채집','나눔','별 관찰','식사'];let s=initial;s??={tick:0,apostle:-1,log:[],p:names.map((name,i)=>({name,x:38+i*23,y:108+i%3*8,food:2,hunger:i%4,act:i%4,stars:0,debt:{}}))};s.wood ??= 0;
@@ -24,6 +25,7 @@ function nextGoal(person,index) {
   if(s.houses===3&&index%4===2&&s.wood<12)return 4;
   if(index%4===1&&person.food<4)return s.berries?0:8;
   if (s.houses < 3 && index % 3 === 2) return s.wood ? 5 : 4;
+  const planned=MarbleSociety.select(s,person,index);if(planned!==null)return planned;
   if((s.tick+index)%4===0)return 7;
   return (index+s.tick%2)%3;
 }
@@ -69,9 +71,10 @@ for(const p of s.p){p.friends??={};p.memory??='아직 기록된 만남이 없다
 
 s.civil ??= {stock:0,leader:null,knowledge:[],observations:0,craft:0,voyages:0,systems:[],boundary:false,contact:false,gravity:1,lawUntil:0,power:45,archives:[],fleet:0};
 const civ=s.civil;
-function record(message){
+function record(message,details={}){
  note(message);
- civ.archives.unshift({tick:s.tick,message});
+ civ.eventSerial=(civ.eventSerial||0)+1;
+ civ.archives.unshift({id:civ.eventSerial,tick:s.tick,message,...details});
  if(civ.archives.length>300)civ.archives.pop();
 }
 
@@ -146,13 +149,14 @@ function frontier(){
  civ.colonies.push(colony);record(dest.star+'에 첫 정착 기지 건설 · 공동 창고 보급품 5개 사용')}
  if(civ.treaty&&!civ.colonies.some(c=>c.marble===2)){
  const origin=civ.colonies.find(c=>c.population>=5&&c.food>=3&&c.ore>=4);
- if(origin){origin.population-=2;origin.food-=3;origin.ore-=4;civ.colonies.push({name:'거울바다',marble:2,population:2,food:3,ore:0,gravity:.6,fertility:1.1,greenhouse:false});record(origin.name+' 주민 두 명이 구슬 경계를 넘어 거울바다에 정착했다.')}
+ if(origin){const voyagers=MarbleSociety.residents(s,origin).splice(-2);origin.population-=2;origin.food-=3;origin.ore-=4;civ.colonies.push({name:'거울바다',people:voyagers,marble:2,population:2,food:3,ore:0,gravity:.6,fertility:1.1,greenhouse:false});record(origin.name+' 주민 두 명이 구슬 경계를 넘어 거울바다에 정착했다.')}
  }
 }
 function advanceWorld(){
  if(s.tick%96===0)villageCouncil();
  if(s.tick%144===0)registerFaith();
- if(s.tick%192===0)frontier();
+ if(s.tick%192===0){frontier();MarbleSociety.govern(s,record)}
+ if(s.tick%384===0)MarbleSociety.outsiders(s,record);
  if(s.tick%24===0)civ.power=Math.min(100,civ.power+1);
  if(civ.lawUntil&&s.tick>=civ.lawUntil){civ.gravity=1;civ.lawUntil=0;record('중력 이상이 끝나 이동 속도가 회복됐다.')}
  if(s.tick%144===0){
@@ -194,15 +198,16 @@ function advanceWorld(){
  if(s.tick-p.born>=3600+i*96){
  const old=p.name;record(old+' 생애 종료 · 별 기록 '+p.stars+'건을 후대에 전승');
  if(s.apostle===i){s.apostle=-1;record('사도의 별자리가 비었다. 새 사도를 선택할 수 있다.')}
- const lesson=p.lore[0];p.lore=lesson?[lesson]:[];p.trust=2;p.faith=Math.floor(p.faith/2);
+ p.plan=null;p.completed=0;const lesson=p.lore[0];p.lore=lesson?[lesson]:[];p.trust=2;p.faith=Math.floor(p.faith/2);
  civ.heritage.push({name:old,heir:names[i]+' '+(p.generation+1)+'세',lesson:lesson||'생활 기록'});if(civ.heritage.length>100)civ.heritage.shift();
  p.generation++;p.name=names[i]+' '+p.generation+'세';p.born=s.tick;p.stars=Math.floor(p.stars/2);p.friends={};p.debt={};p.hunger=0;p.fatigue=0;p.memory=old+'의 기록을 물려받았다.';
  }
 }
 function step(){s.tick++;advanceWorld();landscapeTick();s.p.forEach((p,i)=>{let [x,y]=target(p,i);walk(p,x,y);if(p.x!==x||p.y!==y)return;if((p.dwelling??0)<3){p.dwelling=(p.dwelling??0)+1;return}p.dwelling=0;
+ const before={wood:s.wood,food:p.food};let conversation=false;
  finishWork(p);farm(p,i);let a=p.act;
  if(a===0&&s.berries){s.berries--;p.food++}if(a===8&&s.land.fish){s.land.fish--;p.food++}
- if(a===7){const q=s.p.find(q=>q!==p&&Math.hypot(q.x-p.x,q.y-p.y)<24);if(q){teach(p,q);teach(q,p);for(const [u,v] of [[p,q],[q,p]]){u.friends[v.name]=(u.friends[v.name]??0)+1;u.memory=v.name+'와 마을길에서 이야기했다.'}note(p.name+'와 '+q.name+'의 대화 · 친분 '+p.friends[q.name])}}if(a===3&&p.food){p.food--;p.hunger=0}else p.hunger++;if(a===2){p.stars++;civ.observations++}if(a===4||a===5)civ.craft++;if(a===1&&p.food){let others=s.p.filter(q=>q!==p),q=others.sort((u,v)=>(p.debt[v.name]||0)-(p.debt[u.name]||0)||u.food-v.food)[0];q.food++;p.food--;q.debt[p.name]=(q.debt[p.name]||0)+1;note(p.name+' → '+q.name+'에게 식량을 나눴다. '+q.name+'이 은혜를 기억한다.')}p.act=nextGoal(p,i)});}
+ if(a===7){const q=s.p.find(q=>q!==p&&Math.hypot(q.x-p.x,q.y-p.y)<24);if(q){conversation=true;teach(p,q);teach(q,p);for(const [u,v] of [[p,q],[q,p]]){u.friends[v.name]=(u.friends[v.name]??0)+1;u.memory=v.name+'와 마을길에서 이야기했다.'}note(p.name+'와 '+q.name+'의 대화 · 친분 '+p.friends[q.name])}}if(a===3&&p.food){p.food--;p.hunger=0}else p.hunger++;if(a===2){p.stars++;civ.observations++}if(a===4||a===5)civ.craft++;if(a===1&&p.food){let others=s.p.filter(q=>q!==p),q=others.sort((u,v)=>(p.debt[v.name]||0)-(p.debt[u.name]||0)||u.food-v.food)[0];q.food++;p.food--;q.debt[p.name]=(q.debt[p.name]||0)+1;note(p.name+' → '+q.name+'에게 식량을 나눴다. '+q.name+'이 은혜를 기억한다.')}MarbleSociety.progress(s,p,a,a===7?conversation:a===4?s.wood>before.wood:a===1?p.food<before.food:a===2||p.food>before.food,record);p.act=nextGoal(p,i)});}
 
 return {state:s,step,record};
 }
