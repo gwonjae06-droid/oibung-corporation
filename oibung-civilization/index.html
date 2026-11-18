@@ -4,8 +4,9 @@ s.houses ??= 0;
 s.progress ??= 0;
 for (const person of s.p) person.fatigue ??= 0;
 const lots = [[96,145],[202,147],[301,146]];
-acts.push('벌목','집 짓기','수면','대화','낚시');
+acts.push('벌목','집 짓기','수면','대화','낚시','씨뿌리기','물주기','수확');
 function destination(person, index) {
+  if(person.act>=9&&person.act<=11)return fieldSites[Math.floor(index/4)];
   if(person.act===7)return [165,124];
   if(person.act===8)return [334,134];
   if (person.act === 4) return [32,88];
@@ -14,9 +15,11 @@ function destination(person, index) {
   return places[person.act];
 }
 function nextGoal(person,index) {
-  if (!person.food) return s.berries?0:8;
+  if(!person.food && civ.stock>0){civ.stock--;person.food++;return 3}
+  if(!person.food)return s.berries?0:8;
   if (person.hunger >= 5) return 3;
   if (person.fatigue >= 4) return 6;
+  if(index%4===0&&season()!==3){const f=fieldFor(index);if(f.growth<0)return 9;if(f.growth>=6)return 11;if(f.water<=1)return 10}
   if(s.houses===3&&index%4===2&&s.wood<12)return 4;
   if(index%4===1&&person.food<4)return s.berries?0:8;
   if (s.houses < 3 && index % 3 === 2) return s.wood ? 5 : 4;
@@ -26,7 +29,7 @@ function nextGoal(person,index) {
 function finishWork(person) {
   if (person.act === 6) person.fatigue = 0;
   else person.fatigue++;
-  if (person.act === 4) s.wood++;
+  if(person.act===4&&s.land.trees){s.land.trees--;s.wood++}
   if (person.act === 5 && s.wood && s.houses < 3) {
     s.wood--;
     if (++s.progress === 6) {
@@ -101,6 +104,44 @@ function record(message){
  civ.archives.unshift({tick:s.tick,message});
  if(civ.archives.length>300)civ.archives.pop();
 }
+
+const seasons=['봄','여름','가을','겨울'];
+const fieldSites=[[106,150],[135,153],[162,151]];
+s.land??={fields:fieldSites.map(()=>({growth:-1,water:2})),fish:12,trees:30,harvest:0};
+const season=()=>Math.floor(s.tick/384)%4;
+const hour=()=>Math.floor(s.tick%48/2);
+function weather(){
+ const day=Math.floor(s.tick/48),noise=Math.sin(day*177.3+4)*43758.54;
+ return noise-Math.floor(noise)<[.34,.52,.24,.30][season()]?(season()===3?'눈':'비'):'맑음'
+}
+function fieldFor(index){return s.land.fields[Math.floor(index/4)]}
+function landscapeTick(){
+ const l=s.land,wet=weather()==='비',cold=season()===3;
+ if(s.tick%12===0){
+ for(const field of l.fields){
+ if(wet)field.water=4;
+ if(field.growth>=0&&field.growth<6&&field.water>0&&!cold){field.growth++;field.water--}
+ }
+ if(!cold&&s.tick%(wet?12:24)===0)s.berries=Math.min(20,s.berries+1);
+ if(s.tick%24===0)l.fish=Math.min(16,l.fish+2);
+ if(s.tick%36===0)l.trees=Math.min(30,l.trees+2);
+ }}
+function farm(person,index){
+ const f=fieldFor(index);
+ if(person.act===9&&f.growth<0){f.growth=0;f.water=3}
+ if(person.act===10&&f.growth>=0&&f.growth<6)f.water=4;
+ if(person.act===11&&f.growth===6){f.growth=-1;s.land.harvest+=5;civ.stock+=4;person.food++;record(person.name+'의 수확 · 공동 창고에 곡식 4, 개인 식량 1')}
+}
+function paintFields(){
+ fieldSites.forEach(([x,y],i)=>{
+ const f=s.land.fields[i],soil=f.water?'#855f48':'#a37952';
+ surface([[x-11,y-9],[x+11,y-9],[x+11,y+2],[x-11,y+2]],soil);
+ for(let row=0;row<3;row++)for(let col=0;col<5;col++){
+ const [u,v]=project(x-9+col*4,y-7+row*3);rect(u,v,2,1,'#644a3b');
+ if(f.growth>=0){const height=1+f.growth*.5;rect(u,v-height,1,height,f.growth===6?'#e1b350':'#659045');if(f.growth>2)rect(u-1,v-height,3,1,f.growth===6?'#f5ce76':'#9bb75e')}
+ }});
+}
+
 function advanceWorld(){
  if(s.tick%24===0)civ.power=Math.min(100,civ.power+1);
  if(civ.lawUntil&&s.tick>=civ.lawUntil){civ.gravity=1;civ.lawUntil=0;record('중력 이상이 끝나 이동 속도가 회복됐다.')}
@@ -163,9 +204,11 @@ function pact(){
  civ.stock-=3;civ.treaty=true;civ.gravity=1;civ.lawUntil=0;record('추방자에게 보급품을 제공해 다른 구슬로 가는 항로를 얻었다.');save();ui()
 }
 
-const ctx=map.getContext('2d'),rect=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w,h)},note=t=>{s.log.unshift(t);s.log.length=Math.min(15,s.log.length)},save=()=>{try{localStorage.marble1=JSON.stringify(s)}catch{}},sel=()=>+pick.value;names.forEach((n,i)=>pick.add(new Option(s.p[i].name,i)));pick.value=Math.max(0,s.apostle);function ui(){worldInfo.textContent='대표 '+(civ.leader||'공석')+' · 공동 식량 '+civ.stock+' · 상조회 '+(civ.groups||[]).length+'개 · 성력 '+civ.power+' · 연구 '+(civ.knowledge.join(', ')||'관측 중');contract.hidden=!civ.contact||civ.treaty;atlas.textContent=civ.systems.slice(-16).map(v=>v.star+' ('+v.gravity.toFixed(1)+'g)').join(' · ')||'미탐사';historyList.replaceChildren(...civ.archives.slice(0,30).map(v=>Object.assign(document.createElement('li'),{textContent:(1+Math.floor(v.tick/48))+'일 · '+v.message})));construction.textContent='열매 '+s.berries+'개 · 공동 목재 '+s.wood+'개 · 새집 '+s.houses+'/3채'+(s.houses<3?' · 다음 집 '+s.progress+'/6':' · 건설 완료');let p=s.p[sel()];let pc=portrait.getContext('2d');pc.clearRect(0,0,64,64);sprite(pc,sel(),32,58,2,0,false,-1);bio.textContent=profiles[sel()][0]+' · '+profiles[sel()][1]+' · '+traits[sel()%3]+' '+p.name+' · '+acts[p.act]+' 중 · 식량 '+p.food+' · 별 기록 '+p.stars+' · '+p.memory;choose.textContent=s.apostle===sel()?'나의 사도':'사도로 선택';oracle.hidden=s.apostle!==sel();clock.textContent='마을 '+(1+Math.floor(s.tick/48))+'일';log.replaceChildren(...s.log.map(t=>Object.assign(document.createElement('li'),{textContent:t})));}pick.onchange=()=>{reply.textContent='';ui()};choose.onclick=()=>{s.apostle=sel();note(names[sel()]+'에게 별빛이 닿았다.');save();ui()};send.onclick=()=>{let p=s.p[sel()],v=msg.value,a=/별|우주|관찰/.test(v)?2:/이웃|도와|나눠|나눔/.test(v)?1:/채집|모아|식량/.test(v)?0:-1;if(a<0){reply.textContent='채집, 이웃 돕기, 별 관찰 중 하나를 제안해 줘.';return}let why=p.hunger>=6?'지금은 배가 너무 고파요.':a===1&&p.food<2?'나눌 식량을 먼저 구할게요.':'';p.dwelling=0;p.act=why?(p.food&&p.hunger>=6?3:0):a;reply.textContent=p.name+' · '+(why||acts[a]+'을 시작할게요.');note(reply.textContent);save();ui()};function step(){s.tick++;advanceWorld();if(s.tick%12===0)s.berries=Math.min(20,s.berries+1);s.p.forEach((p,i)=>{let [x,y]=target(p,i);walk(p,x,y);if(p.x!==x||p.y!==y)return;if((p.dwelling??0)<3){p.dwelling=(p.dwelling??0)+1;return}p.dwelling=0;
- finishWork(p);let a=p.act;
- if(a===0&&s.berries){s.berries--;p.food++}if(a===8)p.food++;
+const ctx=map.getContext('2d'),rect=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w,h)},note=t=>{s.log.unshift(t);s.log.length=Math.min(15,s.log.length)},save=()=>{try{localStorage.marble1=JSON.stringify(s)}catch{}},sel=()=>+pick.value;names.forEach((n,i)=>pick.add(new Option(s.p[i].name,i)));pick.value=Math.max(0,s.apostle);function ui(){worldInfo.textContent='대표 '+(civ.leader||'공석')+' · 공동 식량 '+civ.stock+' · 상조회 '+(civ.groups||[]).length+'개 · 성력 '+civ.power+' · 연구 '+(civ.knowledge.join(', ')||'관측 중');contract.hidden=!civ.contact||civ.treaty;atlas.textContent=civ.systems.slice(-16).map(v=>v.star+' ('+v.gravity.toFixed(1)+'g)').join(' · ')||'미탐사';historyList.replaceChildren(...civ.archives.slice(0,30).map(v=>Object.assign(document.createElement('li'),{textContent:(1+Math.floor(v.tick/48))+'일 · '+v.message})));construction.textContent='누적 수확 '+s.land.harvest+' · 숲 '+s.land.trees+' · 물고기 '+s.land.fish+' · 열매 '+s.berries+'개 · 공동 목재 '+s.wood+'개 · 새집 '+s.houses+'/3채'+(s.houses<3?' · 다음 집 '+s.progress+'/6':' · 건설 완료');let p=s.p[sel()];let pc=portrait.getContext('2d');pc.clearRect(0,0,64,64);sprite(pc,sel(),32,58,2,0,false,-1);bio.textContent=profiles[sel()][0]+' · '+profiles[sel()][1]+' · '+traits[sel()%3]+' '+p.name+' · '+acts[p.act]+' 중 · 식량 '+p.food+' · 별 기록 '+p.stars+' · '+p.memory;choose.textContent=s.apostle===sel()?'나의 사도':'사도로 선택';oracle.hidden=s.apostle!==sel();clock.textContent=seasons[season()]+' '+(1+Math.floor(s.tick/48))+'일 · '+hour()+'시 · '+weather();log.replaceChildren(...s.log.map(t=>Object.assign(document.createElement('li'),{textContent:t})));}pick.onchange=()=>{reply.textContent='';ui()};choose.onclick=()=>{s.apostle=sel();note(names[sel()]+'에게 별빛이 닿았다.');save();ui()};send.onclick=()=>{let p=s.p[sel()],v=msg.value,a=/별|우주|관찰/.test(v)?2:/이웃|도와|나눠|나눔/.test(v)?1:/채집|모아|식량/.test(v)?0:-1;if(a<0){reply.textContent='채집, 이웃 돕기, 별 관찰 중 하나를 제안해 줘.';return}let why=p.hunger>=6?'지금은 배가 너무 고파요.':a===1&&p.food<2?'나눌 식량을 먼저 구할게요.':'';p.dwelling=0;p.act=why?(p.food&&p.hunger>=6?3:0):a;reply.textContent=p.name+' · '+(why||acts[a]+'을 시작할게요.');note(reply.textContent);save();ui()};let lastMove=0;
+const tracks=new Map();
+function step(){lastMove=performance.now();s.p.forEach((p,i)=>tracks.set(i,[p.x,p.y]));s.tick++;advanceWorld();landscapeTick();s.p.forEach((p,i)=>{let [x,y]=target(p,i);walk(p,x,y);if(p.x!==x||p.y!==y)return;if((p.dwelling??0)<3){p.dwelling=(p.dwelling??0)+1;return}p.dwelling=0;
+ finishWork(p);farm(p,i);let a=p.act;
+ if(a===0&&s.berries){s.berries--;p.food++}if(a===8&&s.land.fish){s.land.fish--;p.food++}
  if(a===7){const q=s.p.find(q=>q!==p&&Math.hypot(q.x-p.x,q.y-p.y)<24);if(q){for(const [u,v] of [[p,q],[q,p]]){u.friends[v.name]=(u.friends[v.name]??0)+1;u.memory=v.name+'와 마을길에서 이야기했다.'}note(p.name+'와 '+q.name+'의 대화 · 친분 '+p.friends[q.name])}}if(a===3&&p.food){p.food--;p.hunger=0}else p.hunger++;if(a===2){p.stars++;civ.observations++}if(a===4||a===5)civ.craft++;if(a===1&&p.food){let others=s.p.filter(q=>q!==p),q=others.sort((u,v)=>(p.debt[v.name]||0)-(p.debt[u.name]||0)||u.food-v.food)[0];q.food++;p.food--;q.debt[p.name]=(q.debt[p.name]||0)+1;note(p.name+' → '+q.name+'에게 식량을 나눴다. '+q.name+'이 은혜를 기억한다.')}p.act=nextGoal(p,i)});save();ui()}
 const project=(x,y)=>[180+(x-180)*.82-(y-122)*.61,105+(x-180)*.18+(y-122)*.79];
 function face(points,color){ctx.fillStyle=color;ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fill()}
@@ -190,16 +233,25 @@ function draw(t){
  ctx.setTransform(2,0,0,2,0,0);rect(0,0,360,192,'#233d49');
  for(let i=0;i<85;i++)rect(i*79%360,(i*47+t/1800)%192,2+i%4,1,'#345461');
  const outline=[[0,76],[18,69],[327,69],[355,78],[359,152],[341,170],[16,172],[0,163]];
- surface(outline,'#665442',-6);surface(outline,'#b79c71',-2);surface(outline,'#86a373');
- for(let n=0;n<500;n++){let x=8+n*73%338,y=79+n*31%83;let [u,v]=project(x,y);rect(u,v,2,1,n%6?'#77976b':'#d7c68a')}
+ surface(outline,'#665442',-6);surface(outline,'#b79c71',-2);surface(outline,['#91ad76','#78995e','#b89d65','#cbd8cf'][season()]);
+ for(let n=0;n<500;n++){let x=8+n*73%338,y=79+n*31%83;let [u,v]=project(x,y);rect(u,v,2,1,n%6?['#809c68','#668554','#9b855a','#b5c7bf'][season()]:'#d7c68a')}
  for(let x=4;x<348;x+=4){let y=120+Math.sin(x/52)*7;surface([[x,y],[x+5,y],[x+5,y+7],[x,y+7]],'#c8b58c')}
+ paintFields();
+ surface([[326,141],[342,138],[357,143],[354,155],[338,159],[325,151]],'#628d8e');
+ surface([[327,137],[341,137],[341,141],[327,141]],'#967958');
+ for(let k=0;k<s.land.fish;k++){const [u,v]=project(338+k%5*3,146+Math.floor(k/5)*2);rect(u+Math.sin(t/900+k)*2,v,2,1,'#a0c7bb')}
  const items=[];
  function add(x,y,paint){items.push([project(x,y)[1],paint])}
- for(let i=0;i<30;i++){const x=8+i*43%335,y=77+i*3%10;add(x,y,()=>{let [u,v]=project(x,y);rect(u-1,v-9,3,9,'#705a44');for(let k=0;k<3;k++){let w=7-k*1.5,b=v-4-k*4;face([[u-w,b],[u,b-11],[u+w,b]],['#3e6756','#507861','#658b69'][k])}})}
+ for(let i=0;i<s.land.trees;i++){const x=8+i*43%335,y=77+i*3%10;add(x,y,()=>{let [u,v]=project(x,y);rect(u-1,v-9,3,9,'#705a44');for(let k=0;k<3;k++){let w=7-k*1.5,b=v-4-k*4;face([[u-w,b],[u,b-11],[u+w,b]],[['#3e6756','#507861','#658b69'],['#355d49','#4b7550','#63865a'],['#775842','#b47847','#c99a55'],['#677c79','#93a8a3','#d6e1dc']][season()][k])}})}
  for(const [x,y] of [[74,113],[145,102],[238,109],[276,128]])add(x,y,()=>lodge(x,y,6));
  lots.forEach(([x,y],i)=>{if(i<=s.houses)add(x,y,()=>lodge(x,y,i<s.houses?6:s.progress))});
- s.p.forEach((p,i)=>add(p.x,p.y,()=>{const [u,v]=project(p.x,p.y),[x,y]=target(p,i);face([[u-5,v],[u,v-2],[u+6,v],[u,v+2]],'#65745a');sprite(ctx,i,u,v,.76,t/180+i,!p.dwelling&&(x!==p.x||y!==p.y),p.act);if(i===sel())face([[u-3,v-24],[u+3,v-24],[u,v-21]],'#fff2ac')}));
- items.sort((a,b)=>a[0]-b[0]).forEach(item=>item[1]());requestAnimationFrame(draw)
+ s.p.forEach((p,i)=>{const [px,py]=tracks.get(i)||[p.x,p.y],f=Math.min(1,Math.max(0,(t-lastMove)/600)),rx=px+(p.x-px)*f,ry=py+(p.y-py)*f;add(rx,ry,()=>{const [u,v]=project(rx,ry),[x,y]=target(p,i);face([[u-5,v],[u,v-2],[u+6,v],[u,v+2]],'#65745a');sprite(ctx,i,u,v,.76,t/180+i,!p.dwelling&&(x!==p.x||y!==p.y),p.act);if(i===sel())face([[u-3,v-24],[u+3,v-24],[u,v-21]],'#fff2ac')})});
+ items.sort((a,b)=>a[0]-b[0]).forEach(item=>item[1]());
+ const dark=Math.max(0,Math.cos((hour()-1)*Math.PI/12))*.36;
+ if(dark){ctx.fillStyle='rgba(28,35,76,'+dark+')';ctx.fillRect(0,0,360,192);
+ for(const [x,y] of [[74,113],[145,102],[238,109],[276,128]]){const [u,v]=project(x+7,y);rect(u,v-7,3,2,'#ffdc89')}}
+ const sky=weather();if(sky!=='맑음'){for(let i=0;i<48;i++){let x=(i*83+t/(sky==='눈'?150:35))%360,y=(i*31+t/(sky==='눈'?70:10))%192;rect(x,y,1,sky==='눈'?1:3,'#c6d9de')}}
+ requestAnimationFrame(draw)
 }
 map.onclick=e=>{const r=map.getBoundingClientRect(),x=(e.clientX-r.left)*360/r.width,y=(e.clientY-r.top)*192/r.height;
  const nearest=s.p.map((p,i)=>{const [u,v]=project(p.x,p.y);return [Math.hypot(u-x,v-8-y),i]}).sort((a,b)=>a[0]-b[0])[0];
