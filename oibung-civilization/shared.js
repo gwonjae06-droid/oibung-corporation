@@ -11,19 +11,16 @@ function submit(type,value){shared('/command',{id:crypto.randomUUID(),type,value
 choose.onclick=()=>submit('choose',sel());send.onclick=()=>submit('oracle',msg.value);invoke=type=>submit(type);pact=()=>submit('pact');
 
 const panel=document.createElement('article');
-panel.innerHTML='<h2>공유 세계 · 카카오톡</h2><p role="status"></p><button>연결 코드 받기</button><input readonly aria-label="5분 연결 코드" hidden><button hidden>코드 복사</button> <a hidden target="_blank" rel="noopener" style="color:#ffe194">채널 채팅 열기 ↗</a>';
+panel.innerHTML='<button disabled>카카오톡 연결</button><p role="status"></p>';
 document.querySelector('header').after(panel);
-const [status,issue,field,copy,chat]=Array.from(panel.children).slice(1);
-let expires=0;
-issue.onclick=()=>shared('/link');
-copy.onclick=async()=>{field.select();try{await navigator.clipboard.writeText(field.value);copy.textContent='복사 완료'}catch{status.textContent='선택한 코드를 직접 복사해 주세요.'}};
-function connectionView({connection,code}){
+const connect=panel.querySelector('button'),linkStatus=panel.querySelector('p');
+const errors={expired:'연결 시간이 지났어요. 다시 눌러 주세요.',cancelled:'연결이 취소됐어요.',failed:'카카오 인증을 완료하지 못했어요.',conflict:'이 카카오 계정은 다른 성좌에 연결돼 있어요.',unavailable:'서버 연결 설정을 확인해 주세요.'};
+let notice=errors[new URLSearchParams(location.search).get('link')]||'';
+function connectionView({connection}){
  if(!connection)return;
- if(code){expires=Date.now()+300000;field.value=code;copy.textContent='코드 복사'}
- const active=Date.now()<expires&&!connection.linked;
- field.hidden=copy.hidden=!active;issue.hidden=connection.linked||!connection.enabled;
- issue.textContent=active?'새 코드 받기':'연결 코드 받기';
- chat.hidden=!connection.channel;if(connection.channel)chat.href=connection.channel;
- status.textContent=connection.linked?'카카오톡 연결 완료 · /역사 또는 /사도':active?'코드를 채널 채팅에 붙여넣으세요 · 남은 시간 '+Math.ceil((expires-Date.now())/1000)+'초':connection.enabled?'공유 서버 연결됨 · 카카오톡 계정을 연결할 수 있어요.':'공유 서버 연결됨 · 운영자가 채널을 설정하면 사용할 수 있어요.'
+ connect.disabled=!connection.oneTap&&!(connection.linked&&connection.channel);
+ connect.textContent=connection.linked?'카카오톡 채팅 열기':'카카오톡 연결';
+ linkStatus.textContent=notice||(connection.linked?'성좌 계정 연결됨':connection.oneTap?'':'운영자의 카카오 앱 연결 설정을 기다리고 있어요.');
+ connect.onclick=()=>{notice='';location.assign(connection.linked?connection.channel:'/connect/kakao')}
 }
 shared();setInterval(()=>shared(),1200);
