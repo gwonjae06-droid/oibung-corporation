@@ -1,14 +1,22 @@
+import './genesis.js';
 import './society.js';
 export function createWorld(initial){
 const note=message=>{s.log.unshift(message);s.log.length=Math.min(15,s.log.length)};
-const names='농 빵 비서 최규원 박성원 배서준 이권재 별이 단비 솔 달래 보리'.split(' '),traits=['호기심 많은','다정한','신중한'],places=[[48,112],[165,132],[308,96],[233,105]],acts=['채집','나눔','별 관찰','식사'];let s=initial;s??={tick:0,apostle:-1,log:[],p:names.map((name,i)=>({name,x:38+i*23,y:108+i%3*8,food:2,hunger:i%4,act:i%4,stars:0,debt:{}}))};s.wood ??= 0;
+const names='농 빵 비서 최규원 박성원 배서준 이권재 별이 단비 솔 달래 보리'.split(' '),traits=['호기심 많은','다정한','신중한'],places=[[48,112],[165,132],[308,96],[233,105]],acts=['채집','나눔','별 관찰','식사'];let s=initial;const fresh=!s;s??={tick:0,apostle:-1,log:[],p:names.map((name,i)=>({name,x:38+i*23,y:108+i%3*8,food:2,hunger:i%4,act:i%4,stars:0,debt:{}}))};if(fresh)MarbleGenesis.start(s,Math.floor(Math.random()*4294967296));s.wood ??= 0;
 s.houses ??= 0;
 s.progress ??= 0;
 for (const person of s.p) person.fatigue ??= 0;
 const lots = [[96,145],[202,147],[301,146]];
-acts.push('벌목','집 짓기','수면','대화','낚시','씨뿌리기','물주기','수확');
+acts.push('벌목','집 짓기','수면','대화','낚시','씨뿌리기','물주기','수확','탐색','자원 채취','도구 실험','거처 짓기','식량 전달');
 function destination(person, index) {
-  if(person.act>=9&&person.act<=11)return fieldSites[Math.floor(index/4)];
+  if(s.genesis){
+ if(person.act===16){const q=s.p.find(q=>q.name===person.friend);return q?[q.x,q.y]:[person.x,person.y]}
+ if(person.act===6||person.act===3)return person.home||person.camp||[person.x,person.y];
+ if(person.act===7){const q=s.p[(index+1)%s.p.length];return [q.x,q.y]}
+ if(person.act===14)return person.home||person.camp;
+ if(person.act>=12)return person.site||person.camp||[person.x,person.y]
+ }
+ if(person.act>=9&&person.act<=11)return fieldSites[Math.floor(index/4)];
   if(person.act===7)return [165,124];
   if(person.act===8)return [334,134];
   if (person.act === 4) return [32,88];
@@ -17,7 +25,8 @@ function destination(person, index) {
   return places[person.act];
 }
 function nextGoal(person,index) {
-  if(!person.food && civ.stock>0){civ.stock--;person.food++;return 3}
+  if(s.genesis){const action=MarbleGenesis.choose(s,person,index);if(action!==null)return action}
+ if(!person.food && civ.stock>0){civ.stock--;person.food++;return 3}
   if(!person.food)return s.berries?0:8;
   if (person.hunger >= 5) return 3;
   if (person.fatigue >= 4) return 6;
@@ -48,7 +57,7 @@ const tileY=y=>Math.max(0,Math.min(63,Math.floor((y-72)*64/100)));
 const cell=(x,y)=>tileY(y)*64+tileX(x);
 const center=n=>[(n%64+.5)*360/64,72+(Math.floor(n/64)+.5)*100/64];
 const blocked=new Uint8Array(4096);
-for(let n=0;n<4096;n++){const [x,y]=center(n);blocked[n]=[[62,97],[133,86],[226,93],[264,112]].some(([a,b])=>x>=a&&x<a+24&&y>=b&&y<b+16)}
+for(let n=0;n<4096;n++){const [x,y]=center(n);blocked[n]=!s.genesis&&[[62,97],[133,86],[226,93],[264,112]].some(([a,b])=>x>=a&&x<a+24&&y>=b&&y<b+16)}
 const maps=new Map();
 function distances(goal){
  if(maps.has(goal))return maps.get(goal);
@@ -65,7 +74,7 @@ function walk(p,x,y){
  if(next===undefined){const near=Array.from(dist).findIndex(v=>v>=0);[p.x,p.y]=center(near);continue}
  ;[p.x,p.y]=center(next)
  }}
-function target(p,i){const [x,y]=destination(p,i);let tx=x+(i%4)*5,ty=y+Math.floor(i/4)*5;while(blocked[cell(tx,ty)])ty+=2;return [tx,ty]}
+function target(p,i){const [x,y]=destination(p,i);if(s.genesis)return [x,y];let tx=x+(i%4)*5,ty=y+Math.floor(i/4)*5;while(blocked[cell(tx,ty)])ty+=2;return [tx,ty]}
 s.berries??=16;
 for(const p of s.p){p.friends??={};p.memory??='아직 기록된 만남이 없다.'}
 
@@ -183,7 +192,7 @@ function advanceWorld(){
  for(const p of [...s.p].sort((a,b)=>a.food-b.food)){if(p.food===0&&civ.stock){p.food++;civ.stock--}}
  }
  if(s.tick%48===0){
- const discoveries=[['천문력',civ.observations>=8],['정밀 공구',civ.craft>=8],['항법',civ.knowledge.includes('천문력')&&civ.observations>=24],['추진 기관',civ.knowledge.includes('정밀 공구')&&s.houses>=2&&civ.craft>=18]];
+ const discoveries=[['천문력',civ.observations>=8],['정밀 공구',civ.craft>=8&&(!s.genesis||s.genesis.tools.some(tool=>tool.key.endsWith(':1')))],['항법',civ.knowledge.includes('천문력')&&civ.observations>=24],['추진 기관',civ.knowledge.includes('정밀 공구')&&s.houses>=2&&civ.craft>=18&&(!s.genesis||s.genesis.tools.some(tool=>tool.key.endsWith(':2')))]];
  for(const [name,ok] of discoveries)if(ok&&!civ.knowledge.includes(name)){civ.knowledge.push(name);const scholar=[...s.p].sort((a,b)=>b.stars-a.stars)[0];scholar.lore.push(name);record('마을 연구 기록에 '+name+' 원리가 등록됐다.')}
  if(civ.knowledge.length>=4&&s.wood>=4&&civ.stock>=2){s.wood-=4;civ.stock-=2;civ.fleet++;record('목재 4와 보급 식량 2로 탐사선 완성')}
  if(civ.fleet&&civ.stock>=1){civ.fleet--;civ.stock--;civ.voyages++;
@@ -203,9 +212,9 @@ function advanceWorld(){
  p.generation++;p.name=names[i]+' '+p.generation+'세';p.born=s.tick;p.stars=Math.floor(p.stars/2);p.friends={};p.debt={};p.hunger=0;p.fatigue=0;p.memory=old+'의 기록을 물려받았다.';
  }
 }
-function step(){s.tick++;advanceWorld();landscapeTick();s.p.forEach((p,i)=>{let [x,y]=target(p,i);walk(p,x,y);if(p.x!==x||p.y!==y)return;if((p.dwelling??0)<3){p.dwelling=(p.dwelling??0)+1;return}p.dwelling=0;
+function step(){s.tick++;if(s.genesis)MarbleGenesis.cycle(s);advanceWorld();landscapeTick();s.p.forEach((p,i)=>{let [x,y]=target(p,i);walk(p,x,y);if(s.genesis)MarbleGenesis.survey(s,p);if(p.x!==x||p.y!==y)return;if((p.dwelling??0)<3){p.dwelling=(p.dwelling??0)+1;return}p.dwelling=0;
  const before={wood:s.wood,food:p.food};let conversation=false;
- finishWork(p);farm(p,i);let a=p.act;
+ if(s.genesis)MarbleGenesis.finish(s,p,record);finishWork(p);farm(p,i);let a=p.act;
  if(a===0&&s.berries){s.berries--;p.food++}if(a===8&&s.land.fish){s.land.fish--;p.food++}
  if(a===7){const q=s.p.find(q=>q!==p&&Math.hypot(q.x-p.x,q.y-p.y)<24);if(q){conversation=true;teach(p,q);teach(q,p);for(const [u,v] of [[p,q],[q,p]]){u.friends[v.name]=(u.friends[v.name]??0)+1;u.memory=v.name+'와 마을길에서 이야기했다.'}note(p.name+'와 '+q.name+'의 대화 · 친분 '+p.friends[q.name])}}if(a===3&&p.food){p.food--;p.hunger=0}else p.hunger++;if(a===2){p.stars++;civ.observations++}if(a===4||a===5)civ.craft++;if(a===1&&p.food){let others=s.p.filter(q=>q!==p),q=others.sort((u,v)=>(p.debt[v.name]||0)-(p.debt[u.name]||0)||u.food-v.food)[0];q.food++;p.food--;q.debt[p.name]=(q.debt[p.name]||0)+1;note(p.name+' → '+q.name+'에게 식량을 나눴다. '+q.name+'이 은혜를 기억한다.')}MarbleSociety.progress(s,p,a,a===7?conversation:a===4?s.wood>before.wood:a===1?p.food<before.food:a===2||p.food>before.food,record);p.act=nextGoal(p,i)});}
 
