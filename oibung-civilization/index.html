@@ -1,22 +1,25 @@
-<!doctype html><html lang="ko"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>오이붕 문명</title><style>*{box-sizing:border-box}body{background:#101b25;color:#f2eee2;font:16px system-ui;margin:auto;max-width:1080px;padding:4vw}header,section{display:flex;align-items:center;justify-content:space-between;gap:14px}small,label{color:#aec9bc}h1{font: bold clamp(30px,5vw,58px) Georgia,serif;margin:8px 0}canvas{width:100%;image-rendering:pixelated;display:block;background:#243c50;cursor:pointer;border-radius:8px}article{background:#1c2b34;padding:20px;border-radius:10px;margin-top:14px}button,input,select{font:inherit;padding:10px;border:0;border-radius:6px;margin:4px 2px}button{background:#dfbd75;cursor:pointer}input{width:min(95%,360px)}li{margin:.6em 0}section{flex-wrap:wrap}</style><header><div><small>OIBUNG CIVILIZATION</small><h1>우주 끝의 구슬</h1></div><span id="clock"></span></header><canvas id="map" width="360" height="172" aria-label="주민을 선택할 수 있는 마을 지도"></canvas><article><small>공동 건설</small><p id="construction"></p></article><article><section><div><label>마을 주민</label> <select id="pick"></select></div><button id="choose">사도로 선택</button></section><p id="bio"></p><div id="oracle"><input id="msg" placeholder="식량을 모아라 / 이웃을 도와라 / 별을 관찰해"><button id="send">계시 전달</button></div><p id="reply" role="status"></p></article><article><small>CHRONICLE</small><h2>마을 연대기</h2><ul id="log"></ul></article><script>
+<!doctype html><html lang="ko"><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>오이붕 문명</title><style>*{box-sizing:border-box}body{background:#101b25;color:#f2eee2;font:16px system-ui;margin:auto;max-width:1080px;padding:4vw}header,section{display:flex;align-items:center;justify-content:space-between;gap:14px}small,label{color:#aec9bc}h1{font: bold clamp(30px,5vw,58px) Georgia,serif;margin:8px 0}canvas{width:100%;image-rendering:pixelated;display:block;background:#243c50;cursor:pointer;border-radius:8px}article{background:#1c2b34;padding:20px;border-radius:10px;margin-top:14px}button,input,select{font:inherit;padding:10px;border:0;border-radius:6px;margin:4px 2px}button{background:#dfbd75;cursor:pointer}input{width:min(95%,360px)}li{margin:.6em 0}section{flex-wrap:wrap}</style><header><div><small>OIBUNG CIVILIZATION</small><h1>우주 끝의 구슬</h1></div><span id="clock"></span></header><canvas id="map" width="720" height="344" aria-label="주민을 선택할 수 있는 마을 지도"></canvas><article><small>공동 건설</small><p id="construction"></p></article><article><section><div><label>마을 주민</label> <select id="pick"></select></div><button id="choose">사도로 선택</button></section><canvas id="portrait" width="64" height="64" style="width:76px;float:left;margin-right:12px"></canvas><p id="bio"></p><div id="oracle"><input id="msg" placeholder="식량을 모아라 / 이웃을 도와라 / 별을 관찰해"><button id="send">계시 전달</button></div><p id="reply" role="status"></p></article><article><small>CHRONICLE</small><h2>마을 연대기</h2><ul id="log"></ul></article><script>
 const names='농 빵 비서 최규원 박성원 배서준 이권재 별이 단비 솔 달래 보리'.split(' '),traits=['호기심 많은','다정한','신중한'],places=[[48,112],[165,132],[308,96],[233,105]],acts=['채집','나눔','별 관찰','식사'];let s;try{s=JSON.parse(localStorage.marble1)}catch{}s??={tick:0,apostle:-1,log:[],p:names.map((name,i)=>({name,x:38+i*23,y:108+i%3*8,food:2,hunger:i%4,act:i%4,stars:0,debt:{}}))};s.wood ??= 0;
 s.houses ??= 0;
 s.progress ??= 0;
 for (const person of s.p) person.fatigue ??= 0;
 const lots = [[96,145],[202,147],[301,146]];
-acts.push('벌목','집 짓기','휴식');
+acts.push('벌목','집 짓기','수면','대화','낚시');
 function destination(person, index) {
+  if(person.act===7)return [165,124];
+  if(person.act===8)return [334,134];
   if (person.act === 4) return [32,88];
   if (person.act === 5) return lots[Math.min(2,s.houses)];
   if (person.act === 6) return s.houses ? lots[index % s.houses] : [66,114];
   return places[person.act];
 }
 function nextGoal(person,index) {
-  if (!person.food) return 0;
+  if (!person.food) return s.berries?0:8;
   if (person.hunger >= 5) return 3;
   if (person.fatigue >= 4) return 6;
   if (s.houses < 3 && index % 3 === 2) return s.wood ? 5 : 4;
-  return (s.tick+index)%3;
+  if((s.tick+index)%4===0)return 7;
+  return (index+s.tick%2)%3;
 }
 function finishWork(person) {
   if (person.act === 6) person.fatigue = 0;
@@ -31,13 +34,73 @@ function finishWork(person) {
     }
   }
 }
-const ctx=map.getContext('2d'),rect=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w,h)},note=t=>{s.log.unshift(t);s.log.length=Math.min(15,s.log.length)},save=()=>{try{localStorage.marble1=JSON.stringify(s)}catch{}},sel=()=>+pick.value;names.forEach((n,i)=>pick.add(new Option(n,i)));pick.value=Math.max(0,s.apostle);function ui(){construction.textContent='공동 목재 '+s.wood+'개 · 새집 '+s.houses+'/3채'+(s.houses<3?' · 다음 집 '+s.progress+'/6':' · 건설 완료');let p=s.p[sel()];bio.textContent=traits[sel()%3]+' '+p.name+' · '+acts[p.act]+' 중 · 식량 '+p.food+' · 별 기록 '+p.stars;choose.textContent=s.apostle===sel()?'나의 사도':'사도로 선택';oracle.hidden=s.apostle!==sel();clock.textContent='마을 '+(1+Math.floor(s.tick/48))+'일';log.replaceChildren(...s.log.map(t=>Object.assign(document.createElement('li'),{textContent:t})));}pick.onchange=()=>{reply.textContent='';ui()};choose.onclick=()=>{s.apostle=sel();note(names[sel()]+'에게 별빛이 닿았다.');save();ui()};send.onclick=()=>{let p=s.p[sel()],v=msg.value,a=/별|우주|관찰/.test(v)?2:/이웃|도와|나눠|나눔/.test(v)?1:/채집|모아|식량/.test(v)?0:-1;if(a<0){reply.textContent='채집, 이웃 돕기, 별 관찰 중 하나를 제안해 줘.';return}let why=p.hunger>=6?'지금은 배가 너무 고파요.':a===1&&p.food<2?'나눌 식량을 먼저 구할게요.':'';p.act=why?(p.food&&p.hunger>=6?3:0):a;reply.textContent=p.name+' · '+(why||acts[a]+'을 시작할게요.');note(reply.textContent);save();ui()};function step(){s.tick++;s.p.forEach((p,i)=>{let [x,y]=destination(p,i);x+=(i%4)*4;y+=Math.floor(i/4)*4;p.x+=Math.sign(x-p.x)*Math.min(4,Math.abs(x-p.x));p.y+=Math.sign(y-p.y)*Math.min(2,Math.abs(y-p.y));if(p.x!==x||p.y!==y)return;finishWork(p);let a=p.act;if(a===0)p.food++;if(a===3&&p.food){p.food--;p.hunger=0}else p.hunger++;if(a===2)p.stars++;if(a===1&&p.food){let others=s.p.filter(q=>q!==p),q=others.sort((u,v)=>(p.debt[v.name]||0)-(p.debt[u.name]||0)||u.food-v.food)[0];q.food++;p.food--;q.debt[p.name]=(q.debt[p.name]||0)+1;note(p.name+' → '+q.name+'에게 식량을 나눴다. '+q.name+'이 은혜를 기억한다.')}p.act=nextGoal(p,i)});save();ui()}function draw(t){rect(0,0,360,172,'#26374e');for(let i=0;i<70;i++)rect(i*79%360,i*47%62,1,1,'#e8d59c');rect(286,13,10,10,'#fee2a0');for(let x=0;x<360;x+=2){let y=53+12*Math.sin(x/41)+6*Math.cos(x/17);rect(x,y,2,172-y,'#39555b');let z=72+8*Math.cos(x/32);rect(x,z,2,172-z,'#64845e')}for(let i=0;i<650;i++)rect(i*137%360,84+i*73%88,2,1,i%5?'#759063':'#c9bd76');for(let x=0;x<360;x+=2)rect(x,121+9*Math.sin(x/52),2,9,'#b4a077');for(let i=0;i<25;i++){let x=i*73%360,y=67+i*13%24;rect(x,y,3,11,'#705441');for(let k=0;k<9;k++)rect(x-k,y-12+k*2,k*2+3,3,k%3?'#314e46':'#416751')}for(let [x,y] of [[62,97],[133,86],[226,93],[264,112]]){rect(x,y,24,18,'#d6bc8b');for(let k=0;k<9;k++)rect(x+10-k*2,y-10+k,5+k*4,2,k%3?'#955f52':'#aa7360');rect(x+9,y+7,6,11,'#534540');rect(x+2,y+5,4,4,'#fee0a0')}for(let i=0;i<Math.min(3,s.houses+1);i++){
+
+const profiles=[
+ ['여','밀짚모자','6f4b36','628456','edc87c','hat'],['남','제빵사','986445','9f6655','fff0d8','chef'],
+ ['여','단발과 리본','302f46','555372','d997a6','bob'],['남','안경과 조끼','4e3a37','57667c','e3c29d','glasses'],
+ ['남','깃털 모자','815334','994e45','f4a751','feather'],['남','붉은 망토','302c37','803b52','db8487','cape'],
+ ['남','푸른 머리띠','38323a','477d93','96d5dc','band'],['여','은빛 양갈래','b8bed0','71618d','eac1d5','twins'],
+ ['여','묶음머리','634843','4c7784','f1a6b4','bun'],['남','솔잎 후드','48513c','4f6749','b4c99c','hood'],
+ ['여','땋은 머리','604058','9a6483','f0c988','braid'],['여','곱슬머리','98714b','816944','efe0b3','apron']
+];
+const details={
+ hat:[[-7,-20,15,2],[-4,-24,9,4]],chef:[[-5,-23,11,5],[-4,-26,5,4],[1,-25,4,3]],
+ bob:[[-6,-19,3,10,1],[4,-18,2,9,1],[2,-18,4,2]],glasses:[[-4,-16,4,2],[1,-16,4,2]],
+ feather:[[-7,-21,14,2],[-4,-24,10,4,2],[3,-27,2,5]],cape:[[-8,-11,4,10,2],[5,-10,3,9]],
+ band:[[-5,-18,11,2],[-8,-17,4,4]],twins:[[-8,-19,4,9,1],[5,-19,4,9,1],[-8,-20,4,2],[5,-20,4,2]],
+ bun:[[-6,-25,6,6,1],[-5,-21,5,2]],hood:[[-6,-21,3,10,2],[4,-21,3,10,2],[-5,-23,11,4,2],[-2,-26,5,4,2]],
+ braid:[[-6,-18,3,6,1],[-7,-13,3,6,1],[-6,-8,3,3]],apron:[[-6,-21,4,4,1],[-2,-23,5,4,1],[2,-22,4,4,1],[-4,-8,8,6]]};
+function sprite(c,i,x,y,scale,t,walking,act){
+ const [gender,,hair,coat,accent,style]=profiles[i];
+ const box=(x,y,w,h,color)=>{c.fillStyle='#'+color;c.fillRect(x,y,w,h)};
+ c.save();c.translate(Math.round(x),Math.round(y));c.scale(scale,scale);
+ if(!walking&&act===6){c.translate(-6,-4);c.rotate(-Math.PI/2)}
+ const stride=walking?Math.floor(t)%2:0;
+ box(-4,-4,3,4-stride,'393849');box(1,-4,3,3+stride,'393849');
+ box(-5,-11,10,8,coat);box(-6,-10,12,4,coat);if(gender==='여'&&i!==0)box(-6,-5,12,2,coat);
+ box(-4,-11,8,2,accent);box(-1,-9,2,5,accent);
+ box(-5,-20,10,9,hair);box(-4,-18,8,7,['f4c397','ddaa80','f9cda9'][i%3]);box(-5,-20,10,3,hair);box(-5,-18,3,4,hair);
+ box(-2,-15,1,2,'3d3541');box(3,-15,1,2,'3d3541');
+ for(const [a,b,w,h,k=0] of details[style])box(a,b,w,h,[accent,hair,coat][k]);
+ if(!walking&&[0,4,5,8].includes(act)){let lift=Math.floor(t)%2;box(6,-10-lift*2,2,7,'805f41');box(5,-11-lift*2,5,2,'c0c6ae')}
+ c.restore()
+}
+// Navigate the walkable ground through a 64 by 64 occupancy grid.
+const tileX=x=>Math.max(0,Math.min(63,Math.floor(x*64/360)));
+const tileY=y=>Math.max(0,Math.min(63,Math.floor((y-72)*64/100)));
+const cell=(x,y)=>tileY(y)*64+tileX(x);
+const center=n=>[(n%64+.5)*360/64,72+(Math.floor(n/64)+.5)*100/64];
+const blocked=new Uint8Array(4096);
+for(let n=0;n<4096;n++){const [x,y]=center(n);blocked[n]=[[62,97],[133,86],[226,93],[264,112]].some(([a,b])=>x>=a&&x<a+24&&y>=b&&y<b+16)}
+const maps=new Map();
+function distances(goal){
+ if(maps.has(goal))return maps.get(goal);
+ const dist=new Int16Array(4096).fill(-1),queue=[goal];dist[goal]=0;
+ for(let k=0;k<queue.length;k++){const n=queue[k];for(const m of neighbors(n)){if(!blocked[m]&&dist[m]<0){dist[m]=dist[n]+1;queue.push(m)}}}
+ maps.set(goal,dist);return dist
+}
+function neighbors(n){return [n%64?n-1:-1,n%64<63?n+1:-1,n-64,n+64].filter(m=>m>=0&&m<4096)}
+function walk(p,x,y){
+ const goal=cell(x,y),dist=distances(goal);
+ for(let k=0;k<2;k++){
+ const n=cell(p.x,p.y);if(n===goal){p.x=x;p.y=y;return}
+ const next=neighbors(n).filter(m=>dist[m]>=0).sort((a,b)=>dist[a]-dist[b])[0];
+ if(next===undefined){const near=Array.from(dist).findIndex(v=>v>=0);[p.x,p.y]=center(near);continue}
+ ;[p.x,p.y]=center(next)
+ }}
+function target(p,i){const [x,y]=destination(p,i);let tx=x+(i%4)*5,ty=y+Math.floor(i/4)*5;while(blocked[cell(tx,ty)])ty+=2;return [tx,ty]}
+s.berries??=16;
+for(const p of s.p){p.friends??={};p.memory??='아직 기록된 만남이 없다.'}
+const ctx=map.getContext('2d'),rect=(x,y,w,h,c)=>{ctx.fillStyle=c;ctx.fillRect(x|0,y|0,w,h)},note=t=>{s.log.unshift(t);s.log.length=Math.min(15,s.log.length)},save=()=>{try{localStorage.marble1=JSON.stringify(s)}catch{}},sel=()=>+pick.value;names.forEach((n,i)=>pick.add(new Option(n,i)));pick.value=Math.max(0,s.apostle);function ui(){construction.textContent='열매 '+s.berries+'개 · 공동 목재 '+s.wood+'개 · 새집 '+s.houses+'/3채'+(s.houses<3?' · 다음 집 '+s.progress+'/6':' · 건설 완료');let p=s.p[sel()];let pc=portrait.getContext('2d');pc.clearRect(0,0,64,64);sprite(pc,sel(),32,58,2,0,false,-1);bio.textContent=profiles[sel()][0]+' · '+profiles[sel()][1]+' · '+traits[sel()%3]+' '+p.name+' · '+acts[p.act]+' 중 · 식량 '+p.food+' · 별 기록 '+p.stars+' · '+p.memory;choose.textContent=s.apostle===sel()?'나의 사도':'사도로 선택';oracle.hidden=s.apostle!==sel();clock.textContent='마을 '+(1+Math.floor(s.tick/48))+'일';log.replaceChildren(...s.log.map(t=>Object.assign(document.createElement('li'),{textContent:t})));}pick.onchange=()=>{reply.textContent='';ui()};choose.onclick=()=>{s.apostle=sel();note(names[sel()]+'에게 별빛이 닿았다.');save();ui()};send.onclick=()=>{let p=s.p[sel()],v=msg.value,a=/별|우주|관찰/.test(v)?2:/이웃|도와|나눠|나눔/.test(v)?1:/채집|모아|식량/.test(v)?0:-1;if(a<0){reply.textContent='채집, 이웃 돕기, 별 관찰 중 하나를 제안해 줘.';return}let why=p.hunger>=6?'지금은 배가 너무 고파요.':a===1&&p.food<2?'나눌 식량을 먼저 구할게요.':'';p.dwelling=0;p.act=why?(p.food&&p.hunger>=6?3:0):a;reply.textContent=p.name+' · '+(why||acts[a]+'을 시작할게요.');note(reply.textContent);save();ui()};function step(){s.tick++;if(s.tick%12===0)s.berries=Math.min(20,s.berries+1);s.p.forEach((p,i)=>{let [x,y]=target(p,i);walk(p,x,y);if(p.x!==x||p.y!==y)return;if((p.dwelling??0)<3){p.dwelling=(p.dwelling??0)+1;return}p.dwelling=0;
+ finishWork(p);let a=p.act;
+ if(a===0&&s.berries){s.berries--;p.food++}if(a===8)p.food++;
+ if(a===7){const q=s.p.find(q=>q!==p&&Math.hypot(q.x-p.x,q.y-p.y)<24);if(q){for(const [u,v] of [[p,q],[q,p]]){u.friends[v.name]=(u.friends[v.name]??0)+1;u.memory=v.name+'와 마을길에서 이야기했다.'}note(p.name+'와 '+q.name+'의 대화 · 친분 '+p.friends[q.name])}}if(a===3&&p.food){p.food--;p.hunger=0}else p.hunger++;if(a===2)p.stars++;if(a===1&&p.food){let others=s.p.filter(q=>q!==p),q=others.sort((u,v)=>(p.debt[v.name]||0)-(p.debt[u.name]||0)||u.food-v.food)[0];q.food++;p.food--;q.debt[p.name]=(q.debt[p.name]||0)+1;note(p.name+' → '+q.name+'에게 식량을 나눴다. '+q.name+'이 은혜를 기억한다.')}p.act=nextGoal(p,i)});save();ui()}function draw(t){ctx.setTransform(2,0,0,2,0,0);rect(0,0,360,172,'#26374e');for(let i=0;i<70;i++)rect(i*79%360,i*47%62,1,1,'#e8d59c');rect(286,13,10,10,'#fee2a0');for(let x=0;x<360;x+=2){let y=53+12*Math.sin(x/41)+6*Math.cos(x/17);rect(x,y,2,172-y,'#39555b');let z=72+8*Math.cos(x/32);rect(x,z,2,172-z,'#64845e')}for(let i=0;i<650;i++)rect(i*137%360,84+i*73%88,2,1,i%5?'#759063':'#c9bd76');for(let x=0;x<360;x+=2)rect(x,121+9*Math.sin(x/52),2,9,'#b4a077');for(let i=0;i<25;i++){let x=i*73%360,y=67+i*13%24;rect(x,y,3,11,'#705441');for(let k=0;k<9;k++)rect(x-k,y-12+k*2,k*2+3,3,k%3?'#314e46':'#416751')}for(let [x,y] of [[62,97],[133,86],[226,93],[264,112]]){rect(x,y,24,18,'#d6bc8b');for(let k=0;k<9;k++)rect(x+10-k*2,y-10+k,5+k*4,2,k%3?'#955f52':'#aa7360');rect(x+9,y+7,6,11,'#534540');rect(x+2,y+5,4,4,'#fee0a0')}for(let i=0;i<Math.min(3,s.houses+1);i++){
   const [x,y]=lots[i];
   const ready=i<s.houses;
   rect(x-9,y,19,2,'#665341');
   if(ready||s.progress){rect(x-8,y-9,2,9,'#946e4a');rect(x+7,y-9,2,9,'#946e4a')}
   if(ready||s.progress>=3)rect(x-8,y-8,17,8,'#d8b180');
   if(ready){for(let row=0;row<8;row++)rect(x-row-2,y-17+row,row*2+5,2,'#925b51');rect(x-2,y-5,4,6,'#513e39')}
-} s.p.forEach((p,i)=>{let x=p.x,y=p.y+Math.floor(Math.sin(t/230+i)*.8);rect(x-2,y-7,5,4,'#f3caa2');rect(x-3,y-9,6,3,'#473e40');rect(x-3,y-3,7,6,['#df925c','#80aace','#ccb4d3'][i%3]);rect(x-2,y+3,2,2,'#363b44');rect(x+2,y+3,2,2,'#363b44');if(i===sel()){rect(x-1,y-14,3,2,'#fff0a1');rect(x,y-12,1,1,'#fff0a1')}});requestAnimationFrame(draw)}map.onclick=e=>{let r=map.getBoundingClientRect(),x=(e.clientX-r.left)*360/r.width,y=(e.clientY-r.top)*172/r.height;pick.value=s.p.map((p,i)=>[Math.hypot(p.x-x,p.y-4-y),i]).sort((a,b)=>a[0]-b[0])[0][1];pick.onchange()};ui();requestAnimationFrame(draw);setInterval(step,600);
+} s.p.map((p,i)=>({p,i})).sort((a,b)=>a.p.y-b.p.y).forEach(({p,i})=>{const [x,y]=target(p,i);sprite(ctx,i,p.x,p.y,.85,t/180+i,!p.dwelling&&(x!==p.x||y!==p.y),p.act);if(i===sel())rect(p.x-2,p.y-25,4,2,'#ffe098')});requestAnimationFrame(draw)}map.onclick=e=>{let r=map.getBoundingClientRect(),x=(e.clientX-r.left)*360/r.width,y=(e.clientY-r.top)*172/r.height;pick.value=s.p.map((p,i)=>[Math.hypot(p.x-x,p.y-4-y),i]).sort((a,b)=>a[0]-b[0])[0][1];pick.onchange()};ui();requestAnimationFrame(draw);setInterval(step,600);
 </script></html>
 
