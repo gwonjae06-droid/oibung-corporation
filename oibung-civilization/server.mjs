@@ -80,6 +80,7 @@ function chatCommand(player,phrase){
 
 setInterval(()=>{world.step();for(const player of Object.values(data.people)){if(player.apostle>=0&&state.p[player.apostle].name!==player.name)player.apostle=-1;if(state.tick%24===0)player.power=Math.min(100,player.power+1)}if(state.tick%12===0)save()},600);
 const page=readFileSync(new URL('./index.html',import.meta.url),'utf8').replace('<script>','<script>globalThis.SERVER_WORLD=true;</script><script>').replace('</html>','<script src="/shared.js"></script></html>');
+const genesis=readFileSync(new URL('./genesis.js',import.meta.url),'utf8');
 const rules=readFileSync(new URL('./society.js',import.meta.url),'utf8');
 const client=readFileSync(new URL('./shared.js',import.meta.url),'utf8');
 http.createServer(async(req,res)=>{
@@ -88,6 +89,7 @@ http.createServer(async(req,res)=>{
  if(req.method==='GET'&&['/connect/kakao','/connect/kakao/callback'].includes(path))return await kakaoLogin(req,res,path);
  if(req.method==='GET'&&path==='/health')return respond(200,{service:'oibung-civilization',tick:state.tick});
  if(req.method==='GET'&&path==='/')return respond(200,page,'text/html');
+ if(req.method==='GET'&&path==='/genesis.js')return respond(200,genesis,'text/javascript');
  if(req.method==='GET'&&path==='/society.js')return respond(200,rules,'text/javascript');
  if(req.method==='GET'&&path==='/shared.js')return respond(200,client,'text/javascript');
  if(req.method!=='POST'||req.headers['content-type']?.split(';')[0]!=='application/json')return respond(404,{});
