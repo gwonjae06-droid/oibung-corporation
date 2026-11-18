@@ -1,0 +1,64 @@
+import http from 'node:http';
+import {readFileSync,writeFileSync,renameSync,existsSync} from 'node:fs';
+import {randomUUID,randomBytes} from 'node:crypto';
+import {createWorld} from './world.mjs';
+const file=process.env.WORLD_FILE||'world-save.json';
+const data=existsSync(file)?JSON.parse(readFileSync(file,'utf8')):{people:{},links:{}};
+const world=createWorld(data.world), state=world.state;
+function save(){writeFileSync(file+'.tmp',JSON.stringify({...data,world:state}),{mode:0o600});renameSync(file+'.tmp',file)}
+const codes=new Map();
+function snapshot(player){return {...state,apostle:player.apostle,civil:{...state.civil,power:player.power}}}
+function command(player,type,value){
+ const p=state.p[player.apostle];
+ if(type==='choose'){
+ const i=Number(value);if(!Number.isInteger(i)||!state.p[i])return '주민을 선택해 주세요.';
+ if(Object.values(data.people).some(v=>v!==player&&v.apostle===i))return '이미 다른 성좌의 사도입니다.';
+ player.apostle=i;player.name=state.p[i].name;return player.name+'에게 별빛이 닿았다.'
+ }
+ if(!p)return '사도를 먼저 선택해 주세요.';
+ if(type==='pact'){const c=state.civil;if(!c.contact||c.treaty||c.stock<3)return '계약 조건이 부족합니다.';c.stock-=3;c.treaty=true;c.gravity=1;c.lawUntil=0;return '외신과 계약했다.'}
+ if(type==='oracle'){
+ const act=/별|우주|관찰/.test(value)?2:/이웃|도와|나눔/.test(value)?1:/식량|채집|모아/.test(value)?0:-1;
+ if(act<0)return '별 관찰, 채집, 이웃 돕기를 제안해 주세요.';
+ if(p.hunger>=6||(act===1&&p.food<2)){if(--p.trust<=-3)player.apostle=-1;return p.name+'이 생존을 우선해 계시를 거절했다.'}
+ p.act=act;p.dwelling=0;return p.name+'이 계시를 받아들였다.'
+ }
+ const cost=new Map([['신탁',10],['축복',15],['기적',40],['강림',100]]).get(type);
+ if(!cost||player.power<cost)return '권능이나 성력을 확인해 주세요.';
+ player.power-=cost;p.trust=Math.min(8,p.trust+1);
+ for(const q of state.p)if(Math.hypot(q.x-p.x,q.y-p.y)<38)q.faith=Math.min(8,q.faith+1);
+ if(type==='신탁'){p.act=2;p.dwelling=0}if(type==='축복'){p.fatigue=0;p.hunger=Math.max(0,p.hunger-2)}
+ if(type==='기적')state.berries=Math.min(30,state.berries+10);
+ if(type==='강림'){state.civil.gravity=1;state.civil.lawUntil=0;for(const q of state.p)q.fatigue=0}
+ return type+' 발현 · '+p.name
+}
+setInterval(()=>{world.step();for(const player of Object.values(data.people)){if(player.apostle>=0&&state.p[player.apostle].name!==player.name)player.apostle=-1;if(state.tick%24===0)player.power=Math.min(100,player.power+1)}if(state.tick%12===0)save()},600);
+const page=readFileSync(new URL('./index.html',import.meta.url),'utf8').replace('<script>','<script>globalThis.SERVER_WORLD=true;</script><script>').replace('</html>','<script src="/shared.js"></script></html>');
+const client=readFileSync(new URL('./shared.js',import.meta.url),'utf8');
+http.createServer(async(req,res)=>{
+ const path=req.url.split('?')[0];function respond(code,body,mime='application/json'){res.writeHead(code,{'content-type':mime+'; charset=utf-8','cache-control':'no-store'});res.end(mime==='application/json'?JSON.stringify(body):body)}
+ try{
+ if(req.method==='GET'&&path==='/')return respond(200,page,'text/html');
+ if(req.method==='GET'&&path==='/shared.js')return respond(200,client,'text/javascript');
+ if(req.method!=='POST'||req.headers['content-type']?.split(';')[0]!=='application/json')return respond(404,{});
+ let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>16000)return respond(413,{})}
+ const b=JSON.parse(raw||'{}');
+ if(path==='/kakao/'+process.env.KAKAO_SECRET&&process.env.KAKAO_SECRET){
+ const uid=b.userRequest?.user?.id,phrase=String(b.userRequest?.utterance||'').trim();if(typeof uid!=='string')return respond(400,{});
+ const code=codes.get(phrase);
+ if(code&&code.until>Date.now()){data.links[uid]=code.token;codes.delete(phrase);save()}
+ const player=data.people[data.links[uid]];
+ let msg='웹에서 연결 코드를 발급해 입력해 주세요.';
+ if(player){const p=state.p[player.apostle];msg=phrase.startsWith('/계시 ')?command(player,'oracle',phrase.slice(4)):phrase==='/역사'?state.log.slice(0,3).join('\n'):p?p.name+' · 식량 '+p.food+' · 별 기록 '+p.stars:'사도를 선택해 주세요.';save()}
+ return respond(200,{version:'2.0',template:{outputs:[{simpleText:{text:msg}}]}})
+ }
+ if(!['/world','/command','/link'].includes(path))return respond(404,{});
+ let token=(req.headers.cookie||'').match(/(?:^|; )star=([a-f0-9-]+)/)?.[1],player=data.people[token];
+ if(!player){if(path!=='/world')return respond(401,{});token=randomUUID();player=data.people[token]={apostle:-1,power:45};res.setHeader('Set-Cookie','star='+token+'; Path=/; HttpOnly; SameSite=Strict');save()}
+ let message='';
+ if(path==='/command'){if(!b.id||typeof b.id!=='string')return respond(400,{});player.recent??=[];const prev=player.recent.find(v=>v.id===b.id);if(prev)message=prev.message;else{message=command(player,b.type,String(b.value??''));world.record(message);player.recent.unshift({id:b.id,message});player.recent.length=Math.min(32,player.recent.length);save()}}
+ if(path==='/link'){if(!process.env.KAKAO_SECRET)message='채널 스킬 서버 설정이 필요합니다.';else{message=randomBytes(8).toString('hex');codes.set(message,{token,until:Date.now()+300000})}}
+ respond(200,{state:snapshot(player),message})
+ }catch{respond(400,{error:'요청 처리 실패'})}
+}).listen(Number(process.env.PORT||8080));
+process.on('SIGTERM',()=>{save();process.exit()});
